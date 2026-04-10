@@ -1,0 +1,1 @@
+import { createClient } from '@supabase/supabase-js'; const supabase = createClient('https://xmfjvhhchhyeobrydasp.supabase.co', 'sb_publishable_hMPDwuiJrwXimYb56p_8Lg_cG1bcA9o'); async function test(){ const { data } = await supabase.from('user_roles').select('*').limit(20); console.log(data); } test();  

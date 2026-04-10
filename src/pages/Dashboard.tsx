@@ -1,0 +1,350 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { supabase } from '../lib/supabase';
+import { useNavigate } from 'react-router-dom';
+import { 
+    MainTab, ClassType, PositionType, ReceiptType, 
+    Profile, TicketRow, PointsStats, MyRequest, Product, 
+    PendingPurchase, Region, Filter 
+} from '../types/dashboard';
+import { 
+    calcAge, toISOStringFromKST, normalizePhone, clampInt 
+} from '../utils/dashboardHelpers';
+
+// Subcomponents
+import { StudentHome } from '../components/dashboard/StudentHome';
+import { StudentRequest } from '../components/dashboard/StudentRequest';
+import { StudentHistory } from '../components/dashboard/StudentHistory';
+import { StudentCash } from '../components/dashboard/StudentCash';
+
+const LIST_LIMIT = 80;
+const FIXED_DURATION_MIN = 60;
+const CLASS_TYPES: ClassType[] = ["A", "B", "C"];
+const QTY_LIST = [1, 5, 10];
+const POINT_WON = 10;
+
+function useViewport() {
+    const [width, setWidth] = useState(window.innerWidth);
+    useEffect(() => {
+        const onResize = () => setWidth(window.innerWidth);
+        window.addEventListener("resize", onResize);
+        return () => window.removeEventListener("resize", onResize);
+    }, []);
+    return { width, isMobile: width < 768, isTablet: width >= 768 && width < 1100, isDesktop: width >= 1100 };
+}
+
+export const Dashboard = () => {
+    const { isMobile } = useViewport();
+    const navigate = useNavigate();
+
+    const [mainTab, setMainTab] = useState<MainTab>("home");
+    const [session, setSession] = useState<any>(null);
+    const [profile, setProfile] = useState<Profile | null>(null);
+
+    const [tickets, setTickets] = useState<Record<ClassType, number>>({ A: 0, B: 0, C: 0 });
+    const [editProfile, setEditProfile] = useState(false);
+    
+    // Profile Fields
+    const [name, setName] = useState(""); 
+    const [birthday, setBirthday] = useState("");
+    const [position, setPosition] = useState<PositionType>("G"); 
+    const [exp, setExp] = useState(""); 
+    const [phone, setPhone] = useState("");
+
+    const [rows, setRows] = useState<MyRequest[]>([]);
+    const [filter, setFilter] = useState<Filter>("all");
+    const [showCancelled, setShowCancelled] = useState(false);
+    const [points, setPoints] = useState<PointsStats | null>(null);
+
+    // Request Fields
+    const [classType, setClassType] = useState<ClassType>("A"); 
+    const [date, setDate] = useState(""); 
+    const [time, setTime] = useState("");
+    const [regionId, setRegionId] = useState(""); 
+    const [regions, setRegions] = useState<Region[]>([]);
+    const [courtName, setCourtName] = useState(""); 
+    const [address, setAddress] = useState(""); 
+    const [note, setNote] = useState("");
+
+    // Cash Fields
+    const [products, setProducts] = useState<Product[]>([]); 
+    const [pending, setPending] = useState<PendingPurchase[]>([]);
+    const [selectedClass, setSelectedClass] = useState<ClassType>("A"); 
+    const [selectedQty, setSelectedQty] = useState<number>(1);
+    const [depositorName, setDepositorName] = useState(""); 
+    const [receiptType, setReceiptType] = useState<ReceiptType>("none");
+    const [receiptValue, setReceiptValue] = useState(""); 
+    const [usePointsInput, setUsePointsInput] = useState<string>("0");
+
+    // const [shippingAddresses, setShippingAddresses] = useState<ShippingAddress[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [msg, setMsg] = useState("");
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (!session) return navigate('/login');
+            setSession(session);
+            loadAll(session.user);
+        });
+    }, [navigate]);
+
+    async function ensureMyProfileExists(user: any) {
+        if (!user?.id) return;
+        const { data: existing } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+        const meta = user.user_metadata || {};
+        
+        if (!existing || !existing.name || !existing.phone || !existing.birthday) {
+            await supabase.from("profiles").upsert({
+                id: user.id,
+                name: existing?.name || meta.name || user.email?.split("@")[0] || "이름없음",
+                birthday: existing?.birthday || meta.birthday || "2000-01-01",
+                position: existing?.position || meta.position || "G",
+                experience_years: existing?.experience_years ?? (meta.experience_years ? Number(meta.experience_years) : null),
+                phone: existing?.phone || (meta.phone ? normalizePhone(String(meta.phone)) : null),
+            }, { onConflict: "id" });
+        }
+    }
+
+    async function loadTickets(uid: string) {
+        const { data } = await supabase.from("ticket_balances").select("class_type, balance").eq("user_id", uid);
+        const next: Record<ClassType, number> = { A: 0, B: 0, C: 0 };
+        (data as TicketRow[] | null)?.forEach(r => { next[r.class_type] = r.balance ?? 0 });
+        setTickets(next);
+    }
+    async function loadMyRequests(uid: string) {
+        const { data } = await supabase.from("class_requests").select("*").eq("student_id", uid).order("created_at", { ascending: false }).limit(LIST_LIMIT);
+        setRows((data ?? []) as MyRequest[]);
+    }
+    async function loadPoints(uid: string) {
+        const { data } = await supabase.from("user_points_stats").select("*").eq("user_id", uid).maybeSingle();
+        setPoints((data as PointsStats | null) ?? { user_id: uid, balance: 0, earned_total: 0, spent_total: 0, completed_count: 0, review_count: 0, tier: "Rookie" });
+    }
+    async function loadMyPendingPurchases(uid: string) {
+        const { data } = await supabase.from("purchases").select("*").eq("user_id", uid).eq("method", "cash").eq("status", "pending").order("created_at", { ascending: false }).limit(20);
+        setPending((data ?? []) as PendingPurchase[]);
+    }
+    async function loadShippingAddresses(_uid: string) {
+        // const { data } = await supabase.from("my_shipping_addresses_view").select("*").eq("user_id", uid).order("is_default", { ascending: false }).order("created_at", { ascending: false });
+        // setShippingAddresses((data ?? []) as ShippingAddress[]);
+    }
+
+    async function loadAll(user: any) {
+        setLoading(true); setMsg("");
+        try {
+            await ensureMyProfileExists(user);
+            const { data: p } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+            
+            const [productsData, regionsData] = await Promise.all([
+                supabase.from("products").select("*").eq("active", true),
+                supabase.from("service_regions").select("*").eq("active", true).order("city").order("district")
+            ]);
+            
+            setProducts((productsData.data ?? []) as Product[]);
+            setRegions((regionsData.data ?? []) as Region[]);
+
+            const pr = (p as Profile) ?? null;
+            setProfile(pr);
+            setName(pr?.name ?? ""); setBirthday(pr?.birthday ?? ""); setPosition((pr?.position ?? "G") as PositionType);
+            setExp(pr?.experience_years?.toString() ?? ""); setPhone(pr?.phone ?? "");
+
+            await Promise.all([
+                loadTickets(user.id), loadMyRequests(user.id), loadPoints(user.id),
+                loadMyPendingPurchases(user.id), loadShippingAddresses(user.id)
+            ]);
+        } catch (e: any) {
+            setMsg(e?.message || "불러오기 실패");
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function refreshStudentData() {
+        if (!session) return;
+        setLoading(true); setMsg("");
+        try {
+            await Promise.all([
+                loadTickets(session.user.id), loadMyRequests(session.user.id), loadPoints(session.user.id),
+                loadMyPendingPurchases(session.user.id), loadShippingAddresses(session.user.id)
+            ]);
+        } catch (e: any) { setMsg(e?.message) } finally { setLoading(false) }
+    }
+
+    async function saveProfile() {
+        if (!session) return;
+        setLoading(true); setMsg("");
+        try {
+            const phoneTrim = normalizePhone(phone.trim());
+            if (phoneTrim.length < 10) throw new Error("전화번호 형식이 올바르지 않습니다.");
+            const expTrim = exp.trim();
+            if (expTrim && !/^\d+$/.test(expTrim)) throw new Error("경력(년)은 숫자만 입력해 주세요.");
+            const { error } = await supabase.from("profiles").upsert({
+                id: session.user.id, name: name.trim(), birthday, position, experience_years: expTrim ? Number(expTrim) : null, phone: phoneTrim
+            }, { onConflict: "id" });
+            if (error) throw error;
+            setEditProfile(false); setMsg("프로필 저장 완료!");
+            await loadAll(session.user);
+        } catch (e: any) { setMsg(e?.message || "저장 실패") } finally { setLoading(false) }
+    }
+
+    async function submitRequest() {
+        if (!session) return setMsg("로그인이 필요합니다.");
+        const savedPhone = normalizePhone(String(profile?.phone ?? ""));
+        if (!savedPhone) return setMsg("전화번호를 먼저 내 계정에서 저장해 주세요.");
+        if (!date || !time) return setMsg("날짜와 시간을 선택해 주세요.");
+        if (!regionId) return setMsg("수업 지역을 선택해 주세요.");
+        if (!address.trim()) return setMsg("주소를 입력해 주세요.");
+        if ((tickets[classType] ?? 0) <= 0) return setMsg(`Class ${classType} 티켓이 없습니다.`);
+
+        let iso; try { iso = toISOStringFromKST(date, time) } catch (e: any) { return setMsg(e?.message) }
+        const fullAddress = courtName.trim() ? `${courtName.trim()} / ${address.trim()}` : address.trim();
+
+        setLoading(true);
+        const { error } = await supabase.rpc("request_class", {
+            p_class_type: classType, p_requested_start: iso, p_duration_min: FIXED_DURATION_MIN, p_address: fullAddress, p_note: note.trim() || null, p_ticket_cost: 1, p_region_id: regionId
+        });
+        setLoading(false);
+        if (error) return setMsg(`신청 실패: ${error.message}`);
+        setMsg("수업 신청 완료\n60분 수업 / 티켓 1장이 선차감되었습니다.");
+        resetRequestForm(); setMainTab("history"); refreshStudentData();
+    }
+
+    function resetRequestForm() { setClassType("A"); setDate(""); setTime(""); setRegionId(""); setCourtName(""); setAddress(""); setNote(""); }
+
+    async function cancelRequest(requestId: string) {
+        if (!session) return; setLoading(true); setMsg("");
+        const { error } = await supabase.rpc("cancel_class_request", { p_request_id: requestId });
+        setLoading(false);
+        if (error) return setMsg(`취소 실패: ${error.message}`);
+        setMsg("취소 처리 완료(환불 여부는 정책에 따라 자동 적용)");
+        refreshStudentData();
+    }
+
+    async function requestCash(productId: string) {
+        if (!session) return;
+        setLoading(true); setMsg("");
+        const note = buildPurchaseNote(selectedProduct!);
+        const { error } = await supabase.rpc("create_cash_purchase", {
+            p_product_id: productId, p_payer_name: depositorName.trim(),
+            p_cash_receipt_type: receiptType === "income" ? "income_deduction" : receiptType === "expense" ? "expense_proof" : "none",
+            p_cash_receipt_value: receiptType === "none" ? null : receiptValue.trim(), p_points_use: usePoints, p_note: note,
+        });
+        setLoading(false);
+        if (error) return setMsg(error.message);
+        setMsg("현금 결제 요청이 등록되었습니다.\n입금 확인 후 티켓이 지급됩니다.");
+        setUsePointsInput("0");
+        refreshStudentData();
+    }
+
+    async function cancelPending(purchaseId: string) {
+        if (!session) return; setLoading(true); setMsg("");
+        const { error } = await supabase.rpc("cancel_cash_purchase", { p_purchase_id: purchaseId });
+        setLoading(false);
+        if (error) return setMsg(error.message);
+        setMsg("구매요청 취소 완료. 포인트 자동 환급.");
+        refreshStudentData();
+    }
+
+    const regionMap = useMemo(() => new Map(regions.map((r) => [r.id, r.display_name])), [regions]);
+    const productMap = useMemo(() => {
+        const m = new Map<string, Product>();
+        for (const p of products) m.set(`${p.class_type}-${p.ticket_qty}`, p);
+        return m;
+    }, [products]);
+
+    const selectedProduct = productMap.get(`${selectedClass}-${selectedQty}`);
+    const productPrice = selectedProduct?.price ?? 0;
+    const availablePoints = points?.balance ?? 0;
+
+    const parsedUsePoints = useMemo(() => {
+        const n = Number((usePointsInput || "").trim().replace(/,/g, ""));
+        return Number.isNaN(n) ? 0 : Math.floor(n);
+    }, [usePointsInput]);
+    const maxUsablePoints = useMemo(() => Math.min(availablePoints, Math.floor(productPrice / POINT_WON)), [availablePoints, productPrice]);
+    const usePoints = useMemo(() => clampInt(parsedUsePoints, 0, maxUsablePoints), [parsedUsePoints, maxUsablePoints]);
+    const pointsDiscountWon = usePoints * POINT_WON;
+    const finalAmount = Math.max(0, productPrice - pointsDiscountWon);
+
+    function buildPurchaseNote(p: Product) {
+        const lines = [
+            "[현금 결제 요청]", `상품: Class ${p.class_type} · ${p.ticket_qty}회`, `원가: ${p.price.toLocaleString()}원`,
+            `포인트사용: ${usePoints.toLocaleString()}p(=${pointsDiscountWon.toLocaleString()}원)`, `최종금액: ${finalAmount.toLocaleString()}원`,
+            `입금자명: ${depositorName.trim()}`, `현금영수증: ${receiptType}`
+        ];
+        if (receiptType !== "none") lines.push(`발급정보: ${receiptValue.trim()}`);
+        return lines.join("\n");
+    }
+
+    if (loading && !session) return <div style={{ padding: 40, color: 'white' }}>불러오는 중...</div>;
+
+    const emailText = session?.user?.email ?? "-";
+    const ageText = profile?.birthday ? `${calcAge(profile.birthday)}세` : "-";
+    const activeCount = rows.filter((r) => r.status === "requested" || r.status === "accepted").length;
+
+    return (
+        <div style={{ maxWidth: '1000px', margin: '0 auto', color: 'white' }}>
+            <div style={{ padding: '0 0 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                   <h1 style={{ fontSize: '1.75rem', fontWeight: 900, marginBottom: '0.5rem' }}>통합 계정 대시보드</h1>
+                   <p style={{ color: 'rgba(255,255,255,0.6)', margin: 0 }}>학생 및 이용자 통합 패널입니다. 수업 열람과 포인트, 구매 내역을 관리하세요.</p>
+                </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: '1rem' }}>
+                <span style={chip}>{emailText}</span>
+                <span style={chip}>{points?.tier ?? "Rookie"}</span>
+                <span style={chip}>Points {(points?.balance ?? 0).toLocaleString()}</span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 8, marginBottom: '2rem' }}>
+                <button style={mainTab === "home" ? tabOn : tabOff} onClick={() => setMainTab("home")}>내 홈</button>
+                <button style={mainTab === "request" ? tabOn : tabOff} onClick={() => setMainTab("request")}>수업 신청</button>
+                <button style={mainTab === "history" ? tabOn : tabOff} onClick={() => setMainTab("history")}>신청내역</button>
+                <button style={mainTab === "cash" ? tabOn : tabOff} onClick={() => setMainTab("cash")}>티켓 충전</button>
+            </div>
+
+            <section style={{ borderRadius: 22, border: "1px solid rgba(255,255,255,.10)", background: "rgba(255,255,255,.02)", padding: 24, minHeight: '500px' }}>
+                {msg && <div style={{ padding: 14, borderRadius: 14, background: 'rgba(59, 130, 246, 0.2)', color: 'white', marginBottom: 20 }}>{msg}</div>}
+                
+                {mainTab === "home" && (
+                    <StudentHome
+                        tickets={tickets} points={points} activeCount={activeCount} loading={loading}
+                        editProfile={editProfile} setEditProfile={setEditProfile} 
+                        name={name} setName={setName} birthday={birthday} setBirthday={setBirthday} 
+                        position={position} setPosition={setPosition} exp={exp} setExp={setExp} 
+                        phone={phone} setPhone={setPhone} saveProfile={saveProfile} ageText={ageText}
+                    />
+                )}
+                {mainTab === "request" && (
+                    <StudentRequest
+                        loading={loading} tickets={tickets} classType={classType} setClassType={setClassType}
+                        date={date} setDate={setDate} time={time} setTime={setTime} regionId={regionId} setRegionId={setRegionId}
+                        regions={regions} courtName={courtName} setCourtName={setCourtName} address={address} setAddress={setAddress}
+                        note={note} setNote={setNote} submitRequest={submitRequest}
+                    />
+                )}
+                {mainTab === "history" && (
+                    <StudentHistory
+                        rows={rows.filter(r => r.status !== 'cancelled' && r.status !== 'rejected').filter(r => filter === 'all' ? true : r.status === filter)}
+                        cancelledRows={rows.filter(r => r.status === 'cancelled' || r.status === 'rejected')}
+                        filter={filter} setFilter={setFilter} showCancelled={showCancelled} setShowCancelled={setShowCancelled}
+                        cancelRequest={cancelRequest} loading={loading} regionMap={regionMap}
+                    />
+                )}
+                {mainTab === "cash" && (
+                    <StudentCash
+                        loading={loading} points={points} pending={pending} selectedClass={selectedClass} setSelectedClass={setSelectedClass}
+                        classTypes={CLASS_TYPES} qtyList={QTY_LIST}
+                        selectedQty={selectedQty} setSelectedQty={setSelectedQty} depositorName={depositorName} setDepositorName={setDepositorName}
+                        receiptType={receiptType} setReceiptType={setReceiptType} receiptValue={receiptValue} setReceiptValue={setReceiptValue}
+                        usePointsInput={usePointsInput} setUsePointsInput={setUsePointsInput}
+                        requestCash={requestCash} cancelPending={cancelPending} selectedProduct={selectedProduct}
+                        pointsDiscountWon={pointsDiscountWon} maxUsablePoints={maxUsablePoints} finalAmount={finalAmount}
+                    />
+                )}
+            </section>
+        </div>
+    );
+};
+
+const chip: React.CSSProperties = { display: "inline-flex", alignItems: "center", padding: "8px 12px", borderRadius: 999, border: "1px solid rgba(255,255,255,.14)", background: "rgba(255,255,255,.08)", fontSize: 13, fontWeight: 600 };
+const tabOn: React.CSSProperties = { padding: "12px 10px", borderRadius: 14, border: "none", background: "#ffffff", color: "#000000", cursor: "pointer", fontWeight: 800, fontSize: 14 };
+const tabOff: React.CSSProperties = { padding: "12px 10px", borderRadius: 14, border: "1px solid rgba(255,255,255,.10)", background: "rgba(255,255,255,.04)", color: "rgba(255,255,255,.5)", cursor: "pointer", fontWeight: 700, fontSize: 14 };

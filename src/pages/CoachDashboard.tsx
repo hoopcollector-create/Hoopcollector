@@ -371,9 +371,5 @@ const regionOption: React.CSSProperties = { padding: '10px', borderRadius: '10px
 const regionOptionActive: React.CSSProperties = { ...regionOption, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--color-coach)', color: 'white' };
 const staticRegionChip: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '8px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '100px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', fontWeight: 800 };
 const msgBox: React.CSSProperties = { padding: '1rem 1.5rem', borderRadius: '16px', background: 'rgba(16, 185, 129, 0.05)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.1)', marginBottom: '1.5rem', fontWeight: 800, fontSize: '0.9rem' };
-', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', textAlign: 'left' };
-const regionOptionActive: React.CSSProperties = { ...regionOption, background: 'rgba(59, 130, 246, 0.2)', border: '1px solid var(--color-primary)', color: 'white' };
-const staticRegionChip: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '6px 12px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: 700 };
-const msgBox: React.CSSProperties = { padding: '1rem', borderRadius: '14px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', marginBottom: '1.5rem', fontWeight: 700, fontSize: '0.9rem' };
 
 

@@ -379,45 +379,4 @@ const regionOptionActive: React.CSSProperties = { ...regionOption, background: '
 const staticRegionChip: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '6px 12px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', fontWeight: 700 };
 const msgBox: React.CSSProperties = { padding: '1rem', borderRadius: '14px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', marginBottom: '1.5rem', fontWeight: 700, fontSize: '0.9rem' };
 
-const StatCard = ({ title, value, unit, icon, link }: any) => (
-    <Link to={link || '#'} style={{ textDecoration: 'none', color: 'inherit' }}>
-        <div style={statCardStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>{title}</span>
-                <div style={iconBox}>{icon}</div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                <span style={{ fontSize: '2rem', fontWeight: 900 }}>{value}</span>
-                <span style={{ fontSize: '0.9rem', opacity: 0.5, fontWeight: 700 }}>{unit}</span>
-            </div>
-        </div>
-    </Link>
-);
-
-const QuickLink = ({ to, title, desc, icon }: any) => (
-    <Link to={to} style={quickLinkStyle}>
-        <div style={{ ...iconBox, background: 'rgba(255,255,255,0.05)', marginRight: '1rem' }}>{icon}</div>
-        <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '2px' }}>{title}</div>
-            <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>{desc}</div>
-        </div>
-        <ChevronRight size={18} style={{ opacity: 0.3 }} />
-    </Link>
-);
-
-const statsGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' };
-const statCardStyle: React.CSSProperties = { padding: '1.5rem', borderRadius: '24px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', transition: 'transform 0.2s ease', cursor: 'pointer' };
-const iconBox: React.CSSProperties = { width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' };
-const panel: React.CSSProperties = { padding: '2rem', borderRadius: '32px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' };
-const panelTitle: React.CSSProperties = { fontSize: '1.25rem', fontWeight: 900, marginBottom: '1.5rem' };
-const quickLinkStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', padding: '1.25rem', borderRadius: '20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', textDecoration: 'none', color: 'inherit', transition: 'all 0.2s' };
-const guideItem: React.CSSProperties = { fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 };
-
-const gradeBadgeRow: React.CSSProperties = { display: 'flex', gap: '8px', alignItems: 'center' };
-const gradeBadge: React.CSSProperties = { padding: '8px 16px', borderRadius: '12px', background: 'var(--color-primary)', color: 'white', fontWeight: 900, fontSize: '0.85rem' };
-const tokenChip: React.CSSProperties = { padding: '8px 16px', borderRadius: '12px', background: 'rgba(251, 191, 36, 0.1)', border: '1px solid rgba(251, 191, 36, 0.2)', color: '#fbbf24', fontWeight: 800, fontSize: '0.85rem', display: 'flex', alignItems: 'center' };
-
-const progressionCard: React.CSSProperties = { padding: '1.5rem', borderRadius: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '2.5rem' };
-const progBarBg: React.CSSProperties = { width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '99px', overflow: 'hidden' };
-const progBarFill: React.CSSProperties = { height: '100%', background: 'linear-gradient(to right, var(--color-primary), #8b5cf6)', borderRadius: '99px', transition: 'width 1s ease-out' };
 

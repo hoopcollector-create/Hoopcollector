@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const HomeSlider = () => {
     const [banners, setBanners] = useState<any[]>([]);
@@ -36,7 +37,18 @@ export const HomeSlider = () => {
     const prev = () => setCurrent(prev => (prev - 1 + banners.length) % banners.length);
 
     if (loading) return <div style={placeholderStyle}>HOOP COLLECTOR</div>;
-    if (banners.length === 0) return null;
+    
+    // Default fallback when no banners are active
+    if (banners.length === 0) return (
+        <div style={emptySliderStyle}>
+            <div style={{ textAlign: 'center', maxWidth: '600px', padding: '0 20px' }}>
+                <div style={badge}>WELCOME TO HOOP COLLECTOR</div>
+                <h1 style={{ ...title, fontSize: '3rem' }}>현재 등록된 배너가 없습니다</h1>
+                <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '2rem' }}>어드민 포털에서 홈페이지 첫 화면을 장식할 멋진 광고 사진들을 직접 등록해 보세요!</p>
+                <Link to="/admin/website" style={primaryBtn}>배너 관리하러 가기</Link>
+            </div>
+        </div>
+    );
 
     const activeBanner = banners[current];
 
@@ -104,3 +116,4 @@ const navBtn: React.CSSProperties = { position: 'absolute', top: '50%', transfor
 const indicatorWrap: React.CSSProperties = { position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '12px', zIndex: 10 };
 const dot: React.CSSProperties = { width: '10px', height: '10px', borderRadius: '50%', cursor: 'pointer', transition: 'all 0.3s' };
 const placeholderStyle: React.CSSProperties = { width: '100%', height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#070708', color: 'rgba(255,255,255,0.05)', fontSize: '4rem', fontWeight: 950 };
+const emptySliderStyle: React.CSSProperties = { width: '100%', height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(to bottom, #070708, #111)', borderBottom: '1px solid rgba(255,255,255,0.05)' };

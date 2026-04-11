@@ -59,48 +59,71 @@ export const WebsiteManager = () => {
         <div style={{ color: 'white' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>홈페이지 배너 관리</h2>
-                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>홈페이지 첫 화면 슬라이더 광고를 직접 관리합니다.</p>
+                    <h1 style={{ fontSize: '1.75rem', fontWeight: 900, letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>WEBSITE CONTROL CENTER</h1>
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.95rem' }}>홈페이지 첫 화면의 광고와 배너를 실시간으로 제어합니다.</p>
                 </div>
-                <button onClick={addBanner} style={addBtn}><Plus size={18} /> 배너 추가</button>
+                <button onClick={addBanner} style={addBtn}><Plus size={20} /> 신규 광고 배너 추가</button>
+            </div>
+
+            {/* Practical Guide */}
+            <div style={guideBox}>
+                <div style={{ fontWeight: 800, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <AlertCircle size={18} color="var(--color-coach)" /> 관리자 가이드
+                </div>
+                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
+                    <li><strong>이미지 URL</strong>: 사진의 주소를 넣으면 즉시 홈페이지에 반영됩니다.</li>
+                    <li><strong>정렬 순서</strong>: 번호가 낮을수록 슬라이더의 앞부분에 나타납니다.</li>
+                    <li><strong>노출 상태</strong>: '비활성'으로 설정하면 홈페이지에서 즉시 사라집니다.</li>
+                </ul>
             </div>
 
             {msg && <div style={msgBox}>{msg}</div>}
 
-            {loading ? <div style={{ opacity: 0.5 }}>로딩 중...</div> : (
+            {loading ? <div style={{ opacity: 0.5 }}>연결 정보를 확인 중...</div> : (
                 <div style={grid}>
-                    {banners.map((banner) => (
-                        <div key={banner.id} style={card}>
+                    {banners.length === 0 ? (
+                        <div style={emptyPlaceholder} onClick={addBanner}>
+                            <ImageIcon size={48} style={{ marginBottom: '1rem', opacity: 0.2 }} />
+                            <div>아직 등록된 광고가 없습니다.</div>
+                            <div style={{ fontSize: '0.8rem', opacity: 0.5, marginTop: '8px' }}>여기를 눌러 첫 번째 배너를 만들어보세요!</div>
+                        </div>
+                    ) : banners.map((banner) => (
+                        <div key={banner.id} style={{ ...card, border: banner.is_active ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(255,255,255,0.08)' }}>
                             <div style={imgWrap}>
-                                <img src={banner.image_url} alt="Banner Preview" style={img} />
+                                <img src={banner.image_url} alt="Banner Preview" style={{ ...img, opacity: banner.is_active ? 1 : 0.3 }} />
+                                {!banner.is_active && <div style={inactiveOverlay}>비활성 상태</div>}
                             </div>
                             <div style={info}>
                                 <div style={inputGroup}>
-                                    <label style={label}>이미지 URL</label>
+                                    <label style={label}>이미지 소스 (URL)</label>
                                     <input 
                                         style={input} 
                                         value={banner.image_url} 
                                         onChange={(e) => updateBanner(banner.id, { image_url: e.target.value })}
-                                        onBlur={() => setMsg("")}
+                                        placeholder="https://..."
                                     />
                                 </div>
                                 <div style={inputGroup}>
-                                    <label style={label}>헤드라인 (선택)</label>
+                                    <label style={label}>배너 타이틀 (선택 사항)</label>
                                     <input 
                                         style={input} 
                                         value={banner.title || ''} 
+                                        placeholder="홈페이지에 표시될 굵은 글씨"
                                         onChange={(e) => updateBanner(banner.id, { title: e.target.value })}
                                     />
                                 </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem' }}>
+                                
+                                <div style={{ display: 'flex', gap: '12px', marginTop: '1.5rem' }}>
                                     <button 
                                         onClick={() => updateBanner(banner.id, { is_active: !banner.is_active })}
-                                        style={{ ...toggleBtn, color: banner.is_active ? '#4ade80' : 'rgba(255,255,255,0.3)' }}
+                                        style={{ ...actionBtnBase, flex: 1, background: banner.is_active ? '#3b82f6' : 'rgba(255,255,255,0.1)', color: 'white' }}
                                     >
-                                        {banner.is_active ? <ToggleRight size={24} /> : <ToggleLeft size={24} />}
+                                        {banner.is_active ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
                                         <span style={{ marginLeft: 8 }}>{banner.is_active ? '노출 중' : '비활성'}</span>
                                     </button>
-                                    <button onClick={() => deleteBanner(banner.id)} style={deleteBtn}><Trash2 size={18} /></button>
+                                    <button onClick={() => deleteBanner(banner.id)} style={deleteBtnStyle}>
+                                        <Trash2 size={18} />
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -111,15 +134,19 @@ export const WebsiteManager = () => {
     );
 };
 
-const grid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' };
-const card: React.CSSProperties = { borderRadius: '24px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden' };
-const imgWrap: React.CSSProperties = { width: '100%', aspectRatio: '16 / 9', background: '#000', borderBottom: '1px solid rgba(255,255,255,0.08)' };
-const img: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'cover' };
-const info: React.CSSProperties = { padding: '20px' };
-const inputGroup: React.CSSProperties = { marginBottom: '12px' };
-const label: React.CSSProperties = { display: 'block', fontSize: '0.7rem', fontWeight: 900, opacity: 0.4, marginBottom: '6px', textTransform: 'uppercase' };
-const input: React.CSSProperties = { width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '0.85rem', outline: 'none' };
-const addBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '12px', background: 'white', color: 'black', border: 'none', fontWeight: 900, cursor: 'pointer' };
-const msgBox: React.CSSProperties = { padding: '12px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', borderRadius: '12px', marginBottom: '1.5rem', fontWeight: 700, fontSize: '0.9rem' };
-const toggleBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', background: 'transparent', border: 'none', fontWeight: 800, cursor: 'pointer' };
-const deleteBtn: React.CSSProperties = { background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' };
+const guideBox: React.CSSProperties = { padding: '20px', borderRadius: '16px', background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)', marginBottom: '2.5rem' };
+const emptyPlaceholder: React.CSSProperties = { gridColumn: '1 / -1', padding: '100px', borderRadius: '24px', border: '2px dashed rgba(255,255,255,0.1)', textAlign: 'center', cursor: 'pointer', transition: 'all 0.3s' };
+const inactiveOverlay: React.CSSProperties = { position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: '#ef4444', fontSize: '0.9rem' };
+const actionBtnBase: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px', borderRadius: '10px', border: 'none', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' };
+const deleteBtnStyle: React.CSSProperties = { padding: '10px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', cursor: 'pointer' };
+
+const grid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '24px' };
+const card: React.CSSProperties = { borderRadius: '24px', background: 'rgba(255,255,255,0.03)', overflow: 'hidden', transition: 'all 0.3s' };
+const imgWrap: React.CSSProperties = { width: '100%', aspectRatio: '16 / 9', background: '#000', position: 'relative' };
+const img: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 0.3s' };
+const info: React.CSSProperties = { padding: '24px' };
+const inputGroup: React.CSSProperties = { marginBottom: '16px' };
+const label: React.CSSProperties = { display: 'block', fontSize: '0.7rem', fontWeight: 900, opacity: 0.4, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' };
+const input: React.CSSProperties = { width: '100%', padding: '12px 14px', borderRadius: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'white', fontSize: '0.9rem', outline: 'none', transition: 'border-color 0.2s' };
+const addBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 28px', borderRadius: '16px', background: 'white', color: 'black', border: 'none', fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' };
+const msgBox: React.CSSProperties = { padding: '14px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', borderRadius: '14px', marginBottom: '2rem', fontWeight: 800, textAlign: 'center' };

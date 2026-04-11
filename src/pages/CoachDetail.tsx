@@ -269,3 +269,47 @@ export const CoachDetail = () => {
         </div>
     );
 };
+
+/* Styles */
+const pageWrap: React.CSSProperties = { color: "white", paddingBottom: "100px", maxWidth: '1200px', margin: '0 auto' };
+const container: React.CSSProperties = { display: 'grid', gap: '4rem' };
+const backBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.1em' };
+
+const editModeBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', padding: '10px 20px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 800, cursor: 'pointer', fontSize: '0.75rem', letterSpacing: '0.05em' };
+const saveBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', padding: '10px 24px', borderRadius: '12px', background: 'white', color: 'black', border: 'none', fontWeight: 900, cursor: 'pointer', fontSize: '0.8rem' };
+const cancelBtn: React.CSSProperties = { ...editModeBtn, color: 'rgba(255,255,255,0.4)' };
+
+const heroLayout: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '4rem', alignItems: 'start' };
+const photoSection: React.CSSProperties = { width: '100%' };
+const photoWrap: React.CSSProperties = { width: '100%', aspectRatio: '1 / 1.2', borderRadius: '2px', overflow: 'hidden', background: '#0a0a0b' };
+const photo: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'cover' };
+const photoFallback: React.CSSProperties = { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', fontWeight: 900, color: 'rgba(255,255,255,0.05)' };
+
+const heroContent: React.CSSProperties = { display: 'flex', flexDirection: 'column', paddingTop: '20px' };
+const topBadge: React.CSSProperties = { fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.4)', marginBottom: '1.5rem' };
+const nameRow: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' };
+const name: React.CSSProperties = { fontSize: '4.5rem', fontWeight: 900, margin: 0, letterSpacing: '-0.04em', lineHeight: 1 };
+const levelBadge: React.CSSProperties = { width: '70px', height: '70px', background: 'white', color: 'black', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '2rem' };
+
+const locationRow: React.CSSProperties = { display: 'flex', alignItems: 'center', marginBottom: '3rem' };
+const infoGrid: React.CSSProperties = { display: 'grid', gap: '2rem', marginBottom: '4rem' };
+const infoItem: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '10px' };
+const infoLabel: React.CSSProperties = { fontSize: '0.65rem', fontWeight: 900, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.15em' };
+const infoValue: React.CSSProperties = { fontSize: '1.4rem', fontWeight: 700, letterSpacing: '-0.01em' };
+
+const ctaRow: React.CSSProperties = { display: 'flex', gap: '12px' };
+const primaryBtn: React.CSSProperties = { flex: 1, padding: '20px', borderRadius: '2px', background: 'white', color: 'black', border: 'none', fontWeight: 900, fontSize: '1rem', cursor: 'pointer', letterSpacing: '0.05em' };
+const secondaryBtn: React.CSSProperties = { flex: 1, padding: '20px', borderRadius: '2px', background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', letterSpacing: '0.05em' };
+
+const detailContent: React.CSSProperties = { display: 'grid', gap: '20px' };
+const sectionTitle: React.CSSProperties = { fontSize: '0.7rem', fontWeight: 900, color: 'rgba(255,255,255,0.3)', marginBottom: '2rem', textTransform: 'uppercase', letterSpacing: '0.2em' };
+const bodyText: React.CSSProperties = { fontSize: '1.1rem', lineHeight: 1.8, color: 'rgba(255,255,255,0.7)', whiteSpace: 'pre-line', fontWeight: 500 };
+
+const editTextArea: React.CSSProperties = { width: '100%', minHeight: '150px', padding: '1.5rem', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '1rem', lineHeight: 1.7, outline: 'none', fontFamily: 'inherit' };
+
+const regionSelectorWrap: React.CSSProperties = { display: 'grid', gap: '16px' };
+const selectedRegionsRow: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '10px', minHeight: '50px', padding: '12px', borderRadius: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)' };
+const regionChipActive: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '8px 16px', borderRadius: '100px', background: 'white', color: 'black', fontSize: '0.85rem', fontWeight: 900, cursor: 'pointer' };
+const allRegionsGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '8px', maxHeight: '200px', overflowY: 'auto' };
+const regionOption: React.CSSProperties = { padding: '10px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', textAlign: 'left' };
+const regionOptionActive: React.CSSProperties = { ...regionOption, background: 'rgba(255,255,255,0.08)', border: '1px solid white', color: 'white' };

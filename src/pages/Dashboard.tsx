@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { 
     MainTab, ClassType, PositionType, ReceiptType, 
     Profile, TicketRow, PointsStats, MyRequest, Product, 
-    PendingPurchase, Region, Filter 
+    PendingPurchase, Region, Filter,
+    ShippingAddress, ShopRequestStatus, ShopPurchaseRequest
 } from '../types/dashboard';
 import { 
     calcAge, toISOStringFromKST, normalizePhone, clampInt 

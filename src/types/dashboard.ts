@@ -105,7 +105,6 @@ export interface ShopPurchaseRequest {
     thumbnail_url: string | null;
     created_at: string;
     paid_at: string | null;
-    paid_at: string | null;
     cancelled_at: string | null;
 }
 

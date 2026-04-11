@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-import { ArrowLeft, MapPin, Award, CheckCircle2, Calendar, MessageSquare, Star, Sparkles, ChevronRight } from "lucide-react";
+import { ArrowLeft, MapPin, Award, CheckCircle2, Calendar, MessageSquare, Star, Sparkles, ChevronRight, Save, X, Edit2, Plus } from "lucide-react";
 
 type PublicCoach = {
     coach_id: string;
@@ -15,17 +15,47 @@ type PublicCoach = {
     available_classes: string[] | null;
 };
 
+type Region = {
+    id: string;
+    display_name: string;
+};
+
 export const CoachDetail = () => {
     const { slug } = useParams<{ slug: string }>();
     const navigate = useNavigate();
     const [coach, setCoach] = useState<PublicCoach | null>(null);
     const [loading, setLoading] = useState(true);
     const [msg, setMsg] = useState("");
+    
+    // Auth & Edit State
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [allRegions, setAllRegions] = useState<Region[]>([]);
+    const [editData, setEditData] = useState({
+        experience_text: "",
+        bio_text: "",
+        service_regions: [] as string[]
+    });
 
     useEffect(() => {
         if (!slug) return;
         loadCoach(slug);
+        checkUser();
+        loadRegions();
     }, [slug]);
+
+    async function checkUser() {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+            setCurrentUserId(session.user.id);
+        }
+    }
+
+    async function loadRegions() {
+        const { data } = await supabase.from('service_regions').select('id, display_name').eq('active', true).order('display_name');
+        setAllRegions(data || []);
+    }
 
     async function loadCoach(targetSlug: string) {
         setLoading(true);
@@ -42,6 +72,11 @@ export const CoachDetail = () => {
                 setMsg("해당 코치를 찾을 수 없습니다.");
             } else {
                 setCoach(data as PublicCoach);
+                setEditData({
+                    experience_text: data.experience_text || "",
+                    bio_text: data.bio_text || "",
+                    service_regions: data.service_regions || []
+                });
             }
         } catch (e: any) {
             setMsg(e.message);
@@ -50,14 +85,78 @@ export const CoachDetail = () => {
         }
     }
 
+    async function handleSave() {
+        if (!currentUserId || !coach) return;
+        setSaving(true);
+        try {
+            const { error } = await supabase
+                .from('coach_profiles')
+                .update({
+                    experience_text: editData.experience_text,
+                    bio_text: editData.bio_text,
+                    service_regions: editData.service_regions
+                })
+                .eq('user_id', currentUserId);
+
+            if (error) throw error;
+            
+            setIsEditing(false);
+            if (slug) loadCoach(slug);
+            alert("프로필이 성공적으로 수정되었습니다.");
+        } catch (e: any) {
+            alert("저장 실패: " + e.message);
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    const toggleRegion = (regionName: string) => {
+        if (editData.service_regions.includes(regionName)) {
+            setEditData(prev => ({
+                ...prev,
+                service_regions: prev.service_regions.filter(r => r !== regionName)
+            }));
+        } else {
+            if (editData.service_regions.length >= 3) {
+                alert("활동 지역은 최대 3개까지만 선택 가능합니다.");
+                return;
+            }
+            setEditData(prev => ({
+                ...prev,
+                service_regions: [...prev.service_regions, regionName]
+            }));
+        }
+    };
+
     if (loading) return <div style={pageWrap}><div style={{ color: 'white', padding: 40 }}>불러오는 중...</div></div>;
     if (!coach) return <div style={pageWrap}><div style={{ color: 'white', padding: 40 }}>{msg || "코치 정보를 찾을 수 없습니다."}</div></div>;
 
+    const isOwner = currentUserId === coach.coach_id;
+
     return (
         <div style={pageWrap}>
-            <button onClick={() => navigate(-1)} style={backBtn}>
-                <ArrowLeft size={18} style={{ marginRight: 8 }} /> 목록으로 돌아가기
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <button onClick={() => navigate(-1)} style={backBtn}>
+                    <ArrowLeft size={18} style={{ marginRight: 8 }} /> 목록으로 돌아가기
+                </button>
+                
+                {isOwner && !isEditing && (
+                    <button onClick={() => setIsEditing(true)} style={editModeBtn}>
+                        <Edit2 size={16} style={{ marginRight: 8 }} /> 프로필 수정하기
+                    </button>
+                )}
+                
+                {isEditing && (
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        <button onClick={() => setIsEditing(false)} style={cancelBtn}>
+                            <X size={16} style={{ marginRight: 8 }} /> 취소
+                        </button>
+                        <button onClick={handleSave} disabled={saving} style={saveBtn}>
+                            <Save size={16} style={{ marginRight: 8 }} /> {saving ? "저장 중..." : "변경사항 저장"}
+                        </button>
+                    </div>
+                )}
+            </div>
 
             <div style={container}>
                 {/* Hero Card */}
@@ -84,19 +183,48 @@ export const CoachDetail = () => {
                                 <div style={infoValue}>{(coach.available_classes ?? []).map(v => `Class ${v}`).join(", ") || "-"}</div>
                             </div>
                             <div style={infoItem}>
-                                <div style={infoLabel}>활동 지역</div>
-                                <div style={infoValue}>{(coach.service_regions ?? []).join(", ") || "-"}</div>
+                                <div style={infoLabel}>활동 지역 {isEditing && <span style={{ color: 'var(--color-primary)', fontSize: '0.7rem' }}>(최대 3개)</span>}</div>
+                                {isEditing ? (
+                                    <div style={regionSelectorWrap}>
+                                        <div style={selectedRegionsRow}>
+                                            {editData.service_regions.length === 0 ? (
+                                                <span style={{ opacity: 0.4, fontSize: '0.85rem' }}>지역을 선택해 주세요</span>
+                                            ) : (
+                                                editData.service_regions.map(r => (
+                                                    <span key={r} onClick={() => toggleRegion(r)} style={regionChipActive}>
+                                                        {r} <X size={12} style={{ marginLeft: 4 }} />
+                                                    </span>
+                                                ))
+                                            )}
+                                        </div>
+                                        <div style={allRegionsGrid}>
+                                            {allRegions.map(r => (
+                                                <button 
+                                                    key={r.id} 
+                                                    onClick={() => toggleRegion(r.display_name)}
+                                                    style={editData.service_regions.includes(r.display_name) ? regionOptionActive : regionOption}
+                                                >
+                                                    {r.display_name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div style={infoValue}>{(coach.service_regions ?? []).join(", ") || "-"}</div>
+                                )}
                             </div>
                         </div>
 
-                        <div style={ctaRow}>
-                            <button style={primaryBtn} onClick={() => navigate('/dashboard')}>
-                                <Calendar size={18} style={{ marginRight: 8 }} /> 수업 신청하기
-                            </button>
-                            <button style={secondaryBtn}>
-                                <MessageSquare size={18} style={{ marginRight: 8 }} /> 문의하기
-                            </button>
-                        </div>
+                        {!isEditing && (
+                            <div style={ctaRow}>
+                                <button style={primaryBtn} onClick={() => navigate('/dashboard')}>
+                                    <Calendar size={18} style={{ marginRight: 8 }} /> 수업 신청하기
+                                </button>
+                                <button style={secondaryBtn}>
+                                    <MessageSquare size={18} style={{ marginRight: 8 }} /> 문의하기
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </section>
 
@@ -104,12 +232,30 @@ export const CoachDetail = () => {
                 <div style={detailGrid}>
                     <section style={sectionCard}>
                         <h3 style={sectionTitle}><Award size={20} style={{ marginRight: 10, color: 'var(--color-primary)' }} /> 주요 경력</h3>
-                        <div style={bodyText}>{coach.experience_text || "등록된 경력 정보가 없습니다."}</div>
+                        {isEditing ? (
+                            <textarea 
+                                style={editTextArea} 
+                                value={editData.experience_text}
+                                onChange={e => setEditData(prev => ({ ...prev, experience_text: e.target.value }))}
+                                placeholder="경력 사항을 입력해 주세요."
+                            />
+                        ) : (
+                            <div style={bodyText}>{coach.experience_text || "등록된 경력 정보가 없습니다."}</div>
+                        )}
                     </section>
 
                     <section style={sectionCard}>
                         <h3 style={sectionTitle}><CheckCircle2 size={20} style={{ marginRight: 10, color: '#4ade80' }} /> 자기소개</h3>
-                        <div style={bodyText}>{coach.bio_text || "등록된 소개 글이 없습니다."}</div>
+                        {isEditing ? (
+                            <textarea 
+                                style={{ ...editTextArea, minHeight: '200px' }} 
+                                value={editData.bio_text}
+                                onChange={e => setEditData(prev => ({ ...prev, bio_text: e.target.value }))}
+                                placeholder="자기소개를 입력해 주세요."
+                            />
+                        ) : (
+                            <div style={bodyText}>{coach.bio_text || "등록된 소개 글이 없습니다."}</div>
+                        )}
                     </section>
                 </div>
             </div>
@@ -120,7 +266,11 @@ export const CoachDetail = () => {
 /* Styles */
 const pageWrap: React.CSSProperties = { color: "white", paddingBottom: "4rem" };
 const container: React.CSSProperties = { maxWidth: '1000px', margin: '0 auto', display: 'grid', gap: '2rem' };
-const backBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', marginBottom: '1.5rem', fontWeight: 700 };
+const backBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontWeight: 700 };
+
+const editModeBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', padding: '10px 20px', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.2)', fontWeight: 800, cursor: 'pointer', fontSize: '0.9rem' };
+const saveBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', padding: '10px 20px', borderRadius: '12px', background: 'white', color: 'black', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '0.9rem' };
+const cancelBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', padding: '10px 20px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem' };
 
 const heroCard: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'minmax(250px, 320px) 1fr', gap: '2.5rem', padding: '2.5rem', borderRadius: '32px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', alignItems: 'center' };
 const photoWrap: React.CSSProperties = { width: '100%', aspectRatio: '1 / 1', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' };
@@ -146,3 +296,12 @@ const detailGrid: React.CSSProperties = { display: 'grid', gap: '1.5rem' };
 const sectionCard: React.CSSProperties = { padding: '2rem', borderRadius: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' };
 const sectionTitle: React.CSSProperties = { display: 'flex', alignItems: 'center', fontSize: '1.25rem', fontWeight: 800, marginBottom: '1.25rem' };
 const bodyText: React.CSSProperties = { fontSize: '1rem', lineHeight: 1.8, color: 'rgba(255,255,255,0.7)', whiteSpace: 'pre-line' };
+
+const editTextArea: React.CSSProperties = { width: '100%', minHeight: '120px', padding: '1rem', borderRadius: '16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '1rem', lineHeight: 1.6, outline: 'none', fontFamilies: 'inherit' };
+
+const regionSelectorWrap: React.CSSProperties = { marginTop: '8px', display: 'grid', gap: '12px' };
+const selectedRegionsRow: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '8px', minHeight: '36px', padding: '8px', borderRadius: '12px', background: 'rgba(0,0,0,0.2)' };
+const regionChipActive: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '6px 12px', borderRadius: '99px', background: 'var(--color-primary)', color: 'white', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' };
+const allRegionsGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '6px', maxHeight: '150px', overflowY: 'auto', padding: '4px' };
+const regionOption: React.CSSProperties = { padding: '6px 10px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', textAlign: 'left' };
+const regionOptionActive: React.CSSProperties = { ...regionOption, background: 'rgba(59, 130, 246, 0.2)', border: '1px solid var(--color-primary)', color: 'white' };

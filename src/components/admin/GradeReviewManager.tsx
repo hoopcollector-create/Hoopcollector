@@ -17,7 +17,10 @@ export const GradeReviewManager = () => {
         try {
             await supabase.from('grade_review_requests').update({ status: newStatus, reviewed_at: new Date().toISOString() }).eq('id', req.id);
             if (newStatus === 'approved') {
+                // Update basic profile grade
                 await supabase.from('profiles').update({ coach_grade: req.target_grade }).eq('id', req.user_id);
+                // Sync with public coach profile level
+                await supabase.from('coach_profiles').update({ coach_level: req.target_grade }).eq('user_id', req.user_id);
             }
             alert(`승급 심사가 ${newStatus === 'approved' ? '승인' : '거절'}되었습니다.`);
             loadRequests();

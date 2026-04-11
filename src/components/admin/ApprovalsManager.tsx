@@ -8,7 +8,7 @@ export const ApprovalsManager = () => {
     useEffect(() => { loadApps(); }, []);
     
     async function loadApps() {
-        const { data } = await supabase.from('coach_profiles').select('id, profiles(name, phone), specialty, certifications, active').eq('active', false);
+        const { data } = await supabase.from('coach_profiles').select('user_id, profiles(name, phone), specialty, certifications, active').eq('active', false);
         setCoachApps(data || []);
     }
 
@@ -17,8 +17,8 @@ export const ApprovalsManager = () => {
         try {
             // 1. Set coach role
             await supabase.from('user_roles').insert({ user_id: userId, role: 'coach' });
-            // 2. Activate application
-            await supabase.from('coach_profiles').update({ active: true }).eq('id', userId);
+            // 2. Activate application and set initial level
+            await supabase.from('coach_profiles').update({ active: true, coach_level: 'C' }).eq('user_id', userId);
             // 3. Ensure Grade C in profile
             await supabase.from('profiles').update({ coach_grade: 'C' }).eq('id', userId);
             

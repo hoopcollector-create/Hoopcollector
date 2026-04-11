@@ -27,12 +27,12 @@ export const CoachApplicationModal = ({ onClose }: { onClose: () => void }) => {
             }
 
             const { error } = await supabase.from('coach_profiles').upsert({
-                id: session.user.id,
+                user_id: session.user.id,
                 specialty: specialty.trim(),
                 certifications: [cert.trim()],
-                profile_image_url: photoUrl,
+                photo_url: photoUrl,
                 active: false
-            }, { onConflict: 'id' });
+            }, { onConflict: 'user_id' });
 
             if (error) throw error;
             setMsg('코치 신청이 완료되었습니다! 관리자 승인 후 코치 모드를 이용할 수 있습니다.');

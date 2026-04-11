@@ -1,31 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Plus, Edit2, Trash2, Save, X, Package, Tag, Layers, Image as ImageIcon } from 'lucide-react';
+import { ShopProduct, ShopVariant } from '../../types/dashboard';
 
-interface Product {
-    id: string;
-    title: string;
-    description: string;
-    thumbnail_url: string;
-    category: string;
-    slug: string;
-    is_active: boolean;
-}
-
-interface Variant {
-    id: string;
-    product_id: string;
-    size_label: string;
-    point_price: number;
-    stock_qty: number;
-    is_active: boolean;
-}
 
 export const AdminShopManager = () => {
-    const [products, setProducts] = useState<Product[]>([]);
+    const [products, setProducts] = useState<ShopProduct[]>([]);
     const [loading, setLoading] = useState(true);
-    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-    const [variants, setVariants] = useState<Variant[]>([]);
+    const [editingProduct, setEditingProduct] = useState<ShopProduct | null>(null);
+    const [variants, setVariants] = useState<ShopVariant[]>([]);
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
@@ -44,7 +27,7 @@ export const AdminShopManager = () => {
         if (!error && data) setVariants(data);
     }
 
-    const startEdit = async (p: Product) => {
+    const startEdit = async (p: ShopProduct) => {
         setEditingProduct(p);
         await loadVariants(p.id);
     };

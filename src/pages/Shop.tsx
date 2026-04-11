@@ -2,21 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ShoppingBag, Search, ChevronRight, ArrowRight, ArrowRightCircle } from 'lucide-react';
+import { ShopProduct } from '../types/dashboard';
 
-interface Product {
-    id: string;
-    title: string;
-    description: string;
-    thumbnail_url: string;
-    category: string;
-    slug: string;
-    min_price?: number;
-    total_stock?: number;
-}
 
 export const Shop = () => {
     const navigate = useNavigate();
-    const [products, setProducts] = useState<Product[]>([]);
+    const [products, setProducts] = useState<ShopProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeCategory, setActiveCategory] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');

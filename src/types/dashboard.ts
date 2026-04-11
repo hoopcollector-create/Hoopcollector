@@ -105,5 +105,27 @@ export interface ShopPurchaseRequest {
     thumbnail_url: string | null;
     created_at: string;
     paid_at: string | null;
+    paid_at: string | null;
     cancelled_at: string | null;
+}
+
+export interface ShopProduct {
+    id: string;
+    title: string;
+    description: string;
+    thumbnail_url: string;
+    category: string;
+    slug: string;
+    is_active: boolean;
+    min_price?: number;
+    total_stock?: number;
+}
+
+export interface ShopVariant {
+    id: string;
+    product_id: string;
+    size_label: string;
+    point_price: number;
+    stock_qty: number;
+    is_active: boolean;
 }

@@ -2,24 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ShoppingBag, ArrowLeft, MapPin, Search as SearchIcon, Plus, Check, CreditCard } from 'lucide-react';
-import { ShippingAddress, ShopRequestStatus, ShopPurchaseRequest } from '../types/dashboard';
+import { ShippingAddress, ShopRequestStatus, ShopPurchaseRequest, ShopProduct, ShopVariant } from '../types/dashboard';
 
-interface Variant {
-    id: string;
-    product_id: string;
-    size_label: string;
-    point_price: number;
-    stock_qty: number;
-}
-
-interface ProductDetail {
-    id: string;
-    title: string;
-    description: string;
-    thumbnail_url: string;
-    category: string;
-    slug: string;
-    variants: Variant[];
+interface ProductDetail extends ShopProduct {
+    variants: ShopVariant[];
 }
 
 export const ShopDetail = () => {
@@ -33,7 +19,7 @@ export const ShopDetail = () => {
     const [userBalance, setUserBalance] = useState(0);
 
     // Purchase states
-    const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+    const [selectedVariant, setSelectedVariant] = useState<ShopVariant | null>(null);
     const [qty, setQty] = useState(1);
     const [addresses, setAddresses] = useState<ShippingAddress[]>([]);
     const [selectedAddressId, setSelectedAddressId] = useState<string>('');

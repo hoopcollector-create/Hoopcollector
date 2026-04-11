@@ -111,8 +111,7 @@ const overlayStyle: React.CSSProperties = {
     justifyContent: 'center',
     opacity: 0,
     transition: 'opacity 0.4s ease',
-    padding: '2rem',
-    className: 'insta-overlay' // React doesn't use className like this in inline styles, fix below
+    padding: '2rem'
 };
 
 // Re-defining overlay to work with CSS class

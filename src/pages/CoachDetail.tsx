@@ -297,7 +297,7 @@ const sectionCard: React.CSSProperties = { padding: '2rem', borderRadius: '24px'
 const sectionTitle: React.CSSProperties = { display: 'flex', alignItems: 'center', fontSize: '1.25rem', fontWeight: 800, marginBottom: '1.25rem' };
 const bodyText: React.CSSProperties = { fontSize: '1rem', lineHeight: 1.8, color: 'rgba(255,255,255,0.7)', whiteSpace: 'pre-line' };
 
-const editTextArea: React.CSSProperties = { width: '100%', minHeight: '120px', padding: '1rem', borderRadius: '16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '1rem', lineHeight: 1.6, outline: 'none', fontFamilies: 'inherit' };
+const editTextArea: React.CSSProperties = { width: '100%', minHeight: '120px', padding: '1rem', borderRadius: '16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '1rem', lineHeight: 1.6, outline: 'none', fontFamily: 'inherit' };
 
 const regionSelectorWrap: React.CSSProperties = { marginTop: '8px', display: 'grid', gap: '12px' };
 const selectedRegionsRow: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '8px', minHeight: '36px', padding: '8px', borderRadius: '12px', background: 'rgba(0,0,0,0.2)' };

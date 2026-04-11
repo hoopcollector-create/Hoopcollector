@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Plus, Trash2, Save, ToggleLeft, ToggleRight, ImageIcon } from 'lucide-react';
+import { Plus, Trash2, Save, ToggleLeft, ToggleRight, ImageIcon, AlertCircle } from 'lucide-react';
 
 export const WebsiteManager = () => {
     const [banners, setBanners] = useState<any[]>([]);

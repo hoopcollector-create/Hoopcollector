@@ -18,6 +18,8 @@ import { Shop } from './pages/Shop';
 import { ShopDetail } from './pages/ShopDetail';
 import { Home } from './pages/Home';
 
+const CoachFinancials = () => <div style={{ color: 'white', padding: 40 }}>내 정산내역 (준비중)</div>;
+
 export const App = () => {
     return (
         <BrowserRouter>

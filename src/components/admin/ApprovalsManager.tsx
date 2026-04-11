@@ -31,19 +31,33 @@ export const ApprovalsManager = () => {
         }
     }
 
+    async function rejectApplication(userId: string) {
+        if (!confirm("정말 이 지원서를 반려하시겠습니까? 데이터가 삭제됩니다.")) return;
+        setLoading(true);
+        try {
+            await supabase.from('coach_profiles').delete().eq('user_id', userId);
+            alert("지원서가 반려 및 삭제되었습니다.");
+            loadApps();
+        } catch (e: any) {
+            alert(e.message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
     return (
         <div>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1rem' }}>코치 지원 승인 결재</h2>
             {coachApps.length === 0 ? <p style={{ color: 'rgba(255,255,255,0.6)' }}>대기 중인 코치 신청이 없습니다.</p> : (
                 <div style={{ display: 'grid', gap: '16px' }}>
                     {coachApps.map((c: any) => (
-                        <div key={c.id} style={{ padding: '20px', borderRadius: '16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <div key={c.user_id} style={{ padding: '20px', borderRadius: '16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <div style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '8px' }}>{c.profiles?.name || '지원자'} ({c.profiles?.phone || '번호 없음'})</div>
                             <div style={{ marginBottom: '4px' }}><span style={{ opacity: 0.5 }}>전문 분야:</span> {c.specialty}</div>
                             <div style={{ marginBottom: '16px' }}><span style={{ opacity: 0.5 }}>경력 사항:</span> {c.certifications?.join(', ') || '-'}</div>
                             <div style={{ display: 'flex', gap: '12px' }}>
-                                <button onClick={() => approve(c.id)} disabled={loading} style={{ padding: '8px 24px', borderRadius: '8px', background: '#3b82f6', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer' }}>승인하기</button>
-                                <button style={{ padding: '8px 24px', borderRadius: '8px', background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', fontWeight: 700, cursor: 'pointer' }}>반려하기</button>
+                                <button onClick={() => approve(c.user_id)} disabled={loading} style={{ padding: '8px 24px', borderRadius: '8px', background: '#3b82f6', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer' }}>승인하기</button>
+                                <button onClick={() => rejectApplication(c.user_id)} disabled={loading} style={{ padding: '8px 24px', borderRadius: '8px', background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', fontWeight: 700, cursor: 'pointer' }}>반려하기</button>
                             </div>
                         </div>
                     ))}

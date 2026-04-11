@@ -16,16 +16,13 @@ import { PostWrite } from './pages/PostWrite';
 import { GradeSystem } from './pages/GradeSystem';
 import { Shop } from './pages/Shop';
 import { ShopDetail } from './pages/ShopDetail';
-
-// Placeholder standard components for routes that might be missing
-const LandingPage = () => <Navigate to="/class-info" replace />;
-const CoachFinancials = () => <div style={{ color: 'white', padding: 40 }}>내 정산내역 (준비중)</div>;
+import { Home } from './pages/Home';
 
 export const App = () => {
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={<LandingPage />} />
+                <Route path="/" element={<AppLayout><Home /></AppLayout>} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/class-info" element={<AppLayout><ClassInfo /></AppLayout>} />
                 <Route path="/coaches" element={<AppLayout><CoachDirectory /></AppLayout>} />

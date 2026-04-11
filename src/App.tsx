@@ -14,6 +14,8 @@ import { CommunityList } from './pages/CommunityList';
 import { PostDetail } from './pages/PostDetail';
 import { PostWrite } from './pages/PostWrite';
 import { GradeSystem } from './pages/GradeSystem';
+import { Shop } from './pages/Shop';
+import { ShopDetail } from './pages/ShopDetail';
 
 // Placeholder standard components for routes that might be missing
 const LandingPage = () => <Navigate to="/class-info" replace />;
@@ -28,6 +30,8 @@ export const App = () => {
                 <Route path="/class-info" element={<AppLayout><ClassInfo /></AppLayout>} />
                 <Route path="/coaches" element={<AppLayout><CoachDirectory /></AppLayout>} />
                 <Route path="/coach-detail/:slug" element={<AppLayout><CoachDetail /></AppLayout>} />
+                <Route path="/shop" element={<AppLayout><Shop /></AppLayout>} />
+                <Route path="/shop/:slug" element={<AppLayout><ShopDetail /></AppLayout>} />
                 
                 <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
                 

@@ -90,3 +90,20 @@ export interface ShippingAddress {
     created_at?: string;
     updated_at?: string;
 }
+
+export type ShopRequestStatus = "pending" | "paid" | "cancelled" | "refunded";
+
+export interface ShopPurchaseRequest {
+    id: string;
+    product_slug: string;
+    product_title: string;
+    size_label: string;
+    quantity: number;
+    points_used: number;
+    cash_amount: number;
+    status: ShopRequestStatus;
+    thumbnail_url: string | null;
+    created_at: string;
+    paid_at: string | null;
+    cancelled_at: string | null;
+}

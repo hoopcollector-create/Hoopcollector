@@ -109,26 +109,26 @@ export const CoachDirectory = () => {
     }, [rows, search, selectedRegion, selectedClass]);
 
     return (
-        <div style={{ color: 'white' }}>
+        <div style={{ color: 'white', maxWidth: '1200px', margin: '0 auto', paddingBottom: '100px' }}>
             {/* Hero Section */}
             <section style={hero}>
-                <div style={heroBadge}><Sparkles size={14} style={{ marginRight: 6 }} /> HOOPCOLLECTOR COACH</div>
-                <h1 style={heroTitle}>전문 코치 찾기</h1>
+                <div style={heroBadge}>HOOPCOLLECTOR ROSTER</div>
+                <h1 style={heroTitle}>FIND YOUR COACH</h1>
                 <p style={heroDesc}>경력과 실력이 검증된 훕콜렉터의 코치진을 만나보세요. 원하는 지역과 레벨에 맞춰 최적의 매칭을 제공합니다.</p>
 
                 <div style={searchPanel}>
-                    <div style={{ position: 'relative' }}>
-                        <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
+                    <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+                        <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', opacity: 0.3 }} />
                         <input
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="코치 이름, 소개, 경력으로 검색"
+                            placeholder="이름, 경력, 지역 등으로 검색하세요."
                             style={searchInput}
                         />
                     </div>
 
                     <div style={filterBlock}>
-                        <div style={filterHead}>활동 지역</div>
+                        <div style={filterHead}>LOCATIONS</div>
                         <div style={chipRow}>
                             {regionOptions.map((region) => (
                                 <button key={region} onClick={() => setSelectedRegion(region)} style={selectedRegion === region ? chipOn : chipOff}>
@@ -139,11 +139,11 @@ export const CoachDirectory = () => {
                     </div>
 
                     <div style={filterBlock}>
-                        <div style={filterHead}>교육 클래스</div>
+                        <div style={filterHead}>PROGRAMS</div>
                         <div style={chipRow}>
                             {classOptions.map((cls) => (
                                 <button key={cls} onClick={() => setSelectedClass(cls)} style={selectedClass === cls ? chipOn : chipOff}>
-                                    {cls === "전체" ? "전체" : `Class ${cls}`}
+                                    {cls === "전체" ? "ALL" : `CLASS ${cls}`}
                                 </button>
                             ))}
                         </div>
@@ -152,64 +152,55 @@ export const CoachDirectory = () => {
             </section>
 
             {/* Coach List */}
-            <section style={{ marginTop: '3rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
+            <section style={{ marginTop: '5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem' }}>
                     <div>
-                        <h2 style={{ fontSize: '1.5rem', fontWeight: 900 }}>Coach List</h2>
-                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>총 {filteredRows.length}명의 코치를 찾았습니다.</p>
+                        <h2 style={{ fontSize: '2rem', fontWeight: 900, letterSpacing: '-0.02e,' }}>COACHES</h2>
+                        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '1rem', fontWeight: 700 }}>{filteredRows.length} ACTIVE COACHES</p>
                     </div>
                 </div>
 
                 {loading ? (
-                    <div style={emptyBox}>데이터를 불러오는 중입니다...</div>
+                    <div style={emptyBox}>COLLECTING DATA...</div>
                 ) : msg ? (
-                    <div style={{ ...emptyBox, borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>오류 발생: {msg}</div>
+                    <div style={{ ...emptyBox, borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>ERROR: {msg}</div>
                 ) : filteredRows.length === 0 ? (
-                    <div style={emptyBox}>조건에 맞는 코치가 없습니다. 다른 필터를 선택해 보세요.</div>
+                    <div style={emptyBox}>코치를 찾을 수 없습니다.</div>
                 ) : (
                     <div style={gridStyle}>
                         {filteredRows.map((coach) => (
                             <Link key={coach.coach_id} to={`/coach-detail/${coach.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                                <article style={card}>
+                                <article className="card-minimal" style={{ padding: 0, height: '100%', cursor: 'pointer', transition: 'transform 0.2s' }}>
                                     <div style={thumbWrap}>
                                         {coach.photo_url ? (
                                             <img src={coach.photo_url} alt={coach.display_name ?? ""} style={thumb} />
                                         ) : (
                                             <div style={thumbFallback}>HC</div>
                                         )}
-                                        <div style={thumbOverlay} />
                                         <div style={topBadgeRow}>
-                                            <span style={coachChip}>Coach</span>
                                             <span style={levelBadge}>{coach.coach_level ?? "-"}</span>
                                         </div>
                                     </div>
 
                                     <div style={cardBody}>
-                                        <div style={coachName}>{coach.display_name ?? "Unnamed Coach"}</div>
+                                        <div style={coachName}>{coach.display_name ?? "UNNAMED"}</div>
                                         
                                         <div style={regionPills}>
-                                            {(coach.service_regions ?? []).slice(0, 2).map((region) => (
-                                                <span key={region} style={miniPill}><MapPin size={10} style={{ marginRight: 4 }} /> {region}</span>
+                                            {(coach.service_regions ?? []).slice(0, 3).map((region) => (
+                                                <span key={region} style={miniPill}><MapPin size={10} style={{ marginRight: 4, opacity: 0.5 }} /> {region}</span>
                                             ))}
-                                            {(coach.service_regions ?? []).length > 2 && (
-                                                <span style={miniPillMuted}>+ {(coach.service_regions ?? []).length - 2}</span>
-                                            )}
                                         </div>
 
                                         <div style={line} />
 
                                         <div style={infoList}>
                                             <div style={infoRow}>
-                                                <div style={infoLabel}>클래스</div>
-                                                <div style={infoValue}>{(coach.available_classes ?? []).map(v => `Class ${v}`).join(", ") || "-"}</div>
-                                            </div>
-                                            <div style={infoRow}>
                                                 <div style={infoLabel}>경력</div>
-                                                <div style={infoValue}>{truncate(coach.experience_text, 40) || "-"}</div>
+                                                <div style={infoValue}>{truncate(coach.experience_text, 50) || "상세 프로필 참조"}</div>
                                             </div>
                                         </div>
 
-                                        <button style={detailBtn}>프로필 상세보기 <ChevronRight size={14} style={{ marginLeft: 4 }} /></button>
+                                        <div style={viewMoreBtn}>VIEW PROFILE <ChevronRight size={14} style={{ marginLeft: 6, opacity: 0.5 }} /></div>
                                     </div>
                                 </article>
                             </Link>
@@ -222,39 +213,35 @@ export const CoachDirectory = () => {
 };
 
 /* Styles */
-const hero: React.CSSProperties = { padding: '2rem', borderRadius: '24px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' };
-const heroBadge: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '6px 12px', borderRadius: '99px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--color-primary)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '1rem' };
-const heroTitle: React.CSSProperties = { fontSize: '2.5rem', fontWeight: 950, marginBottom: '0.5rem', letterSpacing: '-0.02em' };
-const heroDesc: React.CSSProperties = { color: 'rgba(255,255,255,0.6)', fontSize: '1rem', lineHeight: 1.6, maxWidth: '600px', marginBottom: '2rem' };
+const hero: React.CSSProperties = { paddingBottom: '3rem' };
+const heroBadge: React.CSSProperties = { fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.4)', marginBottom: '1.5rem' };
+const heroTitle: React.CSSProperties = { fontSize: '3.5rem', fontWeight: 900, marginBottom: '1rem', letterSpacing: '-0.04em' };
+const heroDesc: React.CSSProperties = { color: 'rgba(255,255,255,0.4)', fontSize: '1.2rem', lineHeight: 1.6, maxWidth: '700px', marginBottom: '3rem' };
 
-const searchPanel: React.CSSProperties = { background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' };
-const searchInput: React.CSSProperties = { width: '100%', padding: '14px 14px 14px 44px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', boxSizing: 'border-box', outline: 'none' };
+const searchPanel: React.CSSProperties = { padding: '2rem', borderRadius: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' };
+const searchInput: React.CSSProperties = { width: '100%', padding: '18px 20px 18px 50px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.3)', color: 'white', fontSize: '1rem', outline: 'none' };
 
-const filterBlock: React.CSSProperties = { marginTop: '1.5rem' };
-const filterHead: React.CSSProperties = { fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', marginBottom: '0.75rem', letterSpacing: '0.05em' };
+const filterBlock: React.CSSProperties = { marginTop: '2rem' };
+const filterHead: React.CSSProperties = { fontSize: '0.65rem', fontWeight: 900, color: 'rgba(255,255,255,0.3)', marginBottom: '1rem', letterSpacing: '0.15em' };
 const chipRow: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '8px' };
-const chipOn: React.CSSProperties = { padding: '8px 16px', borderRadius: '99px', background: 'white', color: '#000000', border: 'none', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer' };
-const chipOff: React.CSSProperties = { padding: '8px 16px', borderRadius: '99px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' };
+const chipOn: React.CSSProperties = { padding: '8px 18px', borderRadius: '100px', background: 'white', color: 'black', border: 'none', fontSize: '0.8rem', fontWeight: 900, cursor: 'pointer' };
+const chipOff: React.CSSProperties = { padding: '8px 18px', borderRadius: '100px', background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.06)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' };
 
-const gridStyle: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' };
-const card: React.CSSProperties = { borderRadius: '22px', overflow: 'hidden', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', transition: 'all 0.3s ease', cursor: 'pointer', height: '100%' };
-const thumbWrap: React.CSSProperties = { position: 'relative', width: '100%', aspectRatio: '4 / 3', overflow: 'hidden' };
+const gridStyle: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '30px' };
+const thumbWrap: React.CSSProperties = { position: 'relative', width: '100%', aspectRatio: '1 / 1', overflow: 'hidden', background: '#0a0a0b' };
 const thumb: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'cover' };
-const thumbFallback: React.CSSProperties = { width: '100%', height: '100%', background: '#1f2937', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 900, color: 'rgba(255,255,255,0.2)' };
-const thumbOverlay: React.CSSProperties = { position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.6))' };
-const topBadgeRow: React.CSSProperties = { position: 'absolute', top: 12, left: 12, right: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
-const coachChip: React.CSSProperties = { padding: '4px 8px', background: 'rgba(0,0,0,0.5)', borderRadius: '6px', color: 'white', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', backdropFilter: 'blur(4px)' };
-const levelBadge: React.CSSProperties = { width: '32px', height: '32px', background: 'rgba(59, 130, 246, 0.8)', borderRadius: '8px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.9rem' };
+const thumbFallback: React.CSSProperties = { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', fontWeight: 900, color: 'rgba(255,255,255,0.05)' };
+const topBadgeRow: React.CSSProperties = { position: 'absolute', bottom: 20, right: 20 };
+const levelBadge: React.CSSProperties = { width: '44px', height: '44px', background: 'white', color: 'black', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.2rem' };
 
-const cardBody: React.CSSProperties = { padding: '1.25rem' };
-const coachName: React.CSSProperties = { fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.5rem' };
-const regionPills: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '1rem' };
-const miniPill: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '4px 8px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', fontWeight: 700 };
-const miniPillMuted: React.CSSProperties = { ...miniPill, opacity: 0.5 };
-const line: React.CSSProperties = { height: '1px', background: 'rgba(255,255,255,0.1)', margin: '1rem 0' };
-const infoList: React.CSSProperties = { display: 'grid', gap: '0.75rem', marginBottom: '1.25rem' };
-const infoRow: React.CSSProperties = { display: 'grid', gridTemplateColumns: '60px 1fr', gap: '8px', fontSize: '0.85rem' };
-const infoLabel: React.CSSProperties = { color: 'rgba(255,255,255,0.4)', fontWeight: 700 };
-const infoValue: React.CSSProperties = { color: 'rgba(255,255,255,0.9)', fontWeight: 600 };
-const detailBtn: React.CSSProperties = { width: '100%', padding: '12px', background: 'rgba(255,255,255,0.08)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' };
-const emptyBox: React.CSSProperties = { padding: '3rem', borderRadius: '24px', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)', textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontWeight: 600 };
+const cardBody: React.CSSProperties = { padding: '2rem' };
+const coachName: React.CSSProperties = { fontSize: '1.5rem', fontWeight: 900, marginBottom: '0.6rem', letterSpacing: '-0.02em' };
+const regionPills: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '1.5rem' };
+const miniPill: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700 };
+const line: React.CSSProperties = { height: '1px', background: 'rgba(255,255,255,0.05)', margin: '1.5rem 0' };
+const infoList: React.CSSProperties = { marginBottom: '2rem' };
+const infoRow: React.CSSProperties = { fontSize: '0.9rem', lineHeight: 1.6 };
+const infoLabel: React.CSSProperties = { color: 'rgba(255,255,255,0.3)', fontWeight: 900, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' };
+const infoValue: React.CSSProperties = { color: 'rgba(255,255,255,0.6)', fontWeight: 500 };
+const viewMoreBtn: React.CSSProperties = { fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.1em', color: 'white', display: 'flex', alignItems: 'center' };
+const emptyBox: React.CSSProperties = { padding: '100px 0', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '24px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontWeight: 800, letterSpacing: '0.1em' };

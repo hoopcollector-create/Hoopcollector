@@ -58,6 +58,15 @@ export function statusKo(s: string) {
     return s;
 }
 
+export function statusShopKo(s: string) {
+    const v = (s || "").toLowerCase();
+    if (v === "pending") return "입금대기";
+    if (v === "paid") return "결제완료";
+    if (v === "cancelled") return "취소됨";
+    if (v === "refunded") return "환불됨";
+    return s;
+}
+
 export function canCancelStatus(s: string) {
     const v = (s || "").toLowerCase();
     return v === "requested" || v === "accepted";

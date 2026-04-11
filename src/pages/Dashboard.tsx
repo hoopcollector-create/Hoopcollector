@@ -15,6 +15,8 @@ import { StudentHome } from '../components/dashboard/StudentHome';
 import { StudentRequest } from '../components/dashboard/StudentRequest';
 import { StudentHistory } from '../components/dashboard/StudentHistory';
 import { StudentCash } from '../components/dashboard/StudentCash';
+import { ShippingManager } from '../components/dashboard/ShippingManager';
+import { StudentShopHistory } from '../components/dashboard/StudentShopHistory';
 
 const LIST_LIMIT = 80;
 const FIXED_DURATION_MIN = 60;
@@ -54,6 +56,7 @@ export const Dashboard = () => {
     const [filter, setFilter] = useState<Filter>("all");
     const [showCancelled, setShowCancelled] = useState(false);
     const [points, setPoints] = useState<PointsStats | null>(null);
+    const [shopRequests, setShopRequests] = useState<ShopPurchaseRequest[]>([]);
 
     // Request Fields
     const [classType, setClassType] = useState<ClassType>("A"); 
@@ -75,7 +78,6 @@ export const Dashboard = () => {
     const [receiptValue, setReceiptValue] = useState(""); 
     const [usePointsInput, setUsePointsInput] = useState<string>("0");
 
-    // const [shippingAddresses, setShippingAddresses] = useState<ShippingAddress[]>([]);
     const [loading, setLoading] = useState(true);
     const [msg, setMsg] = useState("");
 
@@ -122,10 +124,11 @@ export const Dashboard = () => {
         const { data } = await supabase.from("purchases").select("*").eq("user_id", uid).eq("method", "cash").eq("status", "pending").order("created_at", { ascending: false }).limit(20);
         setPending((data ?? []) as PendingPurchase[]);
     }
-    async function loadShippingAddresses(_uid: string) {
-        // const { data } = await supabase.from("my_shipping_addresses_view").select("*").eq("user_id", uid).order("is_default", { ascending: false }).order("created_at", { ascending: false });
-        // setShippingAddresses((data ?? []) as ShippingAddress[]);
+    async function loadShopRequests(uid: string) {
+        const { data } = await supabase.from("shop_purchase_requests").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(20);
+        setShopRequests((data ?? []) as ShopPurchaseRequest[]);
     }
+    async function loadShippingAddresses(_uid: string) {}
 
     async function loadAll(user: any) {
         setLoading(true); setMsg("");
@@ -148,7 +151,7 @@ export const Dashboard = () => {
 
             await Promise.all([
                 loadTickets(user.id), loadMyRequests(user.id), loadPoints(user.id),
-                loadMyPendingPurchases(user.id), loadShippingAddresses(user.id)
+                loadMyPendingPurchases(user.id), loadShopRequests(user.id)
             ]);
         } catch (e: any) {
             setMsg(e?.message || "불러오기 실패");
@@ -273,36 +276,38 @@ export const Dashboard = () => {
         return lines.join("\n");
     }
 
-    if (loading && !session) return <div style={{ padding: 40, color: 'white' }}>불러오는 중...</div>;
+    if (loading && !session) return <div style={{ padding: 40, color: 'white', opacity: 0.5 }}>LOADING DASHBOARD...</div>;
 
     const emailText = session?.user?.email ?? "-";
     const ageText = profile?.birthday ? `${calcAge(profile.birthday)}세` : "-";
     const activeCount = rows.filter((r) => r.status === "requested" || r.status === "accepted").length;
 
     return (
-        <div style={{ maxWidth: '1000px', margin: '0 auto', color: 'white' }}>
-            <div style={{ padding: '0 0 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                   <h1 style={{ fontSize: '1.75rem', fontWeight: 900, marginBottom: '0.5rem' }}>통합 계정 대시보드</h1>
-                   <p style={{ color: 'rgba(255,255,255,0.6)', margin: 0 }}>학생 및 이용자 통합 패널입니다. 수업 열람과 포인트, 구매 내역을 관리하세요.</p>
-                </div>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', color: 'white', paddingBottom: '100px' }}>
+            {/* Header Section */}
+            <div style={{ marginBottom: '3rem' }}>
+                <h1 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '0.6rem', letterSpacing: '-0.02em' }}>MY EXPERIENCE</h1>
+                <p style={{ color: 'rgba(255,255,255,0.4)', margin: 0, fontSize: '1.1rem' }}>학습 현황과 티켓, 포인트를 통합 관리하세요.</p>
             </div>
 
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: '1rem' }}>
-                <span style={chip}>{emailText}</span>
-                <span style={chip}>{points?.tier ?? "Rookie"}</span>
-                <span style={chip}>Points {(points?.balance ?? 0).toLocaleString()}</span>
+            {/* Profile Info Row */}
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: '2rem' }}>
+                <div style={chipStyle}>{emailText}</div>
+                <div style={chipStyle}>{points?.tier?.toUpperCase()} TIER</div>
+                <div style={{ ...chipStyle, background: 'var(--color-student)', border: 'none', color: 'white' }}>{(points?.balance ?? 0).toLocaleString()} P</div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 8, marginBottom: '2rem' }}>
-                <button style={mainTab === "home" ? tabOn : tabOff} onClick={() => setMainTab("home")}>내 홈</button>
-                <button style={mainTab === "request" ? tabOn : tabOff} onClick={() => setMainTab("request")}>수업 신청</button>
-                <button style={mainTab === "history" ? tabOn : tabOff} onClick={() => setMainTab("history")}>신청내역</button>
-                <button style={mainTab === "cash" ? tabOn : tabOff} onClick={() => setMainTab("cash")}>티켓 충전</button>
+            {/* Nav Tabs */}
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: '12px', marginBottom: '1.5rem' }}>
+                <button style={mainTab === "home" ? tabOn : tabOff} onClick={() => setMainTab("home")}>PLAYER HOME</button>
+                <button style={mainTab === "request" ? tabOn : tabOff} onClick={() => setMainTab("request")}>NEW REQUEST</button>
+                <button style={mainTab === "history" ? tabOn : tabOff} onClick={() => setMainTab("history")}>HISTORY</button>
+                <button style={mainTab === "cash" ? tabOn : tabOff} onClick={() => setMainTab("cash")}>RECHARGE</button>
             </div>
 
-            <section style={{ borderRadius: 22, border: "1px solid rgba(255,255,255,.10)", background: "rgba(255,255,255,.02)", padding: 24, minHeight: '500px' }}>
-                {msg && <div style={{ padding: 14, borderRadius: 14, background: 'rgba(59, 130, 246, 0.2)', color: 'white', marginBottom: 20 }}>{msg}</div>}
+            {/* Main Section */}
+            <section className="card-minimal" style={{ minHeight: '600px', padding: '32px' }}>
+                {msg && <div style={msgBoxStyle}>{msg}</div>}
                 
                 {mainTab === "home" && (
                     <StudentHome
@@ -312,6 +317,12 @@ export const Dashboard = () => {
                         position={position} setPosition={setPosition} exp={exp} setExp={setExp} 
                         phone={phone} setPhone={setPhone} saveProfile={saveProfile} ageText={ageText}
                     />
+                )}
+                {mainTab === "home" && !editProfile && (
+                    <>
+                        <ShippingManager uid={session?.user?.id} loading={loading} setLoading={setLoading} setMsg={setMsg} />
+                        <StudentShopHistory requests={shopRequests} loading={loading} />
+                    </>
                 )}
                 {mainTab === "request" && (
                     <StudentRequest
@@ -345,6 +356,7 @@ export const Dashboard = () => {
     );
 };
 
-const chip: React.CSSProperties = { display: "inline-flex", alignItems: "center", padding: "8px 12px", borderRadius: 999, border: "1px solid rgba(255,255,255,.14)", background: "rgba(255,255,255,.08)", fontSize: 13, fontWeight: 600 };
-const tabOn: React.CSSProperties = { padding: "12px 10px", borderRadius: 14, border: "none", background: "#ffffff", color: "#000000", cursor: "pointer", fontWeight: 800, fontSize: 14 };
-const tabOff: React.CSSProperties = { padding: "12px 10px", borderRadius: 14, border: "1px solid rgba(255,255,255,.10)", background: "rgba(255,255,255,.04)", color: "rgba(255,255,255,.5)", cursor: "pointer", fontWeight: 700, fontSize: 14 };
+const chipStyle: React.CSSProperties = { display: "inline-flex", alignItems: "center", padding: "8px 20px", borderRadius: "100px", border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", fontSize: '0.8rem', fontWeight: 900, letterSpacing: '0.05em' };
+const tabOn: React.CSSProperties = { padding: "14px 20px", borderRadius: "12px", border: "none", background: "var(--color-student)", color: "#ffffff", cursor: "pointer", fontWeight: 900, fontSize: '0.85rem', letterSpacing: '0.05em', transition: 'all 0.3s' };
+const tabOff: React.CSSProperties = { padding: "14px 20px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.02)", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontWeight: 800, fontSize: '0.85rem', letterSpacing: '0.05em', transition: 'all 0.3s' };
+const msgBoxStyle: React.CSSProperties = { padding: "16px 24px", borderRadius: "14px", background: "rgba(59, 130, 246, 0.05)", color: "#ffffff", marginBottom: 30, fontSize: '0.95rem', fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)', whiteSpace: 'pre-line' };

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { LayoutDashboard, Target, Calendar, CreditCard, TrendingUp, Users, Clock, ChevronRight, Award, Edit3, Save, X, Sparkles, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ImageUploadField } from '../components/admin/ImageUploadField';
 
 type Region = {
     id: string;
@@ -201,13 +202,12 @@ export const CoachDashboard = () => {
                                 )}
                             </div>
                             {isEditing && (
-                                <div style={{ marginTop: '1.5rem', width: '100%' }}>
-                                    <label style={labelStyle}>PHOTO URL</label>
-                                    <input 
-                                        style={inputStyle}
-                                        value={editData.photo_url}
-                                        onChange={e => setEditData(prev => ({ ...prev, photo_url: e.target.value }))}
-                                        placeholder="https://..."
+                                <div style={{ marginTop: '2rem', width: '100%' }}>
+                                    <ImageUploadField 
+                                        label="프로필 사진" 
+                                        value={editData.photo_url} 
+                                        onChange={(url) => setEditData(prev => ({ ...prev, photo_url: url }))}
+                                        helperText="증명사진 혹은 활동 사진을 권장합니다."
                                     />
                                 </div>
                             )}

@@ -4,6 +4,7 @@ import { MapPin, User, Users, Clock, CheckCircle2, AlertCircle } from 'lucide-re
 
 export const MatchingStatus = () => {
     const [matches, setMatches] = useState<any[]>([]);
+    const [profMap, setProfMap] = useState<any>({});
     const [loading, setLoading] = useState(false);
     const [selectedRegion, setSelectedRegion] = useState<string>("전체");
 
@@ -31,12 +32,13 @@ export const MatchingStatus = () => {
         ]));
 
         const { data: profs } = await supabase.from('profiles').select('id, name, phone').in('id', userIds);
-        const profMap = (profs || []).reduce((acc: any, p: any) => { acc[p.id] = p; return acc; }, {});
+        const map = (profs || []).reduce((acc: any, p: any) => { acc[p.id] = p; return acc; }, {});
+        setProfMap(map);
 
         const enriched = reqs.map(r => ({
             ...r,
-            student_name: profMap[r.student_id]?.name || '익명 학생',
-            coach_name: profMap[r.coach_id]?.name || '미배정 코치',
+            student_name: map[r.student_id]?.name || '익명 학생',
+            coach_name: map[r.coach_id]?.name || '미배정 코치',
             // Simple region extraction from address
             region: r.address?.split(' ')[0] || '미정'
         }));

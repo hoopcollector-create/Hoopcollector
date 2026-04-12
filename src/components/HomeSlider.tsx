@@ -64,17 +64,37 @@ export const HomeSlider = () => {
                     style={{ ...slide, backgroundImage: `url(${activeBanner.image_url})` }}
                 >
                     <div style={overlay}>
+                        {activeBanner.link_url && (
+                            <Link 
+                                to={activeBanner.link_url} 
+                                style={{ position: 'absolute', inset: 0, zIndex: 1 }}
+                                target={activeBanner.link_url.startsWith('http') ? "_blank" : "_self"}
+                            />
+                        )}
                         <motion.div 
                             initial={{ y: 30, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: 0.5, duration: 0.8 }}
-                            style={content}
+                            style={{ ...content, zIndex: 2 }}
                         >
                             <div style={badge}>SPECIAL ADVERTISEMENT</div>
                             <h1 style={title}>{activeBanner.title || 'HOOP COLLECTOR'}</h1>
                             {activeBanner.subtitle && <p style={subtitle}>{activeBanner.subtitle}</p>}
+                            
                             <div style={ctaArea}>
-                                <button style={primaryBtn}>자세히 보기</button>
+                                {activeBanner.button_text ? (
+                                    <Link 
+                                        to={activeBanner.button_url || '#'} 
+                                        style={primaryBtn}
+                                        target={activeBanner.button_url?.startsWith('http') ? "_blank" : "_self"}
+                                    >
+                                        {activeBanner.button_text}
+                                    </Link>
+                                ) : (
+                                    <button style={primaryBtn} onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })}>
+                                        수업 보러가기
+                                    </button>
+                                )}
                             </div>
                         </motion.div>
                     </div>

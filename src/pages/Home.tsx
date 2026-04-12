@@ -1,25 +1,49 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 import { HomeSlider } from '../components/HomeSlider';
 import { InstagramSection } from '../components/InstagramSection';
 import { Compass, Users, Award, ShieldCheck, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Home = () => {
+    const [settings, setSettings] = useState<any>(null);
+
+    useEffect(() => {
+        loadSettings();
+    }, []);
+
+    async function loadSettings() {
+        const { data } = await supabase.from('site_settings').select('*').eq('id', 'main').maybeSingle();
+        if (data) setSettings(data);
+    }
+
+    // Default values
+    const ctaTitle = settings?.home_cta_title || '지금 바로 농구 수업을 시작해보세요';
+    const ctaDesc = settings?.home_cta_description || '훕콜렉터의 전문 코치진이 여러분의 실력 향상을 위해 대기하고 있습니다.\n내 주변의 최적화된 클래스를 찾아보세요.';
+    const ctaBtnText = settings?.home_cta_button_text || '수업 보러가기';
+    const ctaBtnUrl = settings?.home_cta_button_url || '/class-info';
+    const ctaBg = settings?.home_cta_bg_image;
+
     return (
         <div style={{ color: 'white', overflow: 'hidden' }}>
             {/* Hero Slider Section */}
             <HomeSlider />
 
             {/* Main Action: View Classes - Now at the Top */}
-            <section style={mainCtaSection}>
+            <section style={{ 
+                ...mainCtaSection, 
+                backgroundImage: ctaBg ? `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url(${ctaBg})` : 'none',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+            }}>
                 <div style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto' }}>
                     <div style={badgeStyle}>BASKETBALL LESSONS</div>
-                    <h2 style={{ ...titleStyle, marginBottom: '2rem' }}>지금 바로 농구 수업을 시작해보세요</h2>
-                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1.2rem', marginBottom: '3rem', lineHeight: 1.6 }}>
-                        훕콜렉터의 전문 코치진이 여러분의 실력 향상을 위해 대기하고 있습니다.<br/>
-                        내 주변의 최적화된 클래스를 찾아보세요.
+                    <h2 style={{ ...titleStyle, marginBottom: '2rem' }}>{ctaTitle}</h2>
+                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1.2rem', marginBottom: '3rem', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+                        {ctaDesc}
                     </p>
-                    <Link to="/class-info" style={ctaBtn}>수업 보러가기 <ArrowRight size={20} style={{ marginLeft: 10 }} /></Link>
+                    <Link to={ctaBtnUrl} style={ctaBtn}>{ctaBtnText} <ArrowRight size={20} style={{ marginLeft: 10 }} /></Link>
                 </div>
             </section>
 

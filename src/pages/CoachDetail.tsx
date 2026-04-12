@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { ArrowLeft, MapPin, Award, CheckCircle2, Calendar, MessageSquare, Star, Sparkles, ChevronRight, Save, X, Edit2, Plus } from "lucide-react";
+import { ImageUploadField } from "../components/admin/ImageUploadField";
 
 type PublicCoach = {
     coach_id: string;
@@ -36,7 +37,8 @@ export const CoachDetail = () => {
     const [editData, setEditData] = useState({
         experience_text: "",
         bio_text: "",
-        service_regions: [] as string[]
+        service_regions: [] as string[],
+        photo_url: ""
     });
 
     useEffect(() => {
@@ -76,7 +78,8 @@ export const CoachDetail = () => {
                 setEditData({
                     experience_text: data.experience_text || "",
                     bio_text: data.bio_text || "",
-                    service_regions: data.service_regions || []
+                    service_regions: data.service_regions || [],
+                    photo_url: data.photo_url || ""
                 });
             }
         } catch (e: any) {
@@ -95,9 +98,10 @@ export const CoachDetail = () => {
                 .update({
                     experience_text: editData.experience_text,
                     bio_text: editData.bio_text,
-                    service_regions: editData.service_regions
+                    service_regions: editData.service_regions,
+                    photo_url: editData.photo_url
                 })
-                .eq('user_id', currentUserId);
+                .eq('user_id', coach.coach_id);
 
             if (error) throw error;
             
@@ -162,10 +166,21 @@ export const CoachDetail = () => {
                 <div style={heroLayout}>
                     <div style={photoSection}>
                         <div style={photoWrap}>
-                            {coach.photo_url ? (
-                                <img src={coach.photo_url} alt={coach.display_name ?? ""} style={photo} />
+                            {isEditing ? (
+                                <div style={{ padding: '20px' }}>
+                                    <ImageUploadField 
+                                        label="프로필 사진" 
+                                        value={editData.photo_url} 
+                                        onChange={(url) => setEditData(prev => ({ ...prev, photo_url: url }))}
+                                        helperText="증명사진 혹은 활동 사진을 권장합니다."
+                                    />
+                                </div>
                             ) : (
-                                <div style={photoFallback}>HC</div>
+                                coach.photo_url ? (
+                                    <img src={coach.photo_url} alt={coach.display_name ?? ""} style={photo} />
+                                ) : (
+                                    <div style={photoFallback}>HC</div>
+                                )
                             )}
                         </div>
                     </div>

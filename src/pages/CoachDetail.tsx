@@ -165,24 +165,24 @@ export const CoachDetail = () => {
                 {/* Hero Layout */}
                 <div style={heroLayout}>
                     <div style={photoSection}>
-                        <div style={photoWrap}>
-                            {isEditing ? (
-                                <div style={{ padding: '20px' }}>
-                                    <ImageUploadField 
-                                        label="프로필 사진" 
-                                        value={editData.photo_url} 
-                                        onChange={(url) => setEditData(prev => ({ ...prev, photo_url: url }))}
-                                        helperText="증명사진 혹은 활동 사진을 권장합니다."
-                                    />
-                                </div>
-                            ) : (
-                                coach.photo_url ? (
+                        {isEditing ? (
+                            <div style={{ background: 'var(--bg-surface-L1)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border-subtle)', marginBottom: '1rem' }}>
+                                <ImageUploadField 
+                                    label="프로필 사진" 
+                                    value={editData.photo_url} 
+                                    onChange={(url) => setEditData(prev => ({ ...prev, photo_url: url }))}
+                                    helperText="증명사진 혹은 활동 사진을 권장합니다."
+                                />
+                            </div>
+                        ) : (
+                            <div style={photoWrap}>
+                                {coach.photo_url ? (
                                     <img src={coach.photo_url} alt={coach.display_name ?? ""} style={photo} />
                                 ) : (
                                     <div style={photoFallback}>HC</div>
-                                )
-                            )}
-                        </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div style={heroContent}>

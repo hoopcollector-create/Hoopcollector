@@ -220,6 +220,7 @@ export const WebsiteManager = () => {
                         </div>
                     ))}
                     </div>
+                    </>
                 ) : (
                     <div style={{ maxWidth: '800px' }}>
                         <div style={card}>

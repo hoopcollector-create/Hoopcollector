@@ -87,23 +87,29 @@ export const MatchingStatus = () => {
                         </thead>
                         <tbody>
                             {filteredMatches.length === 0 ? (
-                                <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', opacity: 0.5 }}>해당 지역에 진행 중인 수업이 없습니다.</td></tr>
-                            ) : filteredMatches.map(m => (
-                                <tr key={m.id} style={row}>
+                                <tr><td colSpan={5} style={{ padding: '60px', textAlign: 'center', opacity: 0.5, background: 'var(--bg-surface-L1)' }}>해당 지역에 진행 중인 수업이 없습니다.</td></tr>
+                            ) : filteredMatches.map((m, idx) => (
+                                <tr key={m.id} style={{ ...row, background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)' }}>
                                     <td style={td}>{new Date(m.created_at).toLocaleDateString()}</td>
                                     <td style={td}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <MapPin size={14} style={{ color: 'var(--color-coach)' }} />
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
+                                            <MapPin size={16} style={{ color: 'var(--color-coach)' }} />
                                             {m.region}
                                         </div>
                                     </td>
                                     <td style={td}>
-                                        <div style={{ fontWeight: 700 }}>{m.student_name}</div>
+                                        <div style={{ fontWeight: 800, color: 'white' }}>{m.student_name}</div>
+                                        <div style={{ fontSize: '0.75rem', opacity: 0.4, marginTop: '2px' }}>{profMap[m.student_id]?.phone || ''}</div>
                                     </td>
                                     <td style={td}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <Users size={14} style={{ opacity: 0.5 }} />
-                                            <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>{m.coach_name}</span>
+                                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-surface-L2)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-subtle)' }}>
+                                                <User size={16} style={{ opacity: 0.5 }} />
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: 800, color: 'var(--color-coach)' }}>{m.coach_name}</div>
+                                                <div style={{ fontSize: '0.75rem', opacity: 0.4 }}>{profMap[m.coach_id]?.phone || ''}</div>
+                                            </div>
                                         </div>
                                     </td>
                                     <td style={td}>
@@ -121,26 +127,28 @@ export const MatchingStatus = () => {
 
 const StatusBadge = ({ status }: { status: string }) => {
     const config: any = {
-        requested: { label: '대기 중', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
-        accepted: { label: '수업 진행중', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
-        completed: { label: '완료됨', color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
-        cancelled: { label: '취소됨', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' }
+        requested: { label: '신규 신청', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' },
+        accepted: { label: '수업 중', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)' },
+        completed: { label: '종료됨', color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)' },
+        cancelled: { label: '취소됨', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' }
     };
     const s = config[status] || { label: status, color: '#fff', bg: 'rgba(255,255,255,0.1)' };
     return (
         <span style={{ 
-            padding: '4px 12px', borderRadius: '100px', fontSize: '0.75rem', fontWeight: 800,
-            background: s.bg, color: s.color, border: `1px solid ${s.color}22`
+            padding: '6px 14px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900,
+            background: s.bg, color: s.color, border: `1px solid ${s.color}44`,
+            display: 'inline-flex', alignItems: 'center', gap: '6px'
         }}>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: s.color }} />
             {s.label}
         </span>
     );
 };
 
-const chipStyle: React.CSSProperties = { padding: '8px 16px', borderRadius: '100px', border: '1px solid', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' };
-const tableWrap: React.CSSProperties = { background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' };
+const chipStyle: React.CSSProperties = { padding: '10px 20px', borderRadius: '12px', border: '1px solid', fontSize: '0.9rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' };
+const tableWrap: React.CSSProperties = { background: 'var(--bg-surface-L1)', borderRadius: '24px', border: '1px solid var(--border-subtle)', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.4)' };
 const table: React.CSSProperties = { width: '100%', borderCollapse: 'collapse', textAlign: 'left' };
-const th: React.CSSProperties = { padding: '16px 20px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.4, borderBottom: '1px solid rgba(255,255,255,0.05)' };
-const td: React.CSSProperties = { padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.9rem' };
-const headerRow: React.CSSProperties = { background: 'rgba(255,255,255,0.02)' };
-const row: React.CSSProperties = { transition: 'background 0.2s' };
+const th: React.CSSProperties = { padding: '20px 24px', fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', opacity: 0.5, borderBottom: '1px solid var(--border-subtle)', letterSpacing: '0.1em', background: 'var(--bg-surface-L2)' };
+const td: React.CSSProperties = { padding: '24px', borderBottom: '1px solid var(--border-subtle)', fontSize: '0.95rem' };
+const headerRow: React.CSSProperties = { background: 'var(--bg-surface-L2)' };
+const row: React.CSSProperties = { transition: 'all 0.2s' };

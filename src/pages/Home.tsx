@@ -80,18 +80,18 @@ const FeatureCard = ({ to, icon, title, desc }: any) => (
     </Link>
 );
 
-const mainCtaSection: React.CSSProperties = { padding: '120px 20px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)' };
+const mainCtaSection: React.CSSProperties = { padding: '120px 20px', background: 'var(--bg-surface-L1)', borderBottom: '1px solid var(--border-subtle)' };
 const badgeStyle: React.CSSProperties = { fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.3em', color: 'var(--color-coach)', marginBottom: '1.5rem' };
 const titleStyle: React.CSSProperties = { fontSize: '3.5rem', fontWeight: 900, letterSpacing: '-0.03em' };
-const featureGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' };
-const cardStyle: React.CSSProperties = { padding: '50px 40px', borderRadius: '32px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', textDecoration: 'none', color: 'white', transition: 'all 0.4s' };
-const iconBox: React.CSSProperties = { width: '64px', height: '64px', borderRadius: '20px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2.5rem', color: 'var(--color-coach)' };
+const featureGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px' };
+const cardStyle: React.CSSProperties = { padding: '50px 40px', borderRadius: '32px', background: 'var(--bg-surface-L1)', border: '1px solid var(--border-subtle)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', textDecoration: 'none', color: 'white', transition: 'all 0.4s' };
+const iconBox: React.CSSProperties = { width: '64px', height: '64px', borderRadius: '20px', background: 'var(--bg-surface-L2)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2.5rem', color: 'var(--color-coach)' };
 const cardFooter: React.CSSProperties = { display: 'flex', alignItems: 'center', fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-coach)' };
 
-const trustSection: React.CSSProperties = { padding: '100px 20px', background: 'rgba(0,0,0,0.2)' };
+const trustSection: React.CSSProperties = { padding: '100px 20px', background: '#0a0a0b', borderTop: '1px solid var(--border-subtle)' };
 const trustIcon: React.CSSProperties = { color: 'rgba(255,255,255,0.2)', marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' };
 const trustValue: React.CSSProperties = { fontSize: '2rem', fontWeight: 900, marginBottom: '6px' };
 const trustLabel: React.CSSProperties = { fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 };
 const trustItem: React.CSSProperties = { display: 'flex', flexDirection: 'column', alignItems: 'center' };
 
-const ctaBtn: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '20px 50px', borderRadius: '100px', background: 'white', color: 'black', textDecoration: 'none', fontWeight: 900, fontSize: '1.1rem', letterSpacing: '0.05em' };
+const ctaBtn: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '20px 50px', borderRadius: '100px', background: 'white', color: 'black', textDecoration: 'none', fontWeight: 900, fontSize: '1.1rem', letterSpacing: '0.05em', boxShadow: '0 10px 30px rgba(255,255,255,0.1)' };

@@ -103,17 +103,17 @@ export const HomeSlider = () => {
     );
 };
 
-const sliderContainer: React.CSSProperties = { position: 'relative', width: '100%', height: '80vh', overflow: 'hidden', background: '#000' };
+const sliderContainer: React.CSSProperties = { position: 'relative', width: '100%', height: '80vh', overflow: 'hidden', background: '#000', borderBottom: '1px solid var(--border-subtle)' };
 const slide: React.CSSProperties = { width: '100%', height: '100%', backgroundSize: 'cover', backgroundPosition: 'center', position: 'absolute' };
-const overlay: React.CSSProperties = { position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.5) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+const overlay: React.CSSProperties = { position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(7,7,8,1) 0%, rgba(7,7,8,0.4) 40%, rgba(7,7,8,0.6) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' };
 const content: React.CSSProperties = { textAlign: 'center', maxWidth: '800px', padding: '0 20px' };
 const badge: React.CSSProperties = { fontSize: '0.8rem', fontWeight: 900, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.6)', marginBottom: '1.5rem' };
-const title: React.CSSProperties = { fontSize: 'clamp(3rem, 10vw, 6rem)', fontWeight: 950, marginBottom: '2rem', color: 'white', letterSpacing: '-0.04em', lineHeight: 1 };
+const title: React.CSSProperties = { fontSize: 'clamp(3rem, 10vw, 6rem)', fontWeight: 950, marginBottom: '2rem', color: 'white', letterSpacing: '-0.04em', lineHeight: 1, textShadow: '0 10px 30px rgba(0,0,0,0.8)' };
 const subtitle: React.CSSProperties = { fontSize: '1.2rem', color: 'rgba(255,255,255,0.8)', marginBottom: '3rem', fontWeight: 500 };
 const ctaArea: React.CSSProperties = { display: 'flex', justifyContent: 'center', gap: '20px' };
-const primaryBtn: React.CSSProperties = { padding: '18px 40px', borderRadius: '100px', background: 'white', color: 'black', border: 'none', fontWeight: 900, cursor: 'pointer', fontSize: '1rem', letterSpacing: '0.05em' };
+const primaryBtn: React.CSSProperties = { padding: '18px 40px', borderRadius: '100px', background: 'white', color: 'black', border: 'none', fontWeight: 900, cursor: 'pointer', fontSize: '1rem', letterSpacing: '0.05em', boxShadow: '0 10px 40px rgba(255,255,255,0.2)' };
 const navBtn: React.CSSProperties = { position: 'absolute', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', opacity: 0.5, zIndex: 10 };
 const indicatorWrap: React.CSSProperties = { position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '12px', zIndex: 10 };
 const dot: React.CSSProperties = { width: '10px', height: '10px', borderRadius: '50%', cursor: 'pointer', transition: 'all 0.3s' };
-const placeholderStyle: React.CSSProperties = { width: '100%', height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#070708', color: 'rgba(255,255,255,0.05)', fontSize: '4rem', fontWeight: 950 };
-const emptySliderStyle: React.CSSProperties = { width: '100%', height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(to bottom, #070708, #111)', borderBottom: '1px solid rgba(255,255,255,0.05)' };
+const placeholderStyle: React.CSSProperties = { width: '100%', height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-surface-L1)', color: 'rgba(255,255,255,0.05)', fontSize: '4rem', fontWeight: 950 };
+const emptySliderStyle: React.CSSProperties = { width: '100%', height: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(to bottom, #070708, var(--bg-surface-L1))', borderBottom: '1px solid var(--border-subtle)' };

@@ -134,19 +134,19 @@ export const WebsiteManager = () => {
     );
 };
 
-const guideBox: React.CSSProperties = { padding: '20px', borderRadius: '16px', background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)', marginBottom: '2.5rem' };
-const emptyPlaceholder: React.CSSProperties = { gridColumn: '1 / -1', padding: '100px', borderRadius: '24px', border: '2px dashed rgba(255,255,255,0.1)', textAlign: 'center', cursor: 'pointer', transition: 'all 0.3s' };
-const inactiveOverlay: React.CSSProperties = { position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: '#ef4444', fontSize: '0.9rem' };
-const actionBtnBase: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px', borderRadius: '10px', border: 'none', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' };
-const deleteBtnStyle: React.CSSProperties = { padding: '10px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', cursor: 'pointer' };
+const guideBox: React.CSSProperties = { padding: '24px', borderRadius: '20px', background: 'var(--bg-surface-L2)', border: '1px solid var(--border-distinct)', marginBottom: '2.5rem', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' };
+const emptyPlaceholder: React.CSSProperties = { gridColumn: '1 / -1', padding: '100px', borderRadius: '32px', background: 'var(--bg-surface-L1)', border: '2px dashed var(--border-subtle)', textAlign: 'center', cursor: 'pointer', transition: 'all 0.3s' };
+const inactiveOverlay: React.CSSProperties = { position: 'absolute', inset: 0, background: 'rgba(7,7,8,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 950, color: '#ef4444', fontSize: '0.9rem', backdropFilter: 'blur(4px)' };
+const actionBtnBase: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px', borderRadius: '12px', border: 'none', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' };
+const deleteBtnStyle: React.CSSProperties = { padding: '12px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', cursor: 'pointer', transition: 'all 0.2s' };
 
-const grid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '24px' };
-const card: React.CSSProperties = { borderRadius: '24px', background: 'rgba(255,255,255,0.03)', overflow: 'hidden', transition: 'all 0.3s' };
-const imgWrap: React.CSSProperties = { width: '100%', aspectRatio: '16 / 9', background: '#000', position: 'relative' };
+const grid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '32px' };
+const card: React.CSSProperties = { borderRadius: '28px', background: 'var(--bg-surface-L1)', border: '1px solid var(--border-subtle)', overflow: 'hidden', transition: 'all 0.3s', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' };
+const imgWrap: React.CSSProperties = { width: '100%', aspectRatio: '16 / 9', background: '#000', position: 'relative', borderBottom: '1px solid var(--border-subtle)' };
 const img: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 0.3s' };
-const info: React.CSSProperties = { padding: '24px' };
-const inputGroup: React.CSSProperties = { marginBottom: '16px' };
-const label: React.CSSProperties = { display: 'block', fontSize: '0.7rem', fontWeight: 900, opacity: 0.4, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' };
-const input: React.CSSProperties = { width: '100%', padding: '12px 14px', borderRadius: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'white', fontSize: '0.9rem', outline: 'none', transition: 'border-color 0.2s' };
-const addBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 28px', borderRadius: '16px', background: 'white', color: 'black', border: 'none', fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' };
-const msgBox: React.CSSProperties = { padding: '14px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', borderRadius: '14px', marginBottom: '2rem', fontWeight: 800, textAlign: 'center' };
+const info: React.CSSProperties = { padding: '28px' };
+const inputGroup: React.CSSProperties = { marginBottom: '20px' };
+const label: React.CSSProperties = { display: 'block', fontSize: '0.75rem', fontWeight: 900, opacity: 0.5, marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-coach)' };
+const input: React.CSSProperties = { width: '100%', padding: '14px 18px', borderRadius: '14px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-distinct)', color: 'white', fontSize: '0.95rem', outline: 'none', transition: 'all 0.2s' };
+const addBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '10px', padding: '16px 32px', borderRadius: '16px', background: 'white', color: 'black', border: 'none', fontWeight: 950, cursor: 'pointer', boxShadow: '0 10px 30px rgba(255,255,255,0.2)', transition: 'all 0.2s' };
+const msgBox: React.CSSProperties = { padding: '16px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--color-coach)', borderRadius: '16px', marginBottom: '2.5rem', fontWeight: 900, textAlign: 'center', border: '1px solid rgba(59, 130, 246, 0.2)' };

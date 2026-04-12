@@ -71,7 +71,7 @@ export const AdminDashboard = () => {
                 <p style={{ color: 'rgba(255,255,255,0.4)', margin: 0, fontSize: '1rem' }}>시스템 전반에 대한 최고 권한 관리 센터입니다.</p>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '2.5rem', paddingBottom: '12px', whiteSpace: 'nowrap', scrollbarWidth: 'none' }}>
+            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', marginBottom: '3rem', paddingBottom: '16px', whiteSpace: 'nowrap', scrollbarWidth: 'none' }}>
                 <TabButton active={currentTab === 'users'} onClick={() => handleTabSwitch('users')}>회원 관리</TabButton>
                 <TabButton active={currentTab === 'matching'} onClick={() => handleTabSwitch('matching')}>매칭 현황</TabButton>
                 <TabButton active={currentTab === 'website'} onClick={() => handleTabSwitch('website')}>웹사이트 관리</TabButton>
@@ -82,7 +82,7 @@ export const AdminDashboard = () => {
                 <TabButton active={currentTab === 'regions'} onClick={() => handleTabSwitch('regions')}>지역 관리</TabButton>
             </div>
 
-            <section className="card-minimal" style={{ minHeight: '600px', padding: '32px', borderRadius: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <section className="card-minimal" style={{ minHeight: '600px', padding: '40px', borderRadius: '32px', background: 'var(--bg-surface-L1)', border: '1px solid var(--border-subtle)', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
                 {currentTab === 'users' && <UsersManager />}
                 {currentTab === 'shop' && <AdminShopManager />}
                 {currentTab === 'shop_orders' && <AdminShopOrders />}
@@ -99,10 +99,13 @@ export const AdminDashboard = () => {
 
 const TabButton = ({ active, onClick, children }: { active: boolean, onClick: () => void, children: React.ReactNode }) => (
     <button onClick={onClick} style={{
-        padding: "12px 24px", borderRadius: "14px", border: active ? "1px solid var(--color-coach)" : "1px solid rgba(255,255,255,.05)",
-        background: active ? "var(--color-coach)" : "rgba(255,255,255,.02)",
-        color: active ? "#ffffff" : "rgba(255,255,255,.3)",
-        cursor: "pointer", fontWeight: 800, fontSize: '0.9rem', transition: 'all 0.3s'
+        padding: "14px 28px", borderRadius: "16px", 
+        border: active ? "1px solid var(--color-coach)" : "1px solid var(--border-subtle)",
+        background: active ? "var(--color-coach)" : "var(--bg-surface-L1)",
+        color: active ? "#ffffff" : "rgba(255,255,255,.4)",
+        cursor: "pointer", fontWeight: 900, fontSize: '0.95rem', transition: 'all 0.3s',
+        boxShadow: active ? "0 4px 20px rgba(59, 130, 246, 0.3)" : "none",
+        transform: active ? "translateY(-2px)" : "none"
     }}>
         {children}
     </button>

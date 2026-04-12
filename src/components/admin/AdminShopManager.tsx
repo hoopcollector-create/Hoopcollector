@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Plus, Edit2, Trash2, Save, X, Package, Tag, Layers, Image as ImageIcon } from 'lucide-react';
 import { ShopProduct, ShopVariant } from '../../types/dashboard';
+import { ImageUploadField } from './ImageUploadField';
 
 
 export const AdminShopManager = () => {
@@ -168,8 +169,12 @@ export const AdminShopManager = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label style={labelStyle}>썸네일 이미지 URL</label>
-                                    <input style={inputStyle} value={editingProduct.thumbnail_url} onChange={e => setEditingProduct({...editingProduct, thumbnail_url: e.target.value})} />
+                                    <ImageUploadField 
+                                        label="상품 썸네일 이미지"
+                                        value={editingProduct.thumbnail_url}
+                                        onChange={(url) => setEditingProduct({...editingProduct, thumbnail_url: url})}
+                                        helperText="권장 사이즈: 800x800px (1:1 비율)"
+                                    />
                                 </div>
                                 <div>
                                     <label style={labelStyle}>상품 설명</label>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Plus, Trash2, Save, ToggleLeft, ToggleRight, ImageIcon, AlertCircle } from 'lucide-react';
+import { ImageUploadField } from './ImageUploadField';
 
 export const WebsiteManager = () => {
     const [banners, setBanners] = useState<any[]>([]);
@@ -94,13 +95,12 @@ export const WebsiteManager = () => {
                                 {!banner.is_active && <div style={inactiveOverlay}>비활성 상태</div>}
                             </div>
                             <div style={info}>
-                                <div style={inputGroup}>
-                                    <label style={label}>이미지 소스 (URL)</label>
-                                    <input 
-                                        style={input} 
-                                        value={banner.image_url} 
-                                        onChange={(e) => updateBanner(banner.id, { image_url: e.target.value })}
-                                        placeholder="https://..."
+                                <div style={{ marginBottom: '20px' }}>
+                                    <ImageUploadField 
+                                        label="배너 배경 이미지"
+                                        value={banner.image_url}
+                                        onChange={(url) => updateBanner(banner.id, { image_url: url })}
+                                        helperText="권장 사이즈: 1920x1080px (16:9 비율)"
                                     />
                                 </div>
                                 <div style={inputGroup}>

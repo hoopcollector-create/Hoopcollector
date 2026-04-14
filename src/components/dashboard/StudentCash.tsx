@@ -25,6 +25,7 @@ interface StudentCashProps {
     pending: PendingPurchase[];
     loading: boolean;
     cancelPending: (id: string) => Promise<void>;
+    estimatedReward: number;
 }
 
 export const StudentCash = ({

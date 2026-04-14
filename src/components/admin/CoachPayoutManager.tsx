@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { CreditCard, CheckCircle, XCircle, Clock, Search, ExternalLink, User, DollarSign, Wallet } from 'lucide-react';
 
 interface PayoutRequest {
@@ -40,8 +40,8 @@ export const CoachPayoutManager: React.FC = () => {
 
         if (data) {
             setRequests(data as any);
-            const pending = data.filter(r => r.status === 'pending').length;
-            const total = data.filter(r => r.status === 'approved').reduce((acc, r) => acc + r.amount, 0);
+            const pending = data.filter((r: any) => r.status === 'pending').length;
+            const total = data.filter((r: any) => r.status === 'approved').reduce((acc: number, r: any) => acc + (r.amount || 0), 0);
             setStats({ pending, totalPaid: total });
         }
         setLoading(false);

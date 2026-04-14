@@ -19,6 +19,7 @@ import { ShopDetail } from './pages/ShopDetail';
 import { Home } from './pages/Home';
 import { ClassJournalDetail } from './pages/ClassJournalDetail';
 import { MatchBoard } from './pages/MatchBoard';
+import { Terms } from './pages/Terms';
 
 const CoachFinancials = () => <div style={{ color: 'white', padding: 40 }}>내 정산내역 (준비중)</div>;
 
@@ -49,6 +50,7 @@ export const App = () => {
                 <Route path="/community/edit/:id" element={<AppLayout><PostWrite /></AppLayout>} />
                 
                 <Route path="/match" element={<AppLayout><MatchBoard /></AppLayout>} />
+                <Route path="/terms" element={<AppLayout><Terms /></AppLayout>} />
                 
                 <Route path="/admin/*" element={<AppLayout><AdminDashboard /></AppLayout>} />
             </Routes>

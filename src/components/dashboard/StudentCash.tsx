@@ -31,7 +31,7 @@ export const StudentCash = ({
     classTypes, qtyList, selectedClass, setSelectedClass, selectedQty, setSelectedQty,
     depositorName, setDepositorName, receiptType, setReceiptType, receiptValue, setReceiptValue,
     usePointsInput, setUsePointsInput, points, finalAmount, requestCash, selectedProduct,
-    pointsDiscountWon, maxUsablePoints, pending, loading, cancelPending
+    pointsDiscountWon, maxUsablePoints, pending, loading, cancelPending, estimatedReward
 }: StudentCashProps) => {
     return (
         <div style={{ display: 'grid', gap: 24 }}>
@@ -42,6 +42,9 @@ export const StudentCash = ({
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                     {qtyList.map(q => <button key={q} onClick={() => setSelectedQty(q)} style={selectedQty === q ? tabOn : tabOff}>{q}회</button>)}
+                </div>
+                <div style={{ padding: '12px', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: '12px', fontSize: '0.8rem', color: '#f59e0b', marginTop: '12px', lineHeight: 1.5 }}>
+                    * 자산 보호 및 남용 방지를 위해 지갑당 최대 30개의 티켓만 보유 가능합니다. (현재 소진 후 추가 구매 가능)
                 </div>
             </div>
 
@@ -56,6 +59,11 @@ export const StudentCash = ({
                 <div style={{ ...priceLine, fontWeight: 900, fontSize: 18 }}>
                     <span>최종 이체 금액</span><span>{finalAmount.toLocaleString()}원</span>
                 </div>
+                {finalAmount > 0 && (
+                    <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', color: '#3b82f6', fontWeight: 700 }}>
+                        <span>✓ 구매 시 {Math.floor(finalAmount * 0.01).toLocaleString()}P 적립 (1%)</span>
+                    </div>
+                )}
             </div>
 
             <div>

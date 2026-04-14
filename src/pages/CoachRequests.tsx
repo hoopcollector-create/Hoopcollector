@@ -187,20 +187,22 @@ export const CoachRequests = () => {
                                 </div>
                             )}
 
-                            {selectedRequest.status === 'accepted' && (
-                                <>
-                                    <button 
-                                        onClick={() => setShowJournalModal(true)} 
-                                        style={{ ...actionBtn, background: 'var(--color-coach)', width: '100%', marginTop: '1rem' }}
-                                    >
-                                        <BookOpen size={18} style={{ marginRight: 8 }} /> 수업 완료 및 일지 작성
-                                    </button>
-                                    <div style={{ marginTop: '1rem' }}>
-                                        <AttendanceQR classRequestId={selectedRequest.id} isCoach={true} />
-                                    </div>
-                                </>
-                            )}
-                        </div>
+                                    {selectedRequest.status === 'accepted' && (
+                                        <>
+                                            <button 
+                                                onClick={() => setShowJournalModal(true)} 
+                                                style={{ ...actionBtn, background: 'var(--color-coach)', width: '100%', marginTop: '1rem' }}
+                                            >
+                                                <BookOpen size={18} style={{ marginRight: 8 }} /> 수업 완료 및 일지 작성
+                                            </button>
+                                            <div style={{ marginTop: '1rem' }}>
+                                                <AttendanceQR classRequestId={selectedRequest.id} isCoach={true} />
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

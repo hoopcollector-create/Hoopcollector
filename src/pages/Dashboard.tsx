@@ -30,7 +30,7 @@ const LIST_LIMIT = 80;
 const FIXED_DURATION_MIN = 60;
 const CLASS_TYPES: ClassType[] = ["A", "B", "C"];
 const QTY_LIST = [1, 5, 10];
-const POINT_WON = 10;
+const POINT_WON = 1;
 
 function useViewport() {
     const [width, setWidth] = useState(window.innerWidth);
@@ -250,6 +250,14 @@ export const Dashboard = () => {
 
     async function requestCash(productId: string) {
         if (!session) return;
+        
+        // Safety Limit: Max 30 tickets in total
+        const currentTickets = Object.values(tickets).reduce((a, b) => a + b, 0);
+        const buyingQty = selectedProduct?.ticket_qty || 0;
+        if (currentTickets + buyingQty > 30) {
+            return setMsg(`보유 티켓은 최대 30개까지만 가능합니다.\n현재 보유량: ${currentTickets}개 / 구매 예정: ${buyingQty}개`);
+        }
+
         setLoading(true); setMsg("");
         const note = buildPurchaseNote(selectedProduct!);
         const { error } = await supabase.rpc("create_cash_purchase", {
@@ -410,6 +418,7 @@ export const Dashboard = () => {
                         usePointsInput={usePointsInput} setUsePointsInput={setUsePointsInput}
                         requestCash={requestCash} cancelPending={cancelPending} selectedProduct={selectedProduct}
                         pointsDiscountWon={pointsDiscountWon} maxUsablePoints={maxUsablePoints} finalAmount={finalAmount}
+                        estimatedReward={Math.floor(finalAmount * 0.01)}
                     />
                 )}
             </section>

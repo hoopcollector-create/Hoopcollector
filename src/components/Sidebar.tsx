@@ -66,7 +66,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ appMode, onModeChange, isCoach
         { name: "수업 보러가기", icon: Compass, link: "/class-info" },
         { name: "훕콜렉터 스토어", icon: ShoppingBag, link: "/shop" },
         { name: "코치 찾기", icon: Users, link: "/coaches" },
-        { name: "커뮤니티", icon: MessageSquare, link: "/community" }
+        { name: "커뮤니티", icon: MessageSquare, link: "/community" },
+        { name: "정책 및 약관", icon: ShieldCheck, link: "/terms" }
     ];
 
     const coachMenuItems = [
@@ -75,7 +76,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ appMode, onModeChange, isCoach
         { name: "수업 요청 관리", icon: Target, link: "/coach/requests" },
         { name: "스케줄 관리", icon: Calendar, link: "/coach/schedule" },
         { name: "등급 및 승급", icon: Award, link: "/coach/grade" },
-        { name: "스토어", icon: ShoppingBag, link: "/shop" }
+        { name: "스토어", icon: ShoppingBag, link: "/shop" },
+        { name: "정책 및 약관", icon: ShieldCheck, link: "/terms" }
     ];
 
     const adminMenuItems = [

@@ -64,7 +64,7 @@ export const UsersManager = () => {
                                 <td style={{ padding: '15px' }}>
                                     {u.coach_grade && (
                                         <Link 
-                                            to={`/coach/${u.id}`} 
+                                            to={`/coach-detail/${u.id}`} 
                                             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '6px', background: 'var(--bg-surface-L3)', color: 'white', textDecoration: 'none', fontSize: '0.75rem', border: '1px solid var(--border-subtle)' }}
                                         >
                                             <ExternalLink size={12} /> 프로필 관리

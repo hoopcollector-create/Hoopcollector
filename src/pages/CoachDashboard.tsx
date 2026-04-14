@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { LayoutDashboard, Target, Calendar, CreditCard, TrendingUp, Users, Clock, ChevronRight, Award, Edit3, Save, X, Sparkles, MapPin } from 'lucide-react';
+import { LayoutDashboard, Target, Calendar, CreditCard, TrendingUp, Users, Clock, ChevronRight, Award, Edit3, Save, X, Sparkles, MapPin, MessageSquare, User as UserIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ImageUploadField } from '../components/admin/ImageUploadField';
+import { ChatList } from '../components/chat/ChatList';
+import { ChatWindow } from '../components/chat/ChatWindow';
+
+type CoachTab = "home" | "messages";
 
 type Region = {
     id: string;
@@ -21,6 +25,8 @@ export const CoachDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [msg, setMsg] = useState("");
+    const [activeTab, setActiveTab] = useState<CoachTab>("home");
+    const [selectedRoom, setSelectedRoom] = useState<{id: string, name: string, photo?: string} | null>(null);
 
     // Edit states
     const [isEditing, setIsEditing] = useState(false);
@@ -135,18 +141,36 @@ export const CoachDashboard = () => {
     if (loading) return <div style={{ padding: 40, opacity: 0.5, textAlign: 'center' }}>COLLECTING DASHBOARD DATA...</div>;
 
     return (
-        <div style={{ color: 'white', paddingBottom: '100px', width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
-            {/* Header */}
-            <div style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
-                <div>
-                    <h1 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: '0.4rem', letterSpacing: '-0.02em' }}>COACH CENTER</h1>
-                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '1rem' }}>전략적인 수업 관리와 성과를 한눈에 확인하세요.</p>
+        <div style={{ color: 'white', paddingBottom: '100px', width: '100%', maxWidth: '1200px', margin: '0 auto', padding: window.innerWidth <= 768 ? '0 16px' : '0' }}>
+            <div style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: window.innerWidth <= 600 ? 'flex-start' : 'center', flexDirection: window.innerWidth <= 600 ? 'column' : 'row', gap: '1.5rem' }}>
+                <div style={{ width: '100%' }}>
+                    <h1 style={{ fontSize: window.innerWidth <= 768 ? '1.5rem' : '2rem', fontWeight: 900, marginBottom: '0.4rem', letterSpacing: '-0.02em' }}>COACH CENTER</h1>
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>전략적인 수업 관리와 성과를 한눈에 확인하세요.</p>
                 </div>
                 <div style={gradeBadgeRow}>
                     <div style={gradeBadge}>{displayGrade} GRADE</div>
                     <div style={tokenChip}><Award size={14} style={{ marginRight: 6 }} /> {profile?.total_tokens || 0} TOKENS</div>
                 </div>
             </div>
+            
+            {/* Tab Navigation */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '2.5rem', background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '16px', width: 'fit-content' }}>
+                <button 
+                    onClick={() => setActiveTab("home")} 
+                    style={{ ...tabBtn, background: activeTab === 'home' ? 'var(--color-coach)' : 'transparent', color: activeTab === 'home' ? 'white' : 'rgba(255,255,255,0.4)' }}
+                >
+                    <LayoutDashboard size={18} style={{ marginRight: 8 }} /> DASHBOARD
+                </button>
+                <button 
+                    onClick={() => setActiveTab("messages")} 
+                    style={{ ...tabBtn, background: activeTab === 'messages' ? 'var(--color-coach)' : 'transparent', color: activeTab === 'messages' ? 'white' : 'rgba(255,255,255,0.4)' }}
+                >
+                    <MessageSquare size={18} style={{ marginRight: 8 }} /> MESSAGES
+                </button>
+            </div>
+
+            {activeTab === "home" ? (
+                <>
 
             {/* Progression Bar */}
             <div className="card-minimal" style={{ marginBottom: '3rem' }}>
@@ -298,10 +322,38 @@ export const CoachDashboard = () => {
                     <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '16px' }}>
                         <li style={guideItemStyle}>● 수업 2시간 전 확정 일정을 다시 확인해 주세요.</li>
                         <li style={guideItemStyle}>● 개인 사정으로 취소 시 학생에게 미리 연락 부탁드립니다.</li>
-                        <li style={guideItemStyle}>● 프로필 사진과 경력을 상세히 적어 매칭율을 높이세요.</li>
                     </ul>
                 </div>
             </div>
+        </>
+        ) : (
+                /* Messages Tab Content */
+                <div style={{ height: 'calc(100vh - 300px)', display: 'grid', gridTemplateColumns: selectedRoom ? (window.innerWidth <= 768 ? '1fr' : '350px 1fr') : '1fr', gap: '2rem' }}>
+                    {(!selectedRoom || window.innerWidth > 768) && (
+                        <div style={{ overflowY: 'auto' }}>
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <h2 style={{ fontSize: '1.5rem', fontWeight: 900 }}>학생 메시지</h2>
+                                <p style={{ fontSize: '0.85rem', opacity: 0.4 }}>수업 관련 문의 및 대화 목록입니다.</p>
+                            </div>
+                            <ChatList 
+                                currentUserId={profile?.id || ""} 
+                                onSelectRoom={(id, name, photo) => setSelectedRoom({ id, name, photo })} 
+                            />
+                        </div>
+                    )}
+                    {selectedRoom && (
+                        <div style={{ height: '100%' }}>
+                            <ChatWindow 
+                                roomId={selectedRoom.id}
+                                currentUserId={profile?.id || ""}
+                                recipientName={selectedRoom.name}
+                                recipientPhoto={selectedRoom.photo}
+                                onBack={window.innerWidth <= 768 ? () => setSelectedRoom(null) : undefined}
+                            />
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
@@ -339,6 +391,7 @@ const iconBox: React.CSSProperties = { width: '36px', height: '36px', borderRadi
 const panelTitleStyle: React.CSSProperties = { fontSize: '1.2rem', fontWeight: 900, marginBottom: '20px', letterSpacing: '0.02em' };
 const quickLinkStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.03)', textDecoration: 'none', color: 'inherit', transition: 'all 0.2s' };
 const guideItemStyle: React.CSSProperties = { fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 };
+const tabBtn: React.CSSProperties = { border: 'none', padding: '10px 20px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 900, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center' };
 
 const gradeBadgeRow: React.CSSProperties = { display: 'flex', gap: '10px', alignItems: 'center' };
 const gradeBadge: React.CSSProperties = { padding: '8px 18px', borderRadius: '12px', background: 'var(--color-coach)', color: 'white', fontWeight: 900, fontSize: '0.8rem', letterSpacing: '0.05em' };
@@ -347,9 +400,14 @@ const tokenChip: React.CSSProperties = { padding: '8px 18px', borderRadius: '12p
 const progBarBg: React.CSSProperties = { width: '100%', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '99px', overflow: 'hidden' };
 const progBarFill: React.CSSProperties = { height: '100%', background: 'var(--color-coach)', borderRadius: '99px', transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' };
 
-const profileGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: '240px 1fr', gap: '40px', padding: '40px' };
+const profileGrid: React.CSSProperties = { 
+    display: 'grid', 
+    gridTemplateColumns: window.innerWidth <= 800 ? '1fr' : '240px 1fr', 
+    gap: window.innerWidth <= 800 ? '20px' : '40px', 
+    padding: window.innerWidth <= 800 ? '20px' : '40px' 
+};
 const photoSection: React.CSSProperties = { display: 'flex', flexDirection: 'column', alignItems: 'center' };
-const photoWrap: React.CSSProperties = { width: '100%', aspectRatio: '1/1', borderRadius: '20px', overflow: 'hidden', background: '#0a0a0b', border: '1px solid rgba(255,255,255,0.05)' };
+const photoWrap: React.CSSProperties = { width: window.innerWidth <= 800 ? '160px' : '100%', aspectRatio: '1/1', borderRadius: '20px', overflow: 'hidden', background: '#0a0a0b', border: '1px solid rgba(255,255,255,0.05)' };
 const photoFallback: React.CSSProperties = { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', fontWeight: 900, color: 'rgba(255,255,255,0.05)' };
 
 const contentSection: React.CSSProperties = { display: 'grid', gap: '30px' };

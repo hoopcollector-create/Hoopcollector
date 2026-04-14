@@ -53,30 +53,42 @@ export const AdminShopManager = () => {
         const pData = { ...editingProduct };
         const isNew = !pData.id;
         delete (pData as any).id;
+        
+        // Sanitize: remove transient fields that don't exist in the DB
+        delete (pData as any).min_price;
+        delete (pData as any).total_stock;
+        delete (pData as any).shop_product_variants;
 
         try {
             let productId = editingProduct.id;
 
             if (isNew) {
                 const { data, error } = await supabase.from('shop_products').insert([pData]).select().single();
-                if (error) throw error;
+                if (error) {
+                    console.error('Insert Error:', error);
+                    throw error;
+                }
                 productId = data.id;
             } else {
                 const { error } = await supabase.from('shop_products').update(pData).eq('id', productId);
                 if (error) throw error;
             }
 
-            // Save variants (Simple version: handle updates for existing ones)
-            // Note: A full implementation would handle deletes/inserts properly
+            // Save variants
             for (const v of variants) {
                 const vData = { ...v, product_id: productId };
                 const isNewV = v.id.startsWith('new-');
+                
                 if (isNewV) {
                     const cleanV: any = { ...vData };
                     delete cleanV.id;
-                    await supabase.from('shop_product_variants').insert([cleanV]);
+                    const { error: vInsertError } = await supabase.from('shop_product_variants').insert([cleanV]);
+                    if (vInsertError) throw vInsertError;
                 } else {
-                    await supabase.from('shop_product_variants').update(vData).eq('id', v.id);
+                    const cleanV: any = { ...vData };
+                    delete cleanV.id;
+                    const { error: vUpdateError } = await supabase.from('shop_product_variants').update(cleanV).eq('id', v.id);
+                    if (vUpdateError) throw vUpdateError;
                 }
             }
 
@@ -84,7 +96,11 @@ export const AdminShopManager = () => {
             setEditingProduct(null);
             loadProducts();
         } catch (e: any) {
-            alert("오류 발생: " + e.message);
+            console.error('Final Save Error:', e);
+            const errorMsg = e.message || 'Unknown error';
+            const errorDetails = e.details || '';
+            const errorHint = e.hint || '';
+            alert(`오류 발생: ${errorMsg}\n${errorDetails}\n${errorHint}`);
         } finally {
             setIsSaving(false);
         }
@@ -193,17 +209,19 @@ export const AdminShopManager = () => {
                                         <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1.5fr auto', gap: '8px', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
                                             <input style={vInputStyle} placeholder="사이즈" value={v.size_label} onChange={e => {
                                                 const newV = [...variants];
-                                                newV[idx].size_label = e.target.value;
+                                                newV[idx] = { ...newV[idx], size_label: e.target.value };
                                                 setVariants(newV);
                                             }} />
                                             <input type="number" style={vInputStyle} placeholder="가격" value={v.point_price} onChange={e => {
+                                                const val = parseInt(e.target.value) || 0;
                                                 const newV = [...variants];
-                                                newV[idx].point_price = parseInt(e.target.value);
+                                                newV[idx] = { ...newV[idx], point_price: val };
                                                 setVariants(newV);
                                             }} />
                                             <input type="number" style={vInputStyle} placeholder="재고" value={v.stock_qty} onChange={e => {
+                                                const val = parseInt(e.target.value) || 0;
                                                 const newV = [...variants];
-                                                newV[idx].stock_qty = parseInt(e.target.value);
+                                                newV[idx] = { ...newV[idx], stock_qty: val };
                                                 setVariants(newV);
                                             }} />
                                             <button onClick={() => setVariants(variants.filter((_, i) => i !== idx))} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.2)', cursor: 'pointer' }}>

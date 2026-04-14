@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Check, X, Clock, MapPin, User } from 'lucide-react';
+import { Check, X, Clock, MapPin, User, BookOpen } from 'lucide-react';
+import { ClassJournalModal } from '../components/journal/ClassJournalModal';
 
 type RequestStatus = "requested" | "accepted" | "completed" | "cancelled" | "rejected";
 
@@ -24,6 +25,7 @@ export const CoachRequests = () => {
     const [loading, setLoading] = useState(true);
     const [msg, setMsg] = useState("");
     const [selectedRequest, setSelectedRequest] = useState<ClassRequest | null>(null);
+    const [showJournalModal, setShowJournalModal] = useState(false);
 
     useEffect(() => {
         loadRequests();
@@ -128,8 +130,8 @@ export const CoachRequests = () => {
                                             <div style={{ fontSize: '0.7rem', opacity: 0.5 }}>{new Date(req.created_at).toLocaleDateString()} 신청</div>
                                         </div>
                                     </div>
-                                    <div style={{ ...statusBadge, background: req.status === 'requested' ? 'rgba(245, 158, 11, 0.2)' : req.status === 'accepted' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255,255,255,0.1)', color: req.status === 'requested' ? '#f59e0b' : req.status === 'accepted' ? '#4ade80' : 'rgba(255,255,255,0.6)' }}>
-                                        {req.status === 'requested' ? '대기중' : req.status === 'accepted' ? '승인됨' : req.status}
+                                    <div style={{ ...statusBadge, background: req.status === 'requested' ? 'rgba(245, 158, 11, 0.2)' : req.status === 'accepted' ? 'rgba(34, 197, 94, 0.2)' : req.status === 'completed' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.1)', color: req.status === 'requested' ? '#f59e0b' : req.status === 'accepted' ? '#4ade80' : req.status === 'completed' ? '#3b82f6' : 'rgba(255,255,255,0.6)' }}>
+                                        {req.status === 'requested' ? '대기중' : req.status === 'accepted' ? '승인됨' : req.status === 'completed' ? '완료됨' : req.status}
                                     </div>
                                 </div>
                                 <div style={{ display: 'grid', gap: '6px', fontSize: '0.85rem', opacity: 0.8 }}>
@@ -183,10 +185,34 @@ export const CoachRequests = () => {
                                     <button onClick={() => handleAction(selectedRequest.id, 'rejected')} style={{ ...actionBtn, background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}><X size={18} style={{ marginRight: 8 }} /> 거절</button>
                                 </div>
                             )}
+
+                            {selectedRequest.status === 'accepted' && (
+                                <div style={{ marginTop: '1rem' }}>
+                                    <button 
+                                        onClick={() => setShowJournalModal(true)} 
+                                        style={{ ...actionBtn, background: 'var(--color-coach)', width: '100%' }}
+                                    >
+                                        <BookOpen size={18} style={{ marginRight: 8 }} /> 수업 완료 및 일지 작성
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
             </div>
+
+            {showJournalModal && (
+                <ClassJournalModal 
+                    request={selectedRequest}
+                    onClose={() => setShowJournalModal(false)}
+                    onSuccess={() => {
+                        setShowJournalModal(false);
+                        setSelectedRequest(null);
+                        setMsg("수업 일지가 성공적으로 생성되었습니다.");
+                        loadRequests();
+                    }}
+                />
+            )}
         </div>
     );
 };

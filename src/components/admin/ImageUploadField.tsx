@@ -29,19 +29,33 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
             const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
             const filePath = `public/${fileName}`;
 
+            console.log('--- Image Upload Started ---');
+            console.log('Bucket:', bucket);
+            console.log('Target Path:', filePath);
+
             // Upload directly to supabase bucket
             const { error: uploadError } = await supabase.storage
                 .from(bucket)
                 .upload(filePath, file);
 
-            if (uploadError) throw uploadError;
+            if (uploadError) {
+                console.error('Upload Error Details:', uploadError);
+                throw uploadError;
+            }
 
             // Get the public URL
             const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
-            onChange(data.publicUrl);
+            
+            // Add timestamp to prevent browser caching
+            const finalUrl = `${data.publicUrl}?t=${Date.now()}`;
+            
+            console.log('Generated Public URL:', finalUrl);
+            console.log('--- Image Upload Completed ---');
+
+            onChange(finalUrl);
 
         } catch (error: any) {
-            console.error('Upload error:', error);
+            console.error('Final Catch Error:', error);
             alert('사진 업로드에 실패했습니다: ' + (error.message || '알 수 없는 오류'));
         } finally {
             setUploading(false);

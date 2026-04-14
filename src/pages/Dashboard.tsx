@@ -1,23 +1,30 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-    MainTab, ClassType, PositionType, ReceiptType, 
+    ClassType, PositionType, ReceiptType, 
     Profile, TicketRow, PointsStats, MyRequest, Product, 
     PendingPurchase, Region, Filter,
     ShippingAddress, ShopRequestStatus, ShopPurchaseRequest
 } from '../types/dashboard';
+import { Home, Compass, MessageSquare, History, Wallet, User as UserIcon, LogOut, ChevronRight, Menu, X, ArrowLeft, Star, Edit2, Plus, ArrowRight } from 'lucide-react';
 import { 
     calcAge, toISOStringFromKST, normalizePhone, clampInt 
 } from '../utils/dashboardHelpers';
 
+type MainTab = "home" | "request" | "history" | "cash" | "messages";
+
 // Subcomponents
 import { StudentHome } from '../components/dashboard/StudentHome';
+import { ChatList } from '../components/chat/ChatList';
+import { ChatWindow } from '../components/chat/ChatWindow';
 import { StudentRequest } from '../components/dashboard/StudentRequest';
 import { StudentHistory } from '../components/dashboard/StudentHistory';
 import { StudentCash } from '../components/dashboard/StudentCash';
 import { ShippingManager } from '../components/dashboard/ShippingManager';
 import { StudentShopHistory } from '../components/dashboard/StudentShopHistory';
+
+
 
 const LIST_LIMIT = 80;
 const FIXED_DURATION_MIN = 60;
@@ -38,6 +45,7 @@ function useViewport() {
 export const Dashboard = () => {
     const { isMobile } = useViewport();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [mainTab, setMainTab] = useState<MainTab>("home");
     const [session, setSession] = useState<any>(null);
@@ -52,12 +60,16 @@ export const Dashboard = () => {
     const [position, setPosition] = useState<PositionType>("G"); 
     const [exp, setExp] = useState(""); 
     const [phone, setPhone] = useState("");
+    const [photoUrl, setPhotoUrl] = useState("");
 
     const [rows, setRows] = useState<MyRequest[]>([]);
     const [filter, setFilter] = useState<Filter>("all");
     const [showCancelled, setShowCancelled] = useState(false);
     const [points, setPoints] = useState<PointsStats | null>(null);
     const [shopRequests, setShopRequests] = useState<ShopPurchaseRequest[]>([]);
+    
+    // Chat States
+    const [selectedRoom, setSelectedRoom] = useState<{id: string, name: string, photo?: string} | null>(null);
 
     // Request Fields
     const [classType, setClassType] = useState<ClassType>("A"); 
@@ -88,7 +100,19 @@ export const Dashboard = () => {
             setSession(session);
             loadAll(session.user);
         });
-    }, [navigate]);
+        
+        // Handle direct chat opening from state
+        if (location.state?.openChat && location.state?.roomId) {
+            setMainTab("messages");
+            setSelectedRoom({
+                id: location.state.roomId,
+                name: location.state.recipientName,
+                photo: location.state.recipientPhoto
+            });
+            // Clear state to prevent re-opening on refresh
+            window.history.replaceState({}, document.title);
+        }
+    }, [navigate, location]);
 
     async function ensureMyProfileExists(user: any) {
         if (!user?.id) return;
@@ -149,6 +173,7 @@ export const Dashboard = () => {
             setProfile(pr);
             setName(pr?.name ?? ""); setBirthday(pr?.birthday ?? ""); setPosition((pr?.position ?? "G") as PositionType);
             setExp(pr?.experience_years?.toString() ?? ""); setPhone(pr?.phone ?? "");
+            setPhotoUrl(pr?.photo_url ?? "");
 
             await Promise.all([
                 loadTickets(user.id), loadMyRequests(user.id), loadPoints(user.id),
@@ -181,7 +206,8 @@ export const Dashboard = () => {
             const expTrim = exp.trim();
             if (expTrim && !/^\d+$/.test(expTrim)) throw new Error("경력(년)은 숫자만 입력해 주세요.");
             const { error } = await supabase.from("profiles").upsert({
-                id: session.user.id, name: name.trim(), birthday, position, experience_years: expTrim ? Number(expTrim) : null, phone: phoneTrim
+                id: session.user.id, name: name.trim(), birthday, position, experience_years: expTrim ? Number(expTrim) : null, phone: phoneTrim,
+                photo_url: photoUrl
             }, { onConflict: "id" });
             if (error) throw error;
             setEditProfile(false); setMsg("프로필 저장 완료!");
@@ -283,6 +309,13 @@ export const Dashboard = () => {
     const ageText = profile?.birthday ? `${calcAge(profile.birthday)}세` : "-";
     const activeCount = rows.filter((r) => r.status === "requested" || r.status === "accepted").length;
 
+    const TabBtn = ({ id, icon: Icon, active, onClick, label }: any) => (
+        <button onClick={() => onClick(id)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '12px 4px', borderRadius: 12, border: 'none', background: active ? 'rgba(255,255,255,0.1)' : 'transparent', color: active ? 'white' : 'rgba(255,255,255,0.4)', cursor: 'pointer', transition: '0.2s' }}>
+            <Icon size={20} />
+            <span style={{ fontSize: 10, fontWeight: 700 }}>{label}</span>
+        </button>
+    );
+
     return (
         <div style={{ maxWidth: '1200px', margin: '0 auto', color: 'white', paddingBottom: '100px' }}>
             {/* Header Section */}
@@ -299,11 +332,12 @@ export const Dashboard = () => {
             </div>
 
             {/* Nav Tabs */}
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: '12px', marginBottom: '1.5rem' }}>
-                <button style={mainTab === "home" ? tabOn : tabOff} onClick={() => setMainTab("home")}>PLAYER HOME</button>
-                <button style={mainTab === "request" ? tabOn : tabOff} onClick={() => setMainTab("request")}>NEW REQUEST</button>
-                <button style={mainTab === "history" ? tabOn : tabOff} onClick={() => setMainTab("history")}>HISTORY</button>
-                <button style={mainTab === "cash" ? tabOn : tabOff} onClick={() => setMainTab("cash")}>RECHARGE</button>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4, marginBottom: '1.5rem' }}>
+                <TabBtn id="home" icon={UserIcon} active={mainTab==='home'} onClick={setMainTab} label="홈" />
+                <TabBtn id="messages" icon={MessageSquare} active={mainTab==='messages'} onClick={setMainTab} label="채팅" />
+                <TabBtn id="request" icon={Compass} active={mainTab==='request'} onClick={setMainTab} label="예약" />
+                <TabBtn id="history" icon={History} active={mainTab==='history'} onClick={setMainTab} label="내역" />
+                <TabBtn id="cash" icon={Wallet} active={mainTab==='cash'} onClick={setMainTab} label="지갑" />
             </div>
 
             {/* Main Section */}
@@ -316,7 +350,8 @@ export const Dashboard = () => {
                         editProfile={editProfile} setEditProfile={setEditProfile} 
                         name={name} setName={setName} birthday={birthday} setBirthday={setBirthday} 
                         position={position} setPosition={setPosition} exp={exp} setExp={setExp} 
-                        phone={phone} setPhone={setPhone} saveProfile={saveProfile} ageText={ageText}
+                        phone={phone} setPhone={setPhone} photoUrl={photoUrl} setPhotoUrl={setPhotoUrl}
+                        saveProfile={saveProfile} ageText={ageText}
                     />
                 )}
                 {mainTab === "home" && !editProfile && (
@@ -340,6 +375,31 @@ export const Dashboard = () => {
                         filter={filter} setFilter={setFilter} showCancelled={showCancelled} setShowCancelled={setShowCancelled}
                         cancelRequest={cancelRequest} loading={loading} regionMap={regionMap}
                     />
+                )}
+
+                {mainTab === "messages" && (
+                    <div style={{ height: 'calc(100vh - 250px)', display: 'grid', gridTemplateColumns: selectedRoom ? (window.innerWidth <= 768 ? '1fr' : '320px 1fr') : '1fr', gap: 20 }}>
+                        {(!selectedRoom || window.innerWidth > 768) && (
+                            <div style={{ overflowY: 'auto' }}>
+                                <h2 style={{ fontSize: 22, fontWeight: 900, marginBottom: 16 }}>메시지</h2>
+                                <ChatList 
+                                    currentUserId={profile?.id || ""} 
+                                    onSelectRoom={(id, name, photo) => setSelectedRoom({ id, name, photo })} 
+                                />
+                            </div>
+                        )}
+                        {selectedRoom && (
+                            <div style={{ height: '100%' }}>
+                                <ChatWindow 
+                                    roomId={selectedRoom.id}
+                                    currentUserId={profile?.id || ""}
+                                    recipientName={selectedRoom.name}
+                                    recipientPhoto={selectedRoom.photo}
+                                    onBack={window.innerWidth <= 768 ? () => setSelectedRoom(null) : undefined}
+                                />
+                            </div>
+                        )}
+                    </div>
                 )}
                 {mainTab === "cash" && (
                     <StudentCash

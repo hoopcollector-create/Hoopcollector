@@ -48,7 +48,7 @@ export const InstagramSection = () => {
 };
 
 const containerStyle: React.CSSProperties = {
-    padding: '100px 24px',
+    padding: window.innerWidth <= 768 ? '60px 20px' : '100px 24px',
     maxWidth: '1200px',
     margin: '0 auto',
 };
@@ -67,7 +67,7 @@ const badgeStyle: React.CSSProperties = {
 };
 
 const titleStyle: React.CSSProperties = {
-    fontSize: '3rem',
+    fontSize: window.innerWidth <= 768 ? '2rem' : '3rem',
     fontWeight: 900,
     marginBottom: '1rem',
     letterSpacing: '-0.04em'

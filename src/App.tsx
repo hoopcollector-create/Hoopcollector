@@ -17,6 +17,7 @@ import { GradeSystem } from './pages/GradeSystem';
 import { Shop } from './pages/Shop';
 import { ShopDetail } from './pages/ShopDetail';
 import { Home } from './pages/Home';
+import { ClassJournalDetail } from './pages/ClassJournalDetail';
 
 const CoachFinancials = () => <div style={{ color: 'white', padding: 40 }}>내 정산내역 (준비중)</div>;
 
@@ -33,6 +34,7 @@ export const App = () => {
                 <Route path="/shop/:slug" element={<AppLayout><ShopDetail /></AppLayout>} />
                 
                 <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
+                <Route path="/journal/:id" element={<AppLayout><ClassJournalDetail /></AppLayout>} />
                 
                 <Route path="/coach/dashboard" element={<AppLayout><CoachDashboard /></AppLayout>} />
                 <Route path="/coach/requests" element={<AppLayout><CoachRequests /></AppLayout>} />

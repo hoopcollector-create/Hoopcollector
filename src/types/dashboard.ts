@@ -12,6 +12,7 @@ export interface Profile {
     position: PositionType | null;
     experience_years: number | null;
     phone: string | null;
+    photo_url?: string | null;
 }
 
 export interface TicketRow {

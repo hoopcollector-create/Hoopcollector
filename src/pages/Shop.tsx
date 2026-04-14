@@ -136,14 +136,15 @@ export const Shop = () => {
 };
 
 const heroStyle: React.CSSProperties = {
-    height: '400px',
+    height: window.innerWidth <= 768 ? '250px' : '400px',
     background: '#0a0a0b',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    marginBottom: '60px',
-    borderBottom: '1px solid rgba(255,255,255,0.05)'
+    marginBottom: window.innerWidth <= 768 ? '40px' : '60px',
+    borderBottom: '1px solid rgba(255,255,255,0.05)',
+    padding: '0 20px'
 };
 
 const badgeStyle: React.CSSProperties = {
@@ -155,11 +156,12 @@ const badgeStyle: React.CSSProperties = {
 };
 
 const heroTitleStyle: React.CSSProperties = {
-    fontSize: '5rem',
+    fontSize: window.innerWidth <= 768 ? '2.1rem' : '5rem',
     fontWeight: 900,
     letterSpacing: '-0.04em',
     margin: 0,
-    lineHeight: 1
+    lineHeight: 1.1,
+    wordBreak: 'keep-all'
 };
 
 const heroSubtitleStyle: React.CSSProperties = {
@@ -216,8 +218,8 @@ const searchInputStyle: React.CSSProperties = {
 
 const gridStyle: React.CSSProperties = {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-    gap: '40px 30px'
+    gridTemplateColumns: window.innerWidth <= 480 ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
+    gap: window.innerWidth <= 768 ? '30px 20px' : '40px 30px'
 };
 
 const cardStyle: React.CSSProperties = {

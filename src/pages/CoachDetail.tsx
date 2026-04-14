@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { ArrowLeft, MapPin, Award, CheckCircle2, Calendar, MessageSquare, Star, Sparkles, ChevronRight, Save, X, Edit2, Plus } from "lucide-react";
 import { ImageUploadField } from "../components/admin/ImageUploadField";
+import { chatService } from "../lib/chatService";
 
 type PublicCoach = {
     coach_id: string;
@@ -67,7 +68,7 @@ export const CoachDetail = () => {
             const { data, error } = await supabase
                 .from("public_coach_profiles")
                 .select("coach_id,slug,display_name,coach_level,photo_url,experience_text,bio_text,service_regions,available_classes")
-                .eq("slug", targetSlug)
+                .or(`slug.eq."${targetSlug}",coach_id.eq."${targetSlug}"`)
                 .maybeSingle();
 
             if (error) throw error;
@@ -132,6 +133,38 @@ export const CoachDetail = () => {
             }));
         }
     };
+
+    async function handleSendMessage() {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                alert('로그인이 필요한 기능입니다.');
+                navigate('/login');
+                return;
+            }
+
+            if (session.user.id === coach?.coach_id) {
+                alert('본인에게는 메시지를 보낼 수 없습니다.');
+                return;
+            }
+
+            setLoading(true);
+            const roomId = await chatService.getOrCreateRoom(session.user.id, coach!.coach_id);
+            
+            navigate('/dashboard', { 
+                state: { 
+                    openChat: true, 
+                    roomId, 
+                    recipientName: coach?.display_name,
+                    recipientPhoto: coach?.photo_url
+                } 
+            });
+        } catch (e: any) {
+            alert('채팅방 개설 실패: ' + e.message);
+        } finally {
+            setLoading(false);
+        }
+    }
 
     if (loading) return <div style={pageWrap}><div style={{ color: 'white', padding: 40, opacity: 0.5 }}>LOADING COACH PROFILE...</div></div>;
     if (!coach) return <div style={pageWrap}><div style={{ color: 'white', padding: 40 }}>{msg || "코치 정보를 찾을 수 없습니다."}</div></div>;
@@ -212,7 +245,7 @@ export const CoachDetail = () => {
                                 <button style={primaryBtn} onClick={() => navigate('/dashboard')}>
                                     BOOK A CLASS
                                 </button>
-                                <button style={secondaryBtn}>
+                                <button style={secondaryBtn} onClick={handleSendMessage} disabled={loading}>
                                     SEND MESSAGE
                                 </button>
                             </div>

@@ -38,7 +38,6 @@ export const CoachRequests = () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
-            // 1. Fetch Requests
             const { data: reqs, error: reqError } = await supabase
                 .from('class_requests')
                 .select('*')
@@ -47,11 +46,9 @@ export const CoachRequests = () => {
 
             if (reqError) throw reqError;
 
-            // 2. Fetch Student Profiles Manually (Avoid Relationship errors)
             const studentIds = Array.from(new Set((reqs || []).map(r => r.student_id)));
             if (studentIds.length > 0) {
                 const { data: profs } = await supabase.from('profiles').select('id, name, phone').in('id', studentIds);
-                
                 const profMap = (profs || []).reduce((acc: any, p: any) => {
                     acc[p.id] = p;
                     return acc;
@@ -108,7 +105,7 @@ export const CoachRequests = () => {
                 gridTemplateColumns: selectedRequest ? (window.innerWidth <= 768 ? '1fr' : '1fr 1fr') : '1fr', 
                 gap: '2.5rem' 
             }} className="responsive-grid">
-                {/* List View */}
+                
                 <div style={{ display: 'grid', gap: '1rem', order: selectedRequest && window.innerWidth <= 768 ? 2 : 1 }}>
                     {loading && requests.length === 0 ? (
                         <div style={emptyBox}>요청을 불러오는 중...</div>
@@ -144,7 +141,6 @@ export const CoachRequests = () => {
                     )}
                 </div>
 
-                {/* Detail View */}
                 {selectedRequest && (
                     <div style={{ ...detailContainer, order: window.innerWidth <= 768 ? 1 : 2 }} className="card-premium glass-morphism">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -187,22 +183,18 @@ export const CoachRequests = () => {
                                 </div>
                             )}
 
-                                    {selectedRequest.status === 'accepted' && (
-                                        <>
-                                            <button 
-                                                onClick={() => setShowJournalModal(true)} 
-                                                style={{ ...actionBtn, background: 'var(--color-coach)', width: '100%', marginTop: '1rem' }}
-                                            >
-                                                <BookOpen size={18} style={{ marginRight: 8 }} /> 수업 완료 및 일지 작성
-                                            </button>
-                                            <div style={{ marginTop: '1rem' }}>
-                                                <AttendanceQR classRequestId={selectedRequest.id} isCoach={true} />
-                                            </div>
-                                        </>
-                                    )}
+                            {selectedRequest.status === 'accepted' && (
+                                <div style={{ display: 'grid', gap: '1rem', marginTop: '1rem' }}>
+                                    <button 
+                                        onClick={() => setShowJournalModal(true)} 
+                                        style={{ ...actionBtn, background: 'var(--color-coach)' }}
+                                    >
+                                        <BookOpen size={18} style={{ marginRight: 8 }} /> 수업 완료 및 일지 작성
+                                    </button>
+                                    <AttendanceQR classRequestId={selectedRequest.id} isCoach={true} />
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 )}
             </div>

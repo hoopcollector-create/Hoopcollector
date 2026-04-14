@@ -65,11 +65,18 @@ export const CoachDetail = () => {
         setLoading(true);
         setMsg("");
         try {
-            const { data, error } = await supabase
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetSlug);
+            let query = supabase
                 .from("public_coach_profiles")
-                .select("coach_id,slug,display_name,coach_level,photo_url,experience_text,bio_text,service_regions,available_classes")
-                .or(`slug.eq."${targetSlug}",coach_id.eq."${targetSlug}"`)
-                .maybeSingle();
+                .select("coach_id,slug,display_name,coach_level,photo_url,experience_text,bio_text,service_regions,available_classes");
+
+            if (isUUID) {
+                query = query.or(`slug.eq."${targetSlug}",coach_id.eq."${targetSlug}"`);
+            } else {
+                query = query.eq("slug", targetSlug);
+            }
+
+            const { data, error } = await query.maybeSingle();
 
             if (error) throw error;
             if (!data) {

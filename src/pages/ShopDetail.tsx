@@ -247,7 +247,11 @@ export const ShopDetail = () => {
                                         <div style={addrDetail}>{addr.address_road} {addr.detail_address}</div>
                                     </button>
                                 ))}
-                                {addresses.length === 0 && <div style={emptyAddr}>등록된 배송지가 없습니다.</div>}
+                                {addresses.length === 0 && (
+                                    <div style={emptyAddr}>
+                                        {userId ? '등록된 배송지가 없습니다.' : '로그인 후 배송지를 관리하실 수 있습니다.'}
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div style={addrForm}>
@@ -286,6 +290,11 @@ export const ShopDetail = () => {
                             <div style={{ ...priceLabel, fontSize: 18, fontWeight: 900 }}>최종 결제 금액</div>
                             <div style={{ ...priceVal, fontSize: 24, fontWeight: 900 }}>{(finalCash * 10).toLocaleString()} <span style={{ fontSize: 14 }}>원</span></div>
                         </div>
+                        {!userId && (
+                            <p style={{ fontSize: '0.75rem', opacity: 0.6, marginTop: '12px', textAlign: 'right' }}>
+                                * 로그인 시 포인트 할인을 적용받을 수 있습니다.
+                            </p>
+                        )}
                     </div>
 
                     {finalCash > 0 && (
@@ -308,11 +317,20 @@ export const ShopDetail = () => {
 
                     <button 
                         onClick={handleOrder} 
-                        disabled={submitting || !selectedVariant} 
-                        style={orderBtn}
+                        disabled={submitting || (userId && !selectedVariant)} 
+                        style={{
+                            ...orderBtn,
+                            background: userId ? 'white' : 'transparent',
+                            color: userId ? 'black' : 'white',
+                            border: userId ? 'none' : '2px solid white'
+                        }}
                     >
                         {submitting ? 'PROCESSING...' : (
-                            <><ShoppingBag size={20} /> ORDER NOW</>
+                            userId ? (
+                                <><ShoppingBag size={20} /> ORDER NOW</>
+                            ) : (
+                                <><CreditCard size={20} /> LOGIN TO PURCHASE</>
+                            )
                         )}
                     </button>
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Check, X, Clock, MapPin, User, BookOpen } from 'lucide-react';
 import { ClassJournalModal } from '../components/journal/ClassJournalModal';
+import { AttendanceQR } from '../components/AttendanceQR';
 
 type RequestStatus = "requested" | "accepted" | "completed" | "cancelled" | "rejected";
 
@@ -186,14 +187,18 @@ export const CoachRequests = () => {
                                 </div>
                             )}
 
-                            {selectedRequest.status === 'accepted' && (
-                                <div style={{ marginTop: '1rem' }}>
                                     <button 
                                         onClick={() => setShowJournalModal(true)} 
                                         style={{ ...actionBtn, background: 'var(--color-coach)', width: '100%' }}
                                     >
                                         <BookOpen size={18} style={{ marginRight: 8 }} /> 수업 완료 및 일지 작성
                                     </button>
+                                </div>
+                            )}
+
+                            {selectedRequest.status === 'accepted' && (
+                                <div style={{ marginTop: '1rem' }}>
+                                    <AttendanceQR classRequestId={selectedRequest.id} isCoach={true} />
                                 </div>
                             )}
                         </div>

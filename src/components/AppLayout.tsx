@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { CoachApplicationModal } from './CoachApplicationModal';
+import { NotificationCenter } from './NotificationCenter';
+import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { supabase } from '../lib/supabase';
 
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
@@ -59,6 +61,10 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
                 onRequireCoachVerification={handleRequireCoachVerification}
             />
             
+            <div style={{ position: 'fixed', top: '24px', right: '24px', zIndex: 100 }}>
+                <NotificationCenter />
+            </div>
+            
             <main className="main-layout">
                 <div style={{ 
                     width: '100%', 
@@ -72,6 +78,8 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
             {showCoachModal && (
                 <CoachApplicationModal onClose={() => setShowCoachModal(false)} />
             )}
+
+            <PWAInstallPrompt />
         </div>
     );
 };

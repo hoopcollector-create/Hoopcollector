@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { MyRequest, Filter } from '../../types/dashboard';
 import { statusKo, fmtDateKST, fmtTimeKST, canCancelStatus } from '../../utils/dashboardHelpers';
+import { AttendanceQR } from '../AttendanceQR';
 
 interface StudentHistoryProps {
     rows: MyRequest[];
@@ -41,6 +42,11 @@ export const StudentHistory = ({
                             <button style={cancelBtn} onClick={() => cancelRequest(r.id)} disabled={loading}>
                                 예약 취소 (환불규정 적용)
                             </button>
+                        )}
+                        {r.status === 'accepted' && (
+                            <div style={{ marginTop: 16 }}>
+                                <AttendanceQR classRequestId={r.id} isCoach={false} />
+                            </div>
                         )}
                         {r.status === 'completed' && (
                             <Link to={`/journal/${r.id}`} style={{ textDecoration: 'none' }}>

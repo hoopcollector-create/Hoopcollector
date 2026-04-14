@@ -62,6 +62,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ appMode, onModeChange, isCoach
 
     const studentMenuItems = [
         { name: "대시보드", icon: Home, link: "/dashboard" },
+        { name: "매칭 및 모임", icon: Target, link: "/match" },
         { name: "수업 보러가기", icon: Compass, link: "/class-info" },
         { name: "훕콜렉터 스토어", icon: ShoppingBag, link: "/shop" },
         { name: "코치 찾기", icon: Users, link: "/coaches" },
@@ -70,6 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ appMode, onModeChange, isCoach
 
     const coachMenuItems = [
         { name: "코치 대시보드", icon: LayoutDashboard, link: "/coach/dashboard" },
+        { name: "매칭 및 구인", icon: Target, link: "/match" },
         { name: "수업 요청 관리", icon: Target, link: "/coach/requests" },
         { name: "스케줄 관리", icon: Calendar, link: "/coach/schedule" },
         { name: "등급 및 승급", icon: Award, link: "/coach/grade" },

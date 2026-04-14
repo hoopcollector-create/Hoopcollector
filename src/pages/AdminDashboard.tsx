@@ -10,8 +10,9 @@ import { GradeReviewManager } from '../components/admin/GradeReviewManager';
 import { AdminShopOrders } from '../components/admin/AdminShopOrders';
 import { WebsiteManager } from '../components/admin/WebsiteManager';
 import { MatchingStatus } from '../components/admin/MatchingStatus';
+import { CoachPayoutManager } from '../components/admin/CoachPayoutManager';
 
-type AdminTab = 'users' | 'shop' | 'shop_orders' | 'regions' | 'matching' | 'approvals' | 'grade_review' | 'manual_class' | 'website';
+type AdminTab = 'users' | 'shop' | 'shop_orders' | 'regions' | 'matching' | 'approvals' | 'payouts' | 'grade_review' | 'manual_class' | 'website';
 
 const RegionsManager = () => (
     <div>
@@ -78,6 +79,7 @@ export const AdminDashboard = () => {
                 <TabButton active={currentTab === 'shop'} onClick={() => handleTabSwitch('shop')}>상품 관리</TabButton>
                 <TabButton active={currentTab === 'shop_orders'} onClick={() => handleTabSwitch('shop_orders')}>주문 현황</TabButton>
                 <TabButton active={currentTab === 'approvals'} onClick={() => handleTabSwitch('approvals')}>코치 승인</TabButton>
+                <TabButton active={currentTab === 'payouts'} onClick={() => handleTabSwitch('payouts')}>정산 관리</TabButton>
                 <TabButton active={currentTab === 'grade_review'} onClick={() => handleTabSwitch('grade_review')}>승급 심사</TabButton>
                 <TabButton active={currentTab === 'regions'} onClick={() => handleTabSwitch('regions')}>지역 관리</TabButton>
             </div>
@@ -90,6 +92,7 @@ export const AdminDashboard = () => {
                 {currentTab === 'matching' && <MatchingStatus />}
                 {currentTab === 'website' && <WebsiteManager />}
                 {currentTab === 'approvals' && <ApprovalsManager />}
+                {currentTab === 'payouts' && <CoachPayoutManager />}
                 {currentTab === 'grade_review' && <GradeReviewManager />}
                 {currentTab === 'manual_class' && <ManualClassManager />}
             </section>

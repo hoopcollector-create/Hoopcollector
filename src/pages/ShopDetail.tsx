@@ -102,6 +102,7 @@ export const ShopDetail = () => {
     const totalPriceP = (selectedVariant?.point_price || 0) * qty;
     const canUsePoints = Math.min(userBalance, totalPriceP);
     const finalCash = totalPriceP - canUsePoints;
+    const estimatedReward = Math.floor(finalCash * 0.01);
 
     async function handleOrder() {
         if (!userId) {
@@ -142,10 +143,10 @@ export const ShopDetail = () => {
                 size_label: selectedVariant.size_label,
                 quantity: qty,
                 original_point_price: selectedVariant.point_price,
-                original_cash_amount: selectedVariant.point_price * 10, // Assuming 1P = 10 KRW for display
+                original_cash_amount: selectedVariant.point_price,
                 points_used: canUsePoints,
-                points_discount_won: canUsePoints * 10,
-                cash_amount: finalCash * 10,
+                points_discount_won: canUsePoints,
+                cash_amount: finalCash,
                 payer_name: payerName.trim() || '포인트전액결제',
                 cash_receipt_type: receiptType,
                 cash_receipt_value: receiptValue.trim() || null,
@@ -288,8 +289,13 @@ export const ShopDetail = () => {
                         <div style={{ ...divider, margin: '15px 0' }} />
                         <div style={priceRow}>
                             <div style={{ ...priceLabel, fontSize: 18, fontWeight: 900 }}>최종 결제 금액</div>
-                            <div style={{ ...priceVal, fontSize: 24, fontWeight: 900 }}>{(finalCash * 10).toLocaleString()} <span style={{ fontSize: 14 }}>원</span></div>
+                            <div style={{ ...priceVal, fontSize: 24, fontWeight: 900 }}>{finalCash.toLocaleString()} <span style={{ fontSize: 14 }}>원</span></div>
                         </div>
+                        {finalCash > 0 && (
+                            <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 700 }}>
+                                <Check size={14} /> 구매 시 {estimatedReward.toLocaleString()}P 적립 (1%)
+                            </div>
+                        )}
                         {!userId && (
                             <p style={{ fontSize: '0.75rem', opacity: 0.6, marginTop: '12px', textAlign: 'right' }}>
                                 * 로그인 시 포인트 할인을 적용받을 수 있습니다.

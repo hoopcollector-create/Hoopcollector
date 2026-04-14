@@ -317,7 +317,7 @@ export const ShopDetail = () => {
 
                     <button 
                         onClick={handleOrder} 
-                        disabled={submitting || (userId && !selectedVariant)} 
+                        disabled={submitting || !!(userId && !selectedVariant)} 
                         style={{
                             ...orderBtn,
                             background: userId ? 'white' : 'transparent',

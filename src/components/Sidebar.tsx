@@ -218,7 +218,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ appMode, onModeChange, isCoach
                 </div>
             </div>
             
-            <div className="desktop-only" style={{ width: 'var(--sidebar-width)', flexShrink: 0 }}></div>
+            <div className="desktop-only" style={{ width: 'var(--sidebar-width)', flexShrink: 0, height: '100vh' }}></div>
         </>
     );
 };

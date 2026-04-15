@@ -154,9 +154,10 @@ body.theme-student {
   .desktop-only { display: none !important; }
   .mobile-only { display: block !important; }
   
-  /* Main content: compact top padding for mobile menu button */
   .main-layout { 
-    padding: 72px 14px 32px; 
+    padding: 72px 14px 32px;
+    margin-left: 0 !important;
+    width: 100% !important;
   }
 
   /* Tighter card padding on mobile */

@@ -98,6 +98,20 @@ export const Dashboard = () => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (!session) return navigate('/login');
             setSession(session);
+            
+            // Set initial tab from URL
+            const queryParams = new URLSearchParams(location.search);
+            const tabParam = queryParams.get('tab') as MainTab;
+            const typeParam = queryParams.get('type') as ClassType;
+            
+            if (tabParam && ["home", "request", "history", "cash", "messages"].includes(tabParam)) {
+                setMainTab(tabParam);
+            }
+            
+            if (typeParam && ["A", "B", "C"].includes(typeParam)) {
+                setClassType(typeParam);
+            }
+            
             loadAll(session.user);
         });
         
@@ -339,8 +353,15 @@ export const Dashboard = () => {
                 <div style={{ ...chipStyle, background: 'var(--color-student)', border: 'none', color: 'white' }}>{(points?.balance ?? 0).toLocaleString()} P</div>
             </div>
 
-            {/* Nav Tabs */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4, marginBottom: '1.5rem' }}>
+            {/* Nav Tabs - Responsive Grid */}
+            <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: window.innerWidth < 400 ? 'repeat(auto-fit, minmax(60px, 1fr))' : 'repeat(5, 1fr)', 
+                gap: 4, 
+                marginBottom: '1.5rem',
+                overflowX: 'auto',
+                paddingBottom: '8px'
+            }}>
                 <TabBtn id="home" icon={UserIcon} active={mainTab==='home'} onClick={setMainTab} label="홈" />
                 <TabBtn id="messages" icon={MessageSquare} active={mainTab==='messages'} onClick={setMainTab} label="채팅" />
                 <TabBtn id="request" icon={Compass} active={mainTab==='request'} onClick={setMainTab} label="예약" />

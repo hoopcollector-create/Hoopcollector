@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ShoppingBag, Search, ChevronRight, ArrowRight, ArrowRightCircle } from 'lucide-react';
+import { ShoppingBag, Search, ArrowRight } from 'lucide-react';
 import { ShopProduct } from '../types/dashboard';
-
 
 export const Shop = () => {
     const navigate = useNavigate();
@@ -20,7 +19,6 @@ export const Shop = () => {
 
     async function loadShopData() {
         setLoading(true);
-        // Fetch products and their variants to get prices and stock
         const { data: pData, error: pError } = await supabase
             .from('shop_products')
             .select('*, shop_product_variants(point_price, stock_qty)')
@@ -44,192 +42,174 @@ export const Shop = () => {
         return matchCategory && matchSearch;
     });
 
-    if (loading) return <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>COLLECTING PRODUCTS...</div>;
+    if (loading) return (
+        <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#070708' }}>
+            <div style={{ textAlign: 'center' }}>
+                <div className="text-gradient" style={{ fontSize: '1.5rem', fontWeight: 900 }}>HOOPCOLLECTOR</div>
+                <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', marginTop: '8px', letterSpacing: '0.2em' }}>COLLECTING PRODUCTS...</div>
+            </div>
+        </div>
+    );
 
     return (
-        <div style={{ width: '100%', maxWidth: '1400px', margin: '0 auto', padding: '0 0 100px 0' }}>
-            {/* Hero Section */}
+        <div style={{ width: '100%', background: '#070708' }}>
+            {/* Hero Section - Brand Focus */}
             <header style={heroStyle}>
-                <div style={{ zIndex: 2, textAlign: 'center' }}>
-                    <div style={badgeStyle}>HOOP COLLECTOR STORE</div>
-                    <h1 style={heroTitleStyle}>THE COLLECTION</h1>
-                    <p style={heroSubtitleStyle}>Elevate your game with our premium basketball essentials.</p>
+                <div style={heroOverlay} />
+                <div style={{ zIndex: 2, textAlign: 'center', padding: '0 20px' }}>
+                    <div style={badgeStyle}>PREMIUM BASKETBALL GEAR</div>
+                    <h1 style={heroTitleStyle}>THE <span className="text-gradient">COLLECTION</span></h1>
+                    <p style={heroSubtitleStyle}>훕콜렉터의 철학이 담긴 프리미엄 에센셜.</p>
                 </div>
             </header>
 
-            <div style={{ padding: '0 24px' }}>
-                {/* Search & Filter Bar */}
+            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px 100px' }}>
+                {/* Clean Filter Bar */}
                 <div style={filterBarContainer}>
-                    <div style={categoryListStyle}>
+                    <div className="hide-scrollbar" style={categoryScrollStyle}>
                         {categories.map(cat => (
                             <button 
                                 key={cat} 
                                 onClick={() => setActiveCategory(cat)}
                                 style={{
                                     ...categoryBtnStyle,
-                                    background: activeCategory === cat ? 'white' : 'transparent',
+                                    background: activeCategory === cat ? 'white' : 'rgba(255,255,255,0.03)',
                                     color: activeCategory === cat ? 'black' : 'rgba(255,255,255,0.4)',
-                                    border: activeCategory === cat ? '1px solid white' : '1px solid rgba(255,255,255,0.1)'
+                                    border: activeCategory === cat ? '1px solid white' : '1px solid rgba(255,255,255,0.05)'
                                 }}
                             >
                                 {cat.toUpperCase()}
                             </button>
                         ))}
                     </div>
-                    <div style={searchContainerStyle}>
-                        <Search size={18} style={{ opacity: 0.3 }} />
-                        <input 
-                            placeholder="Search products..." 
-                            style={searchInputStyle}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
                 </div>
 
-                {/* Product Grid */}
+                {/* Product Grid - Compact 2-column on Mobile */}
                 {filteredProducts.length > 0 ? (
-                    <div style={gridStyle}>
+                    <div className="shop-grid" style={gridStyle}>
                         {filteredProducts.map(p => (
-                            <div key={p.id} style={cardStyle} className="product-card" onClick={() => navigate(`/shop/${p.slug}`)}>
+                            <div key={p.id} className="hover-lift shop-card-compact" style={cardStyle} onClick={() => navigate(`/shop/${p.slug}`)}>
                                 <div style={imageContainerStyle}>
                                     {p.thumbnail_url ? (
                                         <img src={p.thumbnail_url} alt={p.title} style={imgStyle} />
                                     ) : (
-                                        <div style={placeholderImgStyle}><ShoppingBag size={48} opacity={0.1} /></div>
+                                        <div style={placeholderImgStyle}><ShoppingBag size={32} opacity={0.15} /></div>
                                     )}
-                                    {p.total_stock === 0 && <div style={soldOutBadge}>SOLD OUT</div>}
-                                    <div style={overlayStyle} className="card-overlay">
-                                        <button style={viewBtnStyle}>VIEW DETAILS <ArrowRight size={16} style={{ marginLeft: 8 }} /></button>
-                                    </div>
+                                    {p.total_stock === 0 && <div style={soldOutBadge}>OUT OF STOCK</div>}
                                 </div>
-                                <div style={{ marginTop: '16px' }}>
-                                    <div style={{ fontSize: '0.75rem', fontWeight: 900, color: 'rgba(255,255,255,0.3)', marginBottom: '4px', letterSpacing: '0.05em' }}>{p.category.toUpperCase()}</div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0 }}>{p.title}</h3>
-                                        <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'white' }}>
-                                            {p.min_price?.toLocaleString()} P
-                                        </div>
+                                <div style={{ marginTop: '12px' }}>
+                                    <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--theme-primary)', marginBottom: '4px', letterSpacing: '0.05em' }}>{p.category.toUpperCase()}</div>
+                                    <h3 style={{ fontSize: '0.95rem', fontWeight: 800, margin: '0 0 6px 0', color: 'white', lineHeight: 1.2 }}>{p.title}</h3>
+                                    <div style={{ fontSize: '1rem', fontWeight: 900, color: 'white' }}>
+                                        {p.min_price?.toLocaleString()} <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>P</span>
                                     </div>
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : (
-                    <div style={{ textAlign: 'center', padding: '100px 0', opacity: 0.3 }}>
+                    <div style={{ textAlign: 'center', padding: '100px 0', opacity: 0.2 }}>
                         <ShoppingBag size={48} style={{ marginBottom: '20px' }} />
-                        <p>No products found in this category.</p>
+                        <p style={{ fontWeight: 700 }}>No products found.</p>
                     </div>
                 )}
             </div>
 
             <style>{`
-                .product-card:hover .card-overlay {
-                    opacity: 1 !important;
-                }
-                .product-card:hover img {
-                    transform: scale(1.05);
-                }
+                .hide-scrollbar::-webkit-scrollbar { display: none; }
+                .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
             `}</style>
         </div>
     );
 };
 
+/* Styles */
 const heroStyle: React.CSSProperties = {
-    height: window.innerWidth <= 768 ? '250px' : '400px',
-    background: '#0a0a0b',
+    height: '340px',
+    background: '#070708',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    marginBottom: window.innerWidth <= 768 ? '40px' : '60px',
-    borderBottom: '1px solid rgba(255,255,255,0.05)',
-    padding: '0 20px'
+    marginBottom: '40px',
+    overflow: 'hidden'
+};
+
+const heroOverlay: React.CSSProperties = {
+    position: 'absolute',
+    inset: 0,
+    background: 'radial-gradient(circle at center, rgba(249, 115, 22, 0.05) 0%, transparent 70%)',
+    zIndex: 1
 };
 
 const badgeStyle: React.CSSProperties = {
-    fontSize: '0.75rem',
+    fontSize: '0.7rem',
     fontWeight: 900,
-    letterSpacing: '0.2em',
-    color: 'rgba(255,255,255,0.4)',
-    marginBottom: '1rem'
+    letterSpacing: '0.3em',
+    color: 'var(--theme-primary)',
+    marginBottom: '1.2rem'
 };
 
 const heroTitleStyle: React.CSSProperties = {
-    fontSize: window.innerWidth <= 768 ? '2.1rem' : '5rem',
+    fontSize: '3.2rem',
     fontWeight: 900,
-    letterSpacing: '-0.04em',
+    letterSpacing: '-0.05em',
     margin: 0,
-    lineHeight: 1.1,
-    wordBreak: 'keep-all'
+    lineHeight: 1,
+    color: 'white'
 };
 
 const heroSubtitleStyle: React.CSSProperties = {
-    fontSize: '1.1rem',
+    fontSize: '0.9rem',
     color: 'rgba(255,255,255,0.4)',
-    marginTop: '1.5rem',
-    fontWeight: 500
+    marginTop: '1.2rem',
+    fontWeight: 600,
+    letterSpacing: '-0.02em'
 };
 
 const filterBarContainer: React.CSSProperties = {
+    marginBottom: '32px',
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '50px',
-    flexWrap: 'wrap',
-    gap: '20px'
+    justifyContent: 'center'
 };
 
-const categoryListStyle: React.CSSProperties = {
+const categoryScrollStyle: React.CSSProperties = {
     display: 'flex',
-    gap: '8px'
+    flexWrap: 'wrap',
+    gap: '8px',
+    padding: '4px',
+    width: '100%',
+    justifyContent: 'center'
 };
 
 const categoryBtnStyle: React.CSSProperties = {
-    padding: '10px 20px',
-    borderRadius: '100px',
+    padding: '8px 18px',
+    borderRadius: '12px',
     fontSize: '0.75rem',
     fontWeight: 800,
     cursor: 'pointer',
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    outline: 'none'
-};
-
-const searchContainerStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    background: 'rgba(255,255,255,0.03)',
-    borderRadius: '100px',
-    padding: '0 20px',
-    border: '1px solid rgba(255,255,255,0.05)',
-    width: '100%',
-    maxWidth: '300px'
-};
-
-const searchInputStyle: React.CSSProperties = {
-    background: 'transparent',
+    transition: 'all 0.2s ease',
+    whiteSpace: 'nowrap',
     border: 'none',
-    color: 'white',
-    padding: '12px 12px',
-    fontSize: '0.9rem',
-    outline: 'none',
-    width: '100%'
+    outline: 'none'
 };
 
 const gridStyle: React.CSSProperties = {
     display: 'grid',
-    gridTemplateColumns: window.innerWidth <= 480 ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
-    gap: window.innerWidth <= 768 ? '30px 20px' : '40px 30px'
+    gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+    gap: '32px 24px'
 };
 
 const cardStyle: React.CSSProperties = {
-    cursor: 'pointer'
+    cursor: 'pointer',
+    padding: '8px',
+    background: 'transparent'
 };
 
 const imageContainerStyle: React.CSSProperties = {
-    aspectRatio: '1 / 1.2',
-    background: '#111827',
-    borderRadius: '24px',
+    aspectRatio: '1 / 1',
+    background: 'linear-gradient(180deg, #161618 0%, #0a0a0b 100%)',
+    borderRadius: '20px',
     overflow: 'hidden',
     position: 'relative',
     border: '1px solid rgba(255,255,255,0.05)'
@@ -238,8 +218,7 @@ const imageContainerStyle: React.CSSProperties = {
 const imgStyle: React.CSSProperties = {
     width: '100%',
     height: '100%',
-    objectFit: 'cover',
-    transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
+    objectFit: 'cover'
 };
 
 const placeholderImgStyle: React.CSSProperties = {
@@ -247,43 +226,21 @@ const placeholderImgStyle: React.CSSProperties = {
     height: '100%',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center'
-};
-
-const overlayStyle: React.CSSProperties = {
-    position: 'absolute',
-    inset: 0,
-    background: 'rgba(0,0,0,0.4)',
-    display: 'flex',
-    alignItems: 'center',
     justifyContent: 'center',
-    opacity: 0,
-    transition: 'opacity 0.4s ease',
-    backdropFilter: 'blur(4px)'
-};
-
-const viewBtnStyle: React.CSSProperties = {
-    background: 'white',
-    color: 'black',
-    border: 'none',
-    padding: '14px 28px',
-    borderRadius: '100px',
-    fontWeight: 900,
-    fontSize: '0.8rem',
-    display: 'flex',
-    alignItems: 'center',
-    cursor: 'pointer'
+    color: 'white'
 };
 
 const soldOutBadge: React.CSSProperties = {
     position: 'absolute',
-    top: '20px',
-    right: '20px',
-    background: 'black',
+    top: '12px',
+    right: '12px',
+    background: 'rgba(0,0,0,0.8)',
+    backdropFilter: 'blur(8px)',
     color: 'white',
-    padding: '6px 12px',
-    borderRadius: '8px',
-    fontSize: '0.7rem',
+    padding: '4px 10px',
+    borderRadius: '6px',
+    fontSize: '0.6rem',
     fontWeight: 900,
-    zIndex: 3
+    zIndex: 3,
+    border: '1px solid rgba(255,255,255,0.1)'
 };

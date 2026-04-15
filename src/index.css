@@ -12,6 +12,12 @@
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-distinct: rgba(255, 255, 255, 0.15);
 
+  /* Typography & Accents */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.4);
+  --accent-primary: #f97316;
+
   /* Role Accents */
   --color-coach: #3b82f6;        /* Bright Blue */
   --color-coach-soft: #60a5fa;
@@ -65,6 +71,9 @@ body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
+.mobile-only { display: none !important; }
+.desktop-only { display: block !important; }
 
 .main-layout {
   flex: 1;
@@ -142,7 +151,22 @@ body.theme-student {
 }
 
 /* ===============================
-   MOBILE RESPONSIVE OVERRIDES
+   SIDEBAR LAYOUT
+   =============================== */
+
+/* Desktop: sidebar visible, spacer holds content position */
+.sidebar-container {
+  transform: translateX(0%);
+}
+
+.sidebar-spacer {
+  width: 280px;
+  flex-shrink: 0;
+  height: 100vh;
+}
+
+/* ===============================
+   MOBILE RESPONSIVE
    =============================== */
 @media (max-width: 768px) {
   :root {
@@ -154,15 +178,99 @@ body.theme-student {
   .desktop-only { display: none !important; }
   .mobile-only { display: block !important; }
   
+  /* Sidebar: hidden off-screen on mobile by default */
+  .sidebar-container {
+    transform: translateX(-100%);
+  }
+
+  /* Sidebar: visible when menu is open */
+  .sidebar-container.is-open {
+    transform: translateX(0%);
+  }
+
+  /* Spacer is hidden on mobile (desktop-only handles this) */
+  .sidebar-spacer {
+    display: none !important;
+  }
+
   .main-layout { 
     padding: 72px 14px 32px;
     margin-left: 0 !important;
     width: 100% !important;
   }
 
+  .mobile-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: rgba(10, 10, 11, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 1000;
+    flex-wrap: nowrap !important;
+  }
+
+  .mobile-header-logo {
+    font-size: 1.1rem;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    color: white;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .menu-toggle-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    padding: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Notification Center Mobile Adjustments */
+  .notif-dropdown {
+    position: absolute !important;
+    top: 50px !important;
+    right: -10px !important; /* Move closer to the right edge */
+    width: 300px !important;
+    max-width: calc(100vw - 32px) !important;
+    z-index: 1001 !important;
+  }
+
   /* Tighter card padding on mobile */
   .card-minimal {
     padding: 14px;
+  }
+
+  /* Shop Specific Grid */
+  .shop-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .shop-card-compact {
+    border-radius: 16px !important;
+  }
+
+  .shop-card-compact h3 {
+    font-size: 0.95rem !important;
+    margin-top: 8px !important;
   }
 
   /* Prevent oversized grid items */
@@ -222,4 +330,13 @@ body.theme-student {
   .card-minimal {
     padding: 12px;
   }
+}
+
+/* Global Transitions */
+.hover-lift {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }

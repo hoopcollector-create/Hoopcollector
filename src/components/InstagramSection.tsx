@@ -1,46 +1,48 @@
 import React from 'react';
-import { Instagram, ExternalLink, Heart, MessageCircle } from 'lucide-react';
+import { Instagram, ExternalLink } from 'lucide-react';
 
 export const InstagramSection = () => {
-    const posts = [
-        { id: 1, img: '/images/insta_1.png' },
-        { id: 2, img: '/images/insta_2.png' },
-        { id: 3, img: '/images/insta_3.png' },
-        { id: 4, img: '/images/insta_4.png' }
-    ];
-
     return (
         <section style={containerStyle}>
-            <div style={headerStyle}>
-                <div style={badgeStyle}>INSTAGRAM FEED</div>
-                <h2 style={titleStyle}>@hoop_collector</h2>
-                <p style={subtitleStyle}>농구 열정으로 가득 찬 훕콜렉터의 일상을 만나보세요.</p>
-            </div>
-
-            <div style={gridStyle}>
-                {posts.map(post => (
-                    <div key={post.id} style={cardStyle} className="insta-card">
-                        <img src={post.img} alt={`Hoopcollector Instagram ${post.id}`} style={imgStyle} />
-                        <div style={overlayStyle}>
-                            <a 
-                                href="https://www.instagram.com/hoop_collector/" 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                style={linkBtnStyle}
-                            >
-                                VIEW ON INSTAGRAM <ExternalLink size={14} style={{ marginLeft: 8 }} />
-                            </a>
-                        </div>
+            <div style={cardStyle} className="insta-banner">
+                <div style={contentStyle}>
+                    <div style={iconBox}>
+                        <Instagram size={32} />
                     </div>
-                ))}
+                    <div style={textContent}>
+                        <div style={badgeStyle}>CONNECT WITH US</div>
+                        <h2 style={titleStyle}>훕콜렉터 공식 인스타그램</h2>
+                        <p style={subtitleStyle}>
+                            최신 농구 소식과 훈련 꿀팁, 그리고 훕콜렉터의 일상을 가장 먼저 확인하세요.
+                        </p>
+                    </div>
+                    <a 
+                        href="https://www.instagram.com/hoop_collector/" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={linkBtnStyle}
+                        className="btn-premium"
+                    >
+                        @hoop_collector 팔로우하기 <ExternalLink size={16} style={{ marginLeft: 8 }} />
+                    </a>
+                </div>
             </div>
 
             <style>{`
-                .insta-card:hover .insta-overlay {
-                    opacity: 1 !important;
+                .insta-banner {
+                    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                 }
-                .insta-card:hover img {
-                    transform: scale(1.03);
+                .insta-banner:hover {
+                    transform: translateY(-5px);
+                    border-color: rgba(255, 107, 0, 0.3) !important;
+                    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255, 107, 0, 0.05) 100%) !important;
+                }
+                .btn-premium {
+                    transition: all 0.3s ease;
+                }
+                .btn-premium:hover {
+                    background: #f8f9fa !important;
+                    transform: scale(1.02);
                 }
             `}</style>
         </section>
@@ -48,82 +50,81 @@ export const InstagramSection = () => {
 };
 
 const containerStyle: React.CSSProperties = {
-    padding: window.innerWidth <= 768 ? '60px 20px' : '100px 24px',
-    maxWidth: '1200px',
+    padding: '80px 24px',
+    maxWidth: '1000px',
     margin: '0 auto',
 };
 
-const headerStyle: React.CSSProperties = {
-    textAlign: 'center',
-    marginBottom: '80px'
-};
-
-const badgeStyle: React.CSSProperties = {
-    fontSize: '0.7rem',
-    fontWeight: 900,
-    letterSpacing: '0.2em',
-    color: 'rgba(255,255,255,0.4)',
-    marginBottom: '1rem'
-};
-
-const titleStyle: React.CSSProperties = {
-    fontSize: window.innerWidth <= 768 ? '2rem' : '3rem',
-    fontWeight: 900,
-    marginBottom: '1rem',
-    letterSpacing: '-0.04em'
-};
-
-const subtitleStyle: React.CSSProperties = {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: '1rem',
-    fontWeight: 500
-};
-
-const gridStyle: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-    gap: '4px', // Tighter grid for more modern minimalist look
-    background: 'rgba(255,255,255,0.05)',
-    padding: '4px',
-    borderRadius: '2px'
-};
-
 const cardStyle: React.CSSProperties = {
-    position: 'relative',
-    aspectRatio: '1 / 1',
-    overflow: 'hidden',
-    cursor: 'pointer'
-};
-
-const imgStyle: React.CSSProperties = {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
-};
-
-const overlayStyle: React.CSSProperties = {
-    position: 'absolute',
-    inset: 0,
-    background: 'rgba(0,0,0,0.6)',
+    padding: '60px 40px',
+    borderRadius: '32px',
+    background: 'rgba(255,255,255,0.02)',
+    border: '1px solid rgba(255,255,255,0.05)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    opacity: 0,
-    transition: 'opacity 0.4s ease',
-    padding: '2rem'
+    textAlign: 'center'
 };
 
-// Re-defining overlay to work with CSS class
+const contentStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '24px',
+    maxWidth: '600px'
+};
+
+const iconBox: React.CSSProperties = {
+    width: '72px',
+    height: '72px',
+    borderRadius: '24px',
+    background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'white',
+    boxShadow: '0 10px 30px rgba(220, 39, 67, 0.3)',
+    marginBottom: '8px'
+};
+
+const textContent: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px'
+};
+
+const badgeStyle: React.CSSProperties = {
+    fontSize: '0.75rem',
+    fontWeight: 900,
+    letterSpacing: '0.2em',
+    color: 'var(--color-coach)',
+    opacity: 0.8
+};
+
+const titleStyle: React.CSSProperties = {
+    fontSize: '2.5rem',
+    fontWeight: 900,
+    letterSpacing: '-0.03em',
+    margin: 0
+};
+
+const subtitleStyle: React.CSSProperties = {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: '1.1rem',
+    lineHeight: 1.6,
+    margin: 0
+};
+
 const linkBtnStyle: React.CSSProperties = {
-    padding: '12px 24px',
+    marginTop: '16px',
+    padding: '18px 40px',
     borderRadius: '100px',
     background: 'white',
     color: 'black',
     textDecoration: 'none',
     fontWeight: 900,
-    fontSize: '0.75rem',
+    fontSize: '1rem',
     display: 'flex',
     alignItems: 'center',
-    letterSpacing: '0.05em'
+    boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
 };

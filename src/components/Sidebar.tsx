@@ -8,15 +8,24 @@ export interface SidebarProps {
     onModeChange: (mode: 'student' | 'coach') => void;
     isCoachVerified: boolean;
     onRequireCoachVerification: () => void;
+    isOpen?: boolean;
+    setIsOpen?: (open: boolean) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ appMode, onModeChange, isCoachVerified, onRequireCoachVerification }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ 
+    appMode, onModeChange, isCoachVerified, onRequireCoachVerification,
+    isOpen: externalOpen, setIsOpen: setExternalOpen 
+}) => {
     const navigate = useNavigate();
     const location = useLocation();
     const [session, setSession] = useState<any>(null);
     const [isAdmin, setIsAdmin] = useState(false);
     const [isCoachRole, setIsCoachRole] = useState(false);
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
+    
+    // Internal state fallback if not provided
+    const [internalOpen, setInternalOpen] = useState(false);
+    const isMobileOpen = externalOpen !== undefined ? externalOpen : internalOpen;
+    const setIsMobileOpen = setExternalOpen !== undefined ? setExternalOpen : setInternalOpen;
 
     useEffect(() => {
         // Apply theme to body
@@ -103,22 +112,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ appMode, onModeChange, isCoach
     return (
         <>
             {isMobileOpen && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 40 }} onClick={() => setIsMobileOpen(false)} />
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1050 }} onClick={() => setIsMobileOpen(false)} />
             )}
 
-            <button 
-                onClick={() => setIsMobileOpen(true)}
-                style={{ position: 'fixed', top: '20px', left: '20px', zIndex: 30, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                className="mobile-only"
+            <div
+                style={{
+                    position: 'fixed', top: 0, left: 0, bottom: 0,
+                    width: 'min(280px, 85vw)',
+                    background: '#070708',
+                    borderRight: '1px solid rgba(255,255,255,0.05)',
+                    transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    zIndex: 1100, display: 'flex', flexDirection: 'column',
+                    boxShadow: isMobileOpen ? '0 0 50px rgba(0,0,0,0.5)' : 'none'
+                }}
+                className={`sidebar-container${isMobileOpen ? ' is-open' : ''}`}
             >
-                <Menu size={20} />
-            </button>
-
-            <div style={{
-                position: 'fixed', top: 0, left: 0, bottom: 0, width: 'var(--sidebar-width)', background: '#000000', borderRight: '1px solid rgba(255,255,255,0.05)',
-                transform: isMobileOpen ? 'translateX(0%)' : (typeof window !== 'undefined' && window.innerWidth <= 768 ? 'translateX(-100%)' : 'translateX(0%)'), 
-                transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)', zIndex: 50, display: 'flex', flexDirection: 'column',
-            }} className="sidebar-container">
                 <div style={{ padding: '40px 32px' }}>
                     <Link to="/" onClick={() => setIsMobileOpen(false)} style={{ color: 'white', fontSize: '1.4rem', fontWeight: 900, textDecoration: 'none', letterSpacing: '-0.04em' }}>
                         HOOP<span style={{ opacity: 0.4 }}>COLLECTOR</span>
@@ -218,7 +226,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ appMode, onModeChange, isCoach
                 </div>
             </div>
             
-            <div className="desktop-only" style={{ width: 'var(--sidebar-width)', flexShrink: 0, height: '100vh' }}></div>
+            <div className="desktop-only sidebar-spacer"></div>
         </>
     );
 };

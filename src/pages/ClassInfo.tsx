@@ -1,9 +1,11 @@
 import React from 'react';
 import { Check, ArrowRight, Zap, Target, Trophy, Clock, MapPin, Sparkles } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { InstagramSection } from '../components/InstagramSection';
 
 export const ClassInfo = () => {
+    const navigate = useNavigate();
     const classData = [
         {
             type: 'C',
@@ -31,6 +33,18 @@ export const ClassInfo = () => {
 
     const formatPrice = (p: number) => p.toLocaleString() + '원';
 
+    const handleReserveClick = async (type?: string) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        const targetPath = `/dashboard?tab=request${type ? `&type=${type}` : ''}`;
+        
+        if (session) {
+            navigate(targetPath);
+        } else {
+            navigate(`/login?returnTo=${encodeURIComponent(targetPath)}`);
+        }
+    };
+
     return (
         <div style={{ background: '#000000', color: 'white', minHeight: '100vh', paddingBottom: '100px', width: '100%' }}>
             {/* Hero Section */}
@@ -43,7 +57,13 @@ export const ClassInfo = () => {
                         검증된 전문 코치가 직접 찾아가 잠재력을 깨워드립니다.
                     </p>
                     <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '40px' }}>
-                        <Link to="/login" className="btn-primary" style={{ padding: '16px 40px', fontSize: '1rem', textDecoration: 'none' }}>지금 신청하기</Link>
+                        <button 
+                            onClick={() => handleReserveClick()}
+                            className="btn-primary" 
+                            style={{ padding: '16px 40px', fontSize: '1rem', border: 'none', cursor: 'pointer' }}
+                        >
+                            지금 신청하기
+                        </button>
                         <a href="#pricing" style={btnOutlineStyle}>가격 정책 보기</a>
                     </div>
                 </div>
@@ -94,9 +114,13 @@ export const ClassInfo = () => {
                                 ))}
                             </div>
 
-                            <Link to="/login" className="btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', width: '100%', textDecoration: 'none', background: cls.popular ? 'var(--color-student)' : 'rgba(255,255,255,0.05)' }}>
+                            <button 
+                                onClick={() => handleReserveClick(cls.type)}
+                                className="btn-primary" 
+                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', width: '100%', border: 'none', cursor: 'pointer', background: cls.popular ? 'var(--color-student)' : 'rgba(255,255,255,0.05)' }}
+                            >
                                 예약하기 <ArrowRight size={18} />
-                            </Link>
+                            </button>
                         </div>
                     ))}
                 </div>

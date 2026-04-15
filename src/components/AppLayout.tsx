@@ -4,11 +4,14 @@ import { CoachApplicationModal } from './CoachApplicationModal';
 import { NotificationCenter } from './NotificationCenter';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { supabase } from '../lib/supabase';
+import { Menu, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
     const [appMode, setAppMode] = useState<'student' | 'coach'>('student');
     const [isCoachVerified, setIsCoachVerified] = useState(false);
     const [showCoachModal, setShowCoachModal] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     useEffect(() => {
         checkCoachStatus();
@@ -59,9 +62,28 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
                 onModeChange={setAppMode} 
                 isCoachVerified={isCoachVerified}
                 onRequireCoachVerification={handleRequireCoachVerification}
+                isOpen={isMenuOpen}
+                setIsOpen={setIsMenuOpen}
             />
+
+            {/* Mobile Header Bar */}
+            <header className="mobile-header mobile-only">
+                <Link to="/" className="mobile-header-logo" onClick={() => setIsMenuOpen(false)}>
+                    HOOPCOLLECTOR
+                </Link>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <button 
+                        className="menu-toggle-btn"
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        aria-label="Toggle Menu"
+                    >
+                        {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                    </button>
+                    <NotificationCenter />
+                </div>
+            </header>
             
-            <div style={{ position: 'fixed', top: '24px', right: '24px', zIndex: 100 }}>
+            <div className="desktop-only" style={{ position: 'fixed', top: '24px', right: '24px', zIndex: 100 }}>
                 <NotificationCenter />
             </div>
             

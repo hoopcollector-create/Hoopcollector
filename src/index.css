@@ -23,8 +23,17 @@
   --theme-primary-soft: var(--color-student-soft);
   
   --sidebar-width: 280px;
-  --border-radius-lg: 20px;
-  --border-radius-xl: 32px;
+  --border-radius-lg: 16px;
+  --border-radius-xl: 24px;
+
+  /* Responsive font scale */
+  --font-xs: clamp(0.65rem, 1.5vw, 0.75rem);
+  --font-sm: clamp(0.75rem, 2vw, 0.875rem);
+  --font-base: clamp(0.85rem, 2.5vw, 1rem);
+  --font-lg: clamp(1rem, 3vw, 1.25rem);
+  --font-xl: clamp(1.1rem, 3.5vw, 1.5rem);
+  --font-2xl: clamp(1.3rem, 5vw, 2rem);
+  --font-3xl: clamp(1.5rem, 6vw, 3rem);
 }
 
 * {
@@ -33,11 +42,20 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html {
+  font-size: 16px;
+  /* Prevent font size adjustment on orientation change */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: var(--font-base);
   background-color: #070708;
   color: #ffffff;
+  overflow-x: hidden;
 }
 
 /* Minimalist Utilities */
@@ -52,17 +70,19 @@ body {
   flex: 1;
   padding: 40px 24px;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
   background: #070708;
+  min-width: 0;
 }
 
 .card-minimal {
   background: var(--bg-surface-L1);
   border: 1px solid var(--border-subtle);
   border-radius: var(--border-radius-lg);
-  padding: 24px;
+  padding: 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -111,7 +131,7 @@ body.theme-student {
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -121,8 +141,84 @@ body.theme-student {
   border-radius: 3px;
 }
 
+/* ===============================
+   MOBILE RESPONSIVE OVERRIDES
+   =============================== */
 @media (max-width: 768px) {
+  :root {
+    --sidebar-width: 0px;
+    --border-radius-lg: 14px;
+    --border-radius-xl: 18px;
+  }
+
   .desktop-only { display: none !important; }
   .mobile-only { display: block !important; }
-  .main-layout { padding: 80px 16px 40px; }
+  
+  /* Main content: compact top padding for mobile menu button */
+  .main-layout { 
+    padding: 72px 14px 32px; 
+  }
+
+  /* Tighter card padding on mobile */
+  .card-minimal {
+    padding: 14px;
+  }
+
+  /* Prevent oversized grid items */
+  .main-content-wrapper {
+    max-width: 100% !important;
+  }
+
+  /* Heading size normalization for mobile */
+  h1 { font-size: var(--font-2xl) !important; }
+  h2 { font-size: var(--font-xl) !important; }
+  h3 { font-size: var(--font-lg) !important; }
+
+  /* Page-level headers */
+  .page-header h1 {
+    font-size: clamp(1.3rem, 5vw, 1.75rem) !important;
+    line-height: 1.2;
+  }
+
+  /* Responsive grid: single column on mobile */
+  .responsive-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Tighter notification button on mobile */
+  .notification-btn {
+    top: 14px;
+    right: 14px;
+  }
+
+  /* Ensure no overflow from wide elements */
+  img, video, iframe, canvas {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Table responsiveness */
+  table {
+    font-size: var(--font-sm);
+  }
+
+  /* Input / Button size normalization */
+  input, select, textarea, button {
+    font-size: var(--font-base) !important;
+  }
+}
+
+@media (max-width: 420px) {
+  :root {
+    --border-radius-lg: 12px;
+    --border-radius-xl: 16px;
+  }
+
+  .main-layout {
+    padding: 68px 12px 28px;
+  }
+
+  .card-minimal {
+    padding: 12px;
+  }
 }

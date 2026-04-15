@@ -13,9 +13,8 @@ interface Match {
     host_id: string;
     status: string;
     profiles: { 
-        display_name: string;
+        name: string;
         photo_url: string;
-        activity_score: number;
     };
     participants_count: number;
 }
@@ -46,7 +45,7 @@ export const MatchBoard: React.FC = () => {
             .from('community_matches')
             .select(`
                 *,
-                profiles (display_name, photo_url, activity_score)
+                profiles (name, photo_url)
             `)
             .order('match_time', { ascending: true });
 
@@ -71,6 +70,8 @@ export const MatchBoard: React.FC = () => {
         try {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) throw new Error("로그인이 필요합니다.");
+
+            if (!matchDate || !matchTime) throw new Error("경기 날짜와 시간을 모두 선택해주세요.");
 
             const fullMatchTime = `${matchDate}T${matchTime}:00Z`;
 
@@ -141,8 +142,7 @@ export const MatchBoard: React.FC = () => {
                                 <div style={hostInfo}>
                                     <img src={match.profiles?.photo_url || ""} style={hostAvatar} alt="" />
                                     <div>
-                                        <div style={hostName}>{match.profiles?.display_name || '익명'}</div>
-                                        <div style={hostScore}>Score: {match.profiles?.activity_score || 0}</div>
+                                        <div style={hostName}>{match.profiles?.name || '익명'}</div>
                                     </div>
                                 </div>
                                 <div style={{ ...statusBadge, backgroundColor: match.status === 'open' ? 'rgba(0, 194, 255, 0.1)' : 'rgba(255,255,255,0.05)' }}>

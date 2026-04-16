@@ -27,7 +27,8 @@ export const NotificationCenter: React.FC = () => {
             try {
                 fetchNotifications();
 
-                const newChannel = supabase.channel('notif-changes');
+                // Use unique channel ID to prevent StrictMode remount collisions
+                const newChannel = supabase.channel(`notif-changes-${Math.random()}`);
                 newChannel
                     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload: any) => {
                         const newNotif = payload.new as AppNotification;
@@ -60,7 +61,9 @@ export const NotificationCenter: React.FC = () => {
         setupSubscription();
 
         return () => {
-            if (channel) supabase.removeChannel(channel);
+            if (channel) {
+                supabase.removeChannel(channel);
+            }
         };
     }, []);
 

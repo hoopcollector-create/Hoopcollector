@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { LayoutDashboard, Target, Calendar, CreditCard, TrendingUp, Users, Clock, ChevronRight, Award, Edit3, Save, X, Sparkles, MapPin, MessageSquare, User as UserIcon } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ImageUploadField } from '../components/admin/ImageUploadField';
 import { ChatList } from '../components/chat/ChatList';
 import { ChatWindow } from '../components/chat/ChatWindow';
@@ -14,6 +14,7 @@ type Region = {
 };
 
 export const CoachDashboard = () => {
+    const location = useLocation();
     const [stats, setStats] = useState({
         pendingRequests: 0,
         upcomingClasses: 0,
@@ -39,8 +40,14 @@ export const CoachDashboard = () => {
     });
 
     useEffect(() => {
+        const queryParams = new URLSearchParams(location.search);
+        const tabParam = queryParams.get('tab') as CoachTab;
+        if (tabParam && ["home", "messages"].includes(tabParam)) {
+            setActiveTab(tabParam);
+        }
+        
         loadData();
-    }, []);
+    }, [location.search]);
 
     async function loadData() {
         setLoading(true);
@@ -337,6 +344,7 @@ export const CoachDashboard = () => {
                             </div>
                             <ChatList 
                                 currentUserId={profile?.id || ""} 
+                                isCoachMode={true}
                                 onSelectRoom={(id, name, photo) => setSelectedRoom({ id, name, photo })} 
                             />
                         </div>

@@ -4,12 +4,16 @@ import { User, MessageSquare, Loader2 } from 'lucide-react';
 
 interface ChatListProps {
     currentUserId: string;
+    isCoachMode?: boolean;
     onSelectRoom: (roomId: string, recipientName: string, recipientPhoto?: string) => void;
 }
 
-export const ChatList: React.FC<ChatListProps> = ({ currentUserId, onSelectRoom }) => {
+type FilterTab = "all" | "student" | "coach";
+
+export const ChatList: React.FC<ChatListProps> = ({ currentUserId, isCoachMode, onSelectRoom }) => {
     const [rooms, setRooms] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState<FilterTab>("all");
 
     useEffect(() => {
         loadRooms();
@@ -41,9 +45,29 @@ export const ChatList: React.FC<ChatListProps> = ({ currentUserId, onSelectRoom 
         );
     }
 
+    const filteredRooms = rooms.filter(room => {
+        if (filter === "all") return true;
+        if (filter === "coach") return room.is_counterpart_coach === true;
+        if (filter === "student") return room.is_counterpart_coach === false;
+        return true;
+    });
+
     return (
         <div style={listContainer}>
-            {rooms.map((room) => {
+            {isCoachMode && (
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', padding: '0 8px' }}>
+                    <button onClick={() => setFilter("all")} style={filter === "all" ? tabActive : tabInactive}>전체</button>
+                    <button onClick={() => setFilter("student")} style={filter === "student" ? tabActive : tabInactive}>학생</button>
+                    <button onClick={() => setFilter("coach")} style={filter === "coach" ? tabActive : tabInactive}>코치</button>
+                </div>
+            )}
+            
+            {filteredRooms.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center', opacity: 0.5, fontSize: '0.9rem' }}>
+                    해당하는 대화 내역이 없습니다.
+                </div>
+            ) : (
+                filteredRooms.map((room) => {
                 const isStudent = room.student_id === currentUserId;
                 const recipient = isStudent ? room.coach : room.student;
                 const recipientName = recipient?.name || '익명 사용자';
@@ -77,11 +101,15 @@ export const ChatList: React.FC<ChatListProps> = ({ currentUserId, onSelectRoom 
                     </div>
                 );
             })}
+            )}
         </div>
     );
 };
 
 // Styles
+const tabActive: React.CSSProperties = { flex: 1, padding: '10px', borderRadius: '10px', background: 'var(--color-primary)', color: 'white', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '0.8rem' };
+const tabInactive: React.CSSProperties = { flex: 1, padding: '10px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' };
+
 const listContainer: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '8px' };
 const roomItem: React.CSSProperties = { display: 'flex', gap: '14px', padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', transition: 'all 0.2s' };
 const avatar: React.CSSProperties = { width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 };

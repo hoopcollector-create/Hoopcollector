@@ -21,21 +21,24 @@ export const chatService = {
     /**
      * Finds an existing chat room between a student and coach or creates a new one.
      */
-    async getOrCreateRoom(studentId: string, coachId: string): Promise<string> {
-        // Try to find existing
+    async getOrCreateRoom(senderId: string, recipientId: string): Promise<string> {
+        // Enforce alphabetical sorting for consistent matching regardless of who initiates
+        const u1 = senderId < recipientId ? senderId : recipientId;
+        const u2 = senderId > recipientId ? senderId : recipientId;
+
+        // Try to find existing room by ANY combination of sender/recipient
         const { data: existing, error: findError } = await supabase
             .from('chat_rooms')
             .select('id')
-            .eq('student_id', studentId)
-            .eq('coach_id', coachId)
+            .or(`and(student_id.eq.${senderId},coach_id.eq.${recipientId}),and(student_id.eq.${recipientId},coach_id.eq.${senderId}),and(student_id.eq.${u1},coach_id.eq.${u2})`)
             .maybeSingle();
 
         if (existing) return existing.id;
 
-        // Create new if not found
+        // Create new if not found (u1 becomes student_id, u2 becomes coach_id consistently)
         const { data: created, error: createError } = await supabase
             .from('chat_rooms')
-            .insert({ student_id: studentId, coach_id: coachId })
+            .insert({ student_id: u1, coach_id: u2 })
             .select('id')
             .single();
 
@@ -107,17 +110,34 @@ export const chatService = {
      * Fetches all chat rooms for a user (either student or coach).
      */
     async getUserRooms(userId: string): Promise<any[]> {
-        const { data, error } = await supabase
+        const { data: rooms, error } = await supabase
             .from('chat_rooms')
             .select(`
                 *,
-                student:profiles!chat_rooms_student_id_fkey(name, photo_url),
-                coach:profiles!chat_rooms_coach_id_fkey(name, photo_url)
+                student:profiles!chat_rooms_student_id_fkey(id, name, photo_url),
+                coach:profiles!chat_rooms_coach_id_fkey(id, name, photo_url)
             `)
             .or(`student_id.eq.${userId},coach_id.eq.${userId}`)
             .order('last_message_at', { ascending: false });
 
         if (error) throw error;
-        return data;
+        if (!rooms || rooms.length === 0) return [];
+
+        // Find which counterpart is a coach
+        const counterpartIds = rooms.map(r => r.student_id === userId ? r.coach_id : r.student_id);
+        const { data: coaches } = await supabase
+            .from('coach_profiles')
+            .select('user_id')
+            .in('user_id', counterpartIds);
+
+        const coachIdSet = new Set(coaches?.map(c => c.user_id) || []);
+
+        return rooms.map(r => {
+            const counterpartId = r.student_id === userId ? r.coach_id : r.student_id;
+            return {
+                ...r,
+                is_counterpart_coach: coachIdSet.has(counterpartId)
+            };
+        });
     }
 };

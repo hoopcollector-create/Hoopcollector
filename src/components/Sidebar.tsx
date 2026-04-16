@@ -21,6 +21,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const [session, setSession] = useState<any>(null);
     const [isAdmin, setIsAdmin] = useState(false);
     const [isCoachRole, setIsCoachRole] = useState(false);
+    const [unreadChatCount, setUnreadChatCount] = useState(0);
+
     
     // Internal state fallback if not provided
     const [internalOpen, setInternalOpen] = useState(false);
@@ -38,14 +40,64 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
-            if (session) checkUserRoles(session.user.id);
-            else {
+            if (session) {
+                checkUserRoles(session.user.id);
+                fetchUnreadChats(session.user.id);
+            } else {
                 setIsAdmin(false);
                 setIsCoachRole(false);
+                setUnreadChatCount(0);
             }
         });
+
+        // Initialize chats for initial session load
+        supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+            if (currentSession) {
+                fetchUnreadChats(currentSession.user.id);
+                setupChatSubscription(currentSession.user.id);
+            }
+        });
+
         return () => subscription.unsubscribe();
     }, [appMode]);
+
+    let chatSubChannel: any = null;
+    
+    async function fetchUnreadChats(uid: string) {
+        // Fetch rooms first
+        const { data: rooms } = await supabase
+            .from('chat_rooms')
+            .select('id')
+            .or(`student_id.eq.${uid},coach_id.eq.${uid}`);
+            
+        if (!rooms || rooms.length === 0) return;
+        const roomIds = rooms.map(r => r.id);
+
+        const { count } = await supabase
+            .from('messages')
+            .select('*', { count: 'exact', head: true })
+            .in('room_id', roomIds)
+            .neq('sender_id', uid)
+            .eq('is_read', false);
+            
+        setUnreadChatCount(count || 0);
+    }
+
+    function setupChatSubscription(uid: string) {
+        if (chatSubChannel) return;
+        chatSubChannel = supabase.channel('sidebar-unreads')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload: any) => {
+                if (payload.new && payload.new.sender_id !== uid) {
+                    setUnreadChatCount(prev => prev + 1);
+                }
+            })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, (payload: any) => {
+                if (payload.new && payload.new.sender_id !== uid && payload.new.is_read) {
+                    setUnreadChatCount(prev => Math.max(0, prev - 1));
+                }
+            })
+            .subscribe();
+    }
 
     async function checkUserRoles(uid: string) {
         try {
@@ -198,9 +250,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <a href="https://www.instagram.com/hoop_collector/" target="_blank" rel="noreferrer" style={snsIconStyle}>
                             <Instagram size={18} />
                         </a>
-                        <a href="#" target="_blank" rel="noreferrer" style={snsIconStyle}>
+                        <Link to={appMode === 'coach' ? "/coach/dashboard?tab=messages" : "/dashboard?tab=messages"} onClick={() => setIsMobileOpen(false)} style={{ ...snsIconStyle, position: 'relative' }}>
                             <MessageCircle size={18} />
-                        </a>
+                            {unreadChatCount > 0 && (
+                                <span style={{ position: 'absolute', top: -4, right: -4, background: '#ef4444', color: 'white', fontSize: '9px', fontWeight: 900, borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #070708' }}>
+                                    {unreadChatCount > 9 ? '9+' : unreadChatCount}
+                                </span>
+                            )}
+                        </Link>
                         <a href="#" target="_blank" rel="noreferrer" style={snsIconStyle}>
                             <Users size={18} />
                         </a>

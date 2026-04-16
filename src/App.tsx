@@ -21,6 +21,7 @@ import { ClassJournalDetail } from './pages/ClassJournalDetail';
 import { MatchBoard } from './pages/MatchBoard';
 import { Terms } from './pages/Terms';
 import { CourtMap } from './pages/CourtMap';
+import { Messages } from './pages/Messages';
 
 const CoachFinancials = () => <div style={{ color: 'white', padding: 40 }}>내 정산내역 (준비중)</div>;
 
@@ -36,6 +37,7 @@ export const App = () => {
                 <Route path="/coach-detail/:slug" element={<AppLayout><CoachDetail /></AppLayout>} />
                 <Route path="/shop" element={<AppLayout><Shop /></AppLayout>} />
                 <Route path="/shop/:slug" element={<AppLayout><ShopDetail /></AppLayout>} />
+                <Route path="/messages" element={<AppLayout><Messages /></AppLayout>} />
                 
                 <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
                 <Route path="/journal/:id" element={<AppLayout><ClassJournalDetail /></AppLayout>} />

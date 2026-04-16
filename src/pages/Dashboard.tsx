@@ -12,7 +12,7 @@ import {
     calcAge, toISOStringFromKST, normalizePhone, clampInt 
 } from '../utils/dashboardHelpers';
 
-type MainTab = "home" | "request" | "history" | "cash" | "messages";
+type MainTab = "home" | "request" | "history" | "cash";
 
 // Subcomponents
 import { StudentHome } from '../components/dashboard/StudentHome';
@@ -104,7 +104,7 @@ export const Dashboard = () => {
             const tabParam = queryParams.get('tab') as MainTab;
             const typeParam = queryParams.get('type') as ClassType;
             
-            if (tabParam && ["home", "request", "history", "cash", "messages"].includes(tabParam)) {
+            if (tabParam && ["home", "request", "history", "cash"].includes(tabParam)) {
                 setMainTab(tabParam);
             }
             
@@ -115,17 +115,7 @@ export const Dashboard = () => {
             loadAll(session.user);
         });
         
-        // Handle direct chat opening from state
-        if (location.state?.openChat && location.state?.roomId) {
-            setMainTab("messages");
-            setSelectedRoom({
-                id: location.state.roomId,
-                name: location.state.recipientName,
-                photo: location.state.recipientPhoto
-            });
-            // Clear state to prevent re-opening on refresh
-            window.history.replaceState({}, document.title);
-        }
+        // Removed local chat routing logic, now uses /messages route directly
     }, [navigate, location]);
 
     async function ensureMyProfileExists(user: any) {
@@ -356,14 +346,13 @@ export const Dashboard = () => {
             {/* Nav Tabs - Responsive Grid */}
             <div style={{ 
                 display: 'grid', 
-                gridTemplateColumns: window.innerWidth < 400 ? 'repeat(auto-fit, minmax(60px, 1fr))' : 'repeat(5, 1fr)', 
+                gridTemplateColumns: window.innerWidth < 400 ? 'repeat(auto-fit, minmax(60px, 1fr))' : 'repeat(4, 1fr)', 
                 gap: 4, 
                 marginBottom: '1.5rem',
                 overflowX: 'auto',
                 paddingBottom: '8px'
             }}>
                 <TabBtn id="home" icon={UserIcon} active={mainTab==='home'} onClick={setMainTab} label="홈" />
-                <TabBtn id="messages" icon={MessageSquare} active={mainTab==='messages'} onClick={setMainTab} label="채팅" />
                 <TabBtn id="request" icon={Compass} active={mainTab==='request'} onClick={setMainTab} label="예약" />
                 <TabBtn id="history" icon={History} active={mainTab==='history'} onClick={setMainTab} label="내역" />
                 <TabBtn id="cash" icon={Wallet} active={mainTab==='cash'} onClick={setMainTab} label="지갑" />
@@ -406,30 +395,6 @@ export const Dashboard = () => {
                     />
                 )}
 
-                {mainTab === "messages" && (
-                    <div style={{ height: 'calc(100vh - 250px)', display: 'grid', gridTemplateColumns: selectedRoom ? (window.innerWidth <= 768 ? '1fr' : '320px 1fr') : '1fr', gap: 20 }}>
-                        {(!selectedRoom || window.innerWidth > 768) && (
-                            <div style={{ overflowY: 'auto' }}>
-                                <h2 style={{ fontSize: 22, fontWeight: 900, marginBottom: 16 }}>메시지</h2>
-                                <ChatList 
-                                    currentUserId={profile?.id || ""} 
-                                    onSelectRoom={(id, name, photo) => setSelectedRoom({ id, name, photo })} 
-                                />
-                            </div>
-                        )}
-                        {selectedRoom && (
-                            <div style={{ height: '100%' }}>
-                                <ChatWindow 
-                                    roomId={selectedRoom.id}
-                                    currentUserId={profile?.id || ""}
-                                    recipientName={selectedRoom.name}
-                                    recipientPhoto={selectedRoom.photo}
-                                    onBack={window.innerWidth <= 768 ? () => setSelectedRoom(null) : undefined}
-                                />
-                            </div>
-                        )}
-                    </div>
-                )}
                 {mainTab === "cash" && (
                     <StudentCash
                         loading={loading} points={points} pending={pending} selectedClass={selectedClass} setSelectedClass={setSelectedClass}

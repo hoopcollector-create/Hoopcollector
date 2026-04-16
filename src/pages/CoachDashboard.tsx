@@ -3,10 +3,6 @@ import { supabase } from '../lib/supabase';
 import { LayoutDashboard, Target, Calendar, CreditCard, TrendingUp, Users, Clock, ChevronRight, Award, Edit3, Save, X, Sparkles, MapPin, MessageSquare, User as UserIcon } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { ImageUploadField } from '../components/admin/ImageUploadField';
-import { ChatList } from '../components/chat/ChatList';
-import { ChatWindow } from '../components/chat/ChatWindow';
-
-type CoachTab = "home" | "messages";
 
 type Region = {
     id: string;
@@ -26,8 +22,6 @@ export const CoachDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [msg, setMsg] = useState("");
-    const [activeTab, setActiveTab] = useState<CoachTab>("home");
-    const [selectedRoom, setSelectedRoom] = useState<{id: string, name: string, photo?: string} | null>(null);
 
     // Edit states
     const [isEditing, setIsEditing] = useState(false);
@@ -40,12 +34,6 @@ export const CoachDashboard = () => {
     });
 
     useEffect(() => {
-        const queryParams = new URLSearchParams(location.search);
-        const tabParam = queryParams.get('tab') as CoachTab;
-        if (tabParam && ["home", "messages"].includes(tabParam)) {
-            setActiveTab(tabParam);
-        }
-        
         loadData();
     }, [location.search]);
 
@@ -160,25 +148,6 @@ export const CoachDashboard = () => {
                 </div>
             </div>
             
-            {/* Tab Navigation */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '2.5rem', background: 'rgba(255,255,255,0.02)', padding: '6px', borderRadius: '16px', width: 'fit-content' }}>
-                <button 
-                    onClick={() => setActiveTab("home")} 
-                    style={{ ...tabBtn, background: activeTab === 'home' ? 'var(--color-coach)' : 'transparent', color: activeTab === 'home' ? 'white' : 'rgba(255,255,255,0.4)' }}
-                >
-                    <LayoutDashboard size={18} style={{ marginRight: 8 }} /> DASHBOARD
-                </button>
-                <button 
-                    onClick={() => setActiveTab("messages")} 
-                    style={{ ...tabBtn, background: activeTab === 'messages' ? 'var(--color-coach)' : 'transparent', color: activeTab === 'messages' ? 'white' : 'rgba(255,255,255,0.4)' }}
-                >
-                    <MessageSquare size={18} style={{ marginRight: 8 }} /> MESSAGES
-                </button>
-            </div>
-
-            {activeTab === "home" ? (
-                <>
-
             {/* Progression Bar */}
             <div className="card-minimal" style={{ marginBottom: '3rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px', alignItems: 'center' }}>
@@ -332,36 +301,6 @@ export const CoachDashboard = () => {
                     </ul>
                 </div>
             </div>
-        </>
-        ) : (
-                /* Messages Tab Content */
-                <div style={{ height: 'calc(100vh - 300px)', display: 'grid', gridTemplateColumns: selectedRoom ? (window.innerWidth <= 768 ? '1fr' : '350px 1fr') : '1fr', gap: '2rem' }}>
-                    {(!selectedRoom || window.innerWidth > 768) && (
-                        <div style={{ overflowY: 'auto' }}>
-                            <div style={{ marginBottom: '1.5rem' }}>
-                                <h2 style={{ fontSize: '1.5rem', fontWeight: 900 }}>학생 메시지</h2>
-                                <p style={{ fontSize: '0.85rem', opacity: 0.4 }}>수업 관련 문의 및 대화 목록입니다.</p>
-                            </div>
-                            <ChatList 
-                                currentUserId={profile?.id || ""} 
-                                isCoachMode={true}
-                                onSelectRoom={(id, name, photo) => setSelectedRoom({ id, name, photo })} 
-                            />
-                        </div>
-                    )}
-                    {selectedRoom && (
-                        <div style={{ height: '100%' }}>
-                            <ChatWindow 
-                                roomId={selectedRoom.id}
-                                currentUserId={profile?.id || ""}
-                                recipientName={selectedRoom.name}
-                                recipientPhoto={selectedRoom.photo}
-                                onBack={window.innerWidth <= 768 ? () => setSelectedRoom(null) : undefined}
-                            />
-                        </div>
-                    )}
-                </div>
-            )}
         </div>
     );
 };

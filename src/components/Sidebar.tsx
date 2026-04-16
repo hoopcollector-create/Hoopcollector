@@ -123,6 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     const studentMenuItems = [
         { name: "대시보드", icon: Home, link: "/dashboard" },
+        { name: "메시지 보관함", icon: MessageCircle, link: "/messages" },
         { name: "매칭 및 모임", icon: Target, link: "/match" },
         { name: "수업 보러가기", icon: Compass, link: "/class-info" },
         { name: "훕콜렉터 스토어", icon: ShoppingBag, link: "/shop" },
@@ -135,6 +136,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     const coachMenuItems = [
         { name: "코치 대시보드", icon: LayoutDashboard, link: "/coach/dashboard" },
+        { name: "메시지 보관함", icon: MessageCircle, link: "/messages" },
         { name: "매칭 및 구인", icon: Target, link: "/match" },
         { name: "수업 요청 관리", icon: Target, link: "/coach/requests" },
         { name: "스케줄 관리", icon: Calendar, link: "/coach/schedule" },
@@ -215,10 +217,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             return (
                                 <Link key={item.link} to={item.link} onClick={() => setIsMobileOpen(false)} style={{
                                     display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 16px', borderRadius: '12px',
-                                    background: isSelected ? 'rgba(255, 255, 255, 0.05)' : 'transparent', color: isSelected ? 'white' : 'rgba(255,255,255,0.4)', textDecoration: 'none', fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s'
+                                    background: isSelected ? 'rgba(255, 255, 255, 0.05)' : 'transparent', color: isSelected ? 'white' : 'rgba(255,255,255,0.4)', textDecoration: 'none', fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s', position: 'relative'
                                 }}>
                                     <item.icon size={18} style={{ opacity: isSelected ? 1 : 0.5 }} />
                                     {item.name}
+                                    {item.link === "/messages" && unreadChatCount > 0 && (
+                                        <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: '#ef4444', color: 'white', fontSize: '10px', fontWeight: 900, borderRadius: '100px', padding: '2px 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            {unreadChatCount > 9 ? '9+' : unreadChatCount}
+                                        </span>
+                                    )}
                                 </Link>
                             );
                         })}
@@ -250,14 +257,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <a href="https://www.instagram.com/hoop_collector/" target="_blank" rel="noreferrer" style={snsIconStyle}>
                             <Instagram size={18} />
                         </a>
-                        <Link to={appMode === 'coach' ? "/coach/dashboard?tab=messages" : "/dashboard?tab=messages"} onClick={() => setIsMobileOpen(false)} style={{ ...snsIconStyle, position: 'relative' }}>
-                            <MessageCircle size={18} />
-                            {unreadChatCount > 0 && (
-                                <span style={{ position: 'absolute', top: -4, right: -4, background: '#ef4444', color: 'white', fontSize: '9px', fontWeight: 900, borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #070708' }}>
-                                    {unreadChatCount > 9 ? '9+' : unreadChatCount}
-                                </span>
-                            )}
-                        </Link>
                         <a href="#" target="_blank" rel="noreferrer" style={snsIconStyle}>
                             <Users size={18} />
                         </a>

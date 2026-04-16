@@ -100,7 +100,7 @@ export const ChatList: React.FC<ChatListProps> = ({ currentUserId, isCoachMode, 
                         </div>
                     </div>
                 );
-            })}
+            })
             )}
         </div>
     );

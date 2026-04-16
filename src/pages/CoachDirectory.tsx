@@ -167,10 +167,10 @@ export const CoachDirectory = () => {
                 ) : filteredRows.length === 0 ? (
                     <div style={emptyBox}>코치를 찾을 수 없습니다.</div>
                 ) : (
-                    <div style={gridStyle}>
+                    <div className="coach-grid">
                         {filteredRows.map((coach) => (
                             <Link key={coach.coach_id} to={`/coach-detail/${coach.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                                <article className="card-minimal" style={{ padding: 0, height: '100%', cursor: 'pointer', transition: 'transform 0.2s' }}>
+                                <article className="card-minimal hover-lift" style={{ padding: 0, height: '100%', cursor: 'pointer' }}>
                                     <div style={thumbWrap}>
                                         {coach.photo_url ? (
                                             <img src={coach.photo_url} alt={coach.display_name ?? ""} style={thumb} />
@@ -227,7 +227,6 @@ const chipRow: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '
 const chipOn: React.CSSProperties = { padding: '8px 18px', borderRadius: '100px', background: 'white', color: 'black', border: 'none', fontSize: '0.8rem', fontWeight: 900, cursor: 'pointer' };
 const chipOff: React.CSSProperties = { padding: '8px 18px', borderRadius: '100px', background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.06)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' };
 
-const gridStyle: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '30px' };
 const thumbWrap: React.CSSProperties = { position: 'relative', width: '100%', aspectRatio: '1 / 1', overflow: 'hidden', background: '#0a0a0b' };
 const thumb: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'cover' };
 const thumbFallback: React.CSSProperties = { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', fontWeight: 900, color: 'rgba(255,255,255,0.05)' };

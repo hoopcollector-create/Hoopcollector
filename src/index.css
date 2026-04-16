@@ -278,6 +278,11 @@ body.theme-student {
     max-width: 100% !important;
   }
 
+  .coach-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+
   /* Heading size normalization for mobile */
   h1 { font-size: var(--font-2xl) !important; }
   h2 { font-size: var(--font-xl) !important; }
@@ -339,4 +344,11 @@ body.theme-student {
 .hover-lift:hover {
   transform: translateY(-4px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Coach Specific Grid */
+.coach-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
 }

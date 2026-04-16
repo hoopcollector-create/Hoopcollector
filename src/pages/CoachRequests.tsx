@@ -19,7 +19,9 @@ type ClassRequest = {
     created_at: string;
     student_name?: string;
     student_phone?: string;
+    reject_reason?: string | null;
 };
+
 
 export const CoachRequests = () => {
     const [requests, setRequests] = useState<ClassRequest[]>([]);
@@ -27,6 +29,9 @@ export const CoachRequests = () => {
     const [msg, setMsg] = useState("");
     const [selectedRequest, setSelectedRequest] = useState<ClassRequest | null>(null);
     const [showJournalModal, setShowJournalModal] = useState(false);
+    const [rejectingId, setRejectingId] = useState<string | null>(null);
+    const [rejectReason, setRejectReason] = useState<string>("일정 조율 불가(시간/장소)");
+
 
     useEffect(() => {
         loadRequests();
@@ -70,17 +75,35 @@ export const CoachRequests = () => {
         }
     }
 
-    async function handleAction(id: string, newStatus: RequestStatus) {
+    async function handleAction(id: string, newStatus: RequestStatus, reason?: string) {
         setLoading(true);
         try {
+            const updates: any = { status: newStatus };
+            if (newStatus === 'rejected' && reason) {
+                updates.reject_reason = reason;
+            }
+
             const { error } = await supabase
                 .from('class_requests')
-                .update({ status: newStatus })
+                .update(updates)
                 .eq('id', id);
 
             if (error) throw error;
+
+            if (newStatus === 'accepted' && selectedRequest) {
+                // Auto reject overlapping requests
+                await supabase
+                    .from('class_requests')
+                    .update({ status: 'rejected', reject_reason: '코치님이 해당 시간대에 다른 예약 일정을 확정했습니다.' })
+                    .eq('coach_id', selectedRequest.coach_id)
+                    .eq('requested_start', selectedRequest.requested_start)
+                    .neq('id', id)
+                    .eq('status', 'requested');
+            }
+
             setMsg(`요청이 ${newStatus === 'accepted' ? '승인' : '거절'}되었습니다.`);
             setSelectedRequest(null);
+            setRejectingId(null);
             await loadRequests();
         } catch (e: any) {
             setMsg(e.message);
@@ -88,6 +111,7 @@ export const CoachRequests = () => {
             setLoading(false);
         }
     }
+
 
     const fmtDate = (iso: string) => new Date(iso).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', weekday: 'short' });
 
@@ -176,12 +200,33 @@ export const CoachRequests = () => {
                                 </div>
                             </div>
 
-                            {selectedRequest.status === 'requested' && (
+                            {selectedRequest.status === 'requested' && !rejectingId && (
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
                                     <button onClick={() => handleAction(selectedRequest.id, 'accepted')} style={{ ...actionBtn, background: 'var(--color-primary)' }}><Check size={18} style={{ marginRight: 8 }} /> 수업 승인</button>
-                                    <button onClick={() => handleAction(selectedRequest.id, 'rejected')} style={{ ...actionBtn, background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}><X size={18} style={{ marginRight: 8 }} /> 거절</button>
+                                    <button onClick={() => setRejectingId(selectedRequest.id)} style={{ ...actionBtn, background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}><X size={18} style={{ marginRight: 8 }} /> 거절</button>
                                 </div>
                             )}
+
+                            {rejectingId === selectedRequest.id && (
+                                <div style={{ marginTop: '1rem', padding: '16px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#ef4444', marginBottom: '8px' }}>거절 사유 선택</div>
+                                    <select 
+                                        value={rejectReason} 
+                                        onChange={e => setRejectReason(e.target.value)}
+                                        style={{ width: '100%', padding: '10px', borderRadius: '8px', background: 'rgba(0,0,0,0.5)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '12px', outline: 'none' }}
+                                    >
+                                        <option>일정 조율 불가(시간/장소)</option>
+                                        <option>코치 개인 사정</option>
+                                        <option>현재 수강생 초과로 인한 마감</option>
+                                        <option>기타</option>
+                                    </select>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button onClick={() => setRejectingId(null)} style={{ flex: 1, padding: '10px', borderRadius: '8px', background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}>취소</button>
+                                        <button onClick={() => handleAction(selectedRequest.id, 'rejected', rejectReason)} style={{ flex: 1, padding: '10px', borderRadius: '8px', background: '#ef4444', color: 'white', border: 'none', fontWeight: 800, cursor: 'pointer' }}>거절 확정</button>
+                                    </div>
+                                </div>
+                            )}
+
 
                             {selectedRequest.status === 'accepted' && (
                                 <div style={{ display: 'grid', gap: '1rem', marginTop: '1rem' }}>

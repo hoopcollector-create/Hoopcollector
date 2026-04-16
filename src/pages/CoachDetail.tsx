@@ -4,6 +4,8 @@ import { supabase } from "../lib/supabase";
 import { ArrowLeft, MapPin, Award, CheckCircle2, Calendar, MessageSquare, Star, Sparkles, ChevronRight, Save, X, Edit2, Plus } from "lucide-react";
 import { ImageUploadField } from "../components/admin/ImageUploadField";
 import { chatService } from "../lib/chatService";
+import { DirectBookingModal } from "../components/dashboard/DirectBookingModal";
+
 
 type PublicCoach = {
     coach_id: string;
@@ -33,6 +35,7 @@ export const CoachDetail = () => {
     // Auth & Edit State
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [showBookingModal, setShowBookingModal] = useState(false);
     const [saving, setSaving] = useState(false);
     const [allRegions, setAllRegions] = useState<Region[]>([]);
     const [editData, setEditData] = useState({
@@ -249,7 +252,7 @@ export const CoachDetail = () => {
 
                         {!isEditing && (
                             <div style={ctaRow}>
-                                <button style={primaryBtn} onClick={() => navigate('/dashboard')}>
+                                <button style={primaryBtn} onClick={() => setShowBookingModal(true)}>
                                     BOOK A CLASS
                                 </button>
                                 <button style={secondaryBtn} onClick={handleSendMessage} disabled={loading}>
@@ -321,9 +324,22 @@ export const CoachDetail = () => {
                     )}
                 </div>
             </div>
+
+            {showBookingModal && coach && (
+                <DirectBookingModal 
+                    coachId={coach.coach_id} 
+                    coachName={coach.display_name ?? '코치'} 
+                    onClose={() => setShowBookingModal(false)}
+                    onSuccess={() => {
+                        setShowBookingModal(false);
+                        navigate('/dashboard?tab=history');
+                    }}
+                />
+            )}
         </div>
     );
 };
+
 
 /* Styles */
 const pageWrap: React.CSSProperties = { color: "white", paddingBottom: "100px", maxWidth: '1200px', margin: '0 auto' };

@@ -20,8 +20,10 @@ import { Home } from './pages/Home';
 import { ClassJournalDetail } from './pages/ClassJournalDetail';
 import { MatchBoard } from './pages/MatchBoard';
 import { Terms } from './pages/Terms';
+import { CourtMap } from './pages/CourtMap';
 
 const CoachFinancials = () => <div style={{ color: 'white', padding: 40 }}>내 정산내역 (준비중)</div>;
+
 
 export const App = () => {
     return (
@@ -51,8 +53,10 @@ export const App = () => {
                 
                 <Route path="/match" element={<AppLayout><MatchBoard /></AppLayout>} />
                 <Route path="/terms" element={<AppLayout><Terms /></AppLayout>} />
+                <Route path="/court-map" element={<AppLayout><CourtMap /></AppLayout>} />
                 
                 <Route path="/admin/*" element={<AppLayout><AdminDashboard /></AppLayout>} />
+
             </Routes>
         </BrowserRouter>
     );

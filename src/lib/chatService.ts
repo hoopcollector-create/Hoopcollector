@@ -75,14 +75,52 @@ export const chatService = {
 
         if (msgError) throw msgError;
 
-        // 2. Update room metadata (for sorting chat lists)
+        // 2. Update room metadata (for sorting chat lists) and revive room if previously left
         await supabase
             .from('chat_rooms')
             .update({
                 last_message: content,
-                last_message_at: new Date().toISOString()
+                last_message_at: new Date().toISOString(),
+                left_student_at: null,
+                left_coach_at: null
             })
             .eq('id', roomId);
+    },
+
+    /**
+     * Leaves a chat room. Sets left_xxx_at timestamp so it hides from the user's ChatList.
+     */
+    async leaveRoom(roomId: string, userId: string): Promise<void> {
+        const { data: room, error: fetchErr } = await supabase.from('chat_rooms').select('student_id, coach_id').eq('id', roomId).single();
+        if (fetchErr || !room) throw fetchErr;
+
+        const updateData: any = {};
+        if (room.student_id === userId) {
+            updateData.left_student_at = new Date().toISOString();
+        } else if (room.coach_id === userId) {
+            updateData.left_coach_at = new Date().toISOString();
+        }
+
+        if (Object.keys(updateData).length > 0) {
+            await supabase.from('chat_rooms').update(updateData).eq('id', roomId);
+        }
+    },
+
+    /**
+     * Delete abandoned 30+ days chat rooms on client-side (Passive garbage collection).
+     * relies on the database RLS policy to safely only allow deletion of 30-day abandoned rows.
+     */
+    async cleanupAbandonedRooms() {
+        try {
+            await supabase.from('chat_rooms')
+                .delete()
+                .not('left_student_at', 'is', null)
+                .not('left_coach_at', 'is', null)
+                .lt('left_student_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+                .lt('left_coach_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+        } catch (e) {
+            // fail silently for passive background tasks
+        }
     },
 
     /**
@@ -110,6 +148,9 @@ export const chatService = {
      * Fetches all chat rooms for a user (either student or coach).
      */
     async getUserRooms(userId: string): Promise<any[]> {
+        // passively fire the background garbage collection for abandoned 30+ days rooms
+        this.cleanupAbandonedRooms();
+
         const { data: rooms, error } = await supabase
             .from('chat_rooms')
             .select(`
@@ -117,7 +158,7 @@ export const chatService = {
                 student:profiles!chat_rooms_student_id_fkey(id, name, photo_url),
                 coach:profiles!chat_rooms_coach_id_fkey(id, name, photo_url)
             `)
-            .or(`student_id.eq.${userId},coach_id.eq.${userId}`)
+            .or(`and(student_id.eq.${userId},left_student_at.is.null),and(coach_id.eq.${userId},left_coach_at.is.null)`)
             .order('last_message_at', { ascending: false });
 
         if (error) throw error;

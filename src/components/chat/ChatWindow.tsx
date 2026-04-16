@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { chatService, ChatMessage } from '../../lib/chatService';
-import { Send, User, ChevronLeft, Loader2 } from 'lucide-react';
+import { Send, User, ChevronLeft, Loader2, LogOut } from 'lucide-react';
 
 interface ChatWindowProps {
     roomId: string;
@@ -75,6 +75,28 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         }
     }
 
+    async function handleLeaveRoom() {
+        if (!window.confirm("🚨 정말 채팅방을 나가시겠습니까?\n\n나가시면 채팅 대화 목록에서 영구히 삭제되며, 이전 단락 메시지들의 자체 복구가 어렵습니다.\n\n(단, 상대방이 다시 내게 새로운 메시지를 전송할 경우 방이 다시 활성화됩니다.)")) {
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await chatService.leaveRoom(roomId, currentUserId);
+            // After successfully leaving, call onBack to hide window, or just refresh to re-render ChatList
+            if (onBack) {
+                onBack();
+                window.location.reload(); 
+            } else {
+                window.location.reload();
+            }
+        } catch (error) {
+            console.error('Failed to leave room:', error);
+            alert('채팅방 나가기에 실패했습니다.');
+            setLoading(false);
+        }
+    }
+
     if (loading) {
         return (
             <div style={container}>
@@ -103,6 +125,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     <div style={name}>{recipientName}</div>
                     <div style={status}>실시간 대화 중</div>
                 </div>
+                <button onClick={handleLeaveRoom} style={leaveBtn} title="채팅방 나가기">
+                    <LogOut size={18} />
+                </button>
             </div>
 
             {/* Messages Area */}
@@ -170,3 +195,4 @@ const input: React.CSSProperties = { flex: 1, background: 'rgba(255,255,255,0.05
 const sendBtn: React.CSSProperties = { width: '40px', height: '40px', borderRadius: '12px', background: 'var(--color-primary)', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' };
 const empty: React.CSSProperties = { textAlign: 'center', marginTop: '40px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.3)' };
 const loaderWrap: React.CSSProperties = { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' };
+const leaveBtn: React.CSSProperties = { background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '8px', display: 'flex', alignItems: 'center', borderRadius: '8px', transition: 'background 0.2s' };

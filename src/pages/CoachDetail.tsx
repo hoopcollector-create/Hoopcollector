@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabase";
 import { ArrowLeft, MapPin, Award, CheckCircle2, Calendar, MessageSquare, Star, Sparkles, ChevronRight, Save, X, Edit2, Plus } from "lucide-react";
 import { ImageUploadField } from "../components/admin/ImageUploadField";
 import { chatService } from "../lib/chatService";
-import { DirectBookingModal } from "../components/dashboard/DirectBookingModal";
+import { UnifiedBookingForm } from "../components/dashboard/UnifiedBookingForm";
 
 
 type PublicCoach = {
@@ -325,8 +325,6 @@ export const CoachDetail = () => {
                 </div>
             </div>
 
-import { UnifiedBookingForm } from "../components/dashboard/UnifiedBookingForm";
-// ...
             {showBookingModal && coach && (
                 <UnifiedBookingForm 
                     targetCoachId={coach.coach_id} 

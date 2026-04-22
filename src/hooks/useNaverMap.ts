@@ -11,6 +11,7 @@ export const useNaverMap = () => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        // v1.0.2: Force rebuild for Vercel sync & reliable ID loading
         const clientId = import.meta.env.VITE_NAVER_MAP_CLIENT_ID || 'v5mt48x1bn';
         const scriptId = 'naver-map-script';
         

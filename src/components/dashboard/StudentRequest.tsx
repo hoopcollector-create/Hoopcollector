@@ -75,21 +75,26 @@ const input: React.CSSProperties = {
     padding: "14px", 
     borderRadius: 14, 
     border: "1px solid rgba(255,255,255,.12)", 
-    background: "rgba(255,255,255,.1)", // Slightly lighter for readability
+    background: "rgba(255,255,255,.1)", 
     color: "white", 
     outline: "none", 
     boxSizing: "border-box", 
     fontSize: 14,
-    colorScheme: 'dark' // Ensures browser-native date/time icons are visible
+    colorScheme: 'dark'
 };
 
 const selectStyle: React.CSSProperties = {
     ...input,
-    background: "#2a2a2d", // Grey background as requested
+    background: "#2a2a2d", // Dark grey background
+    appearance: "none", // Remove OS default styling
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "right 12px center",
+    backgroundSize: "16px",
     cursor: "pointer"
 };
 
 const btnPrimary: React.CSSProperties = { width: "100%", padding: "14px", borderRadius: 14, border: "none", background: "white", color: "black", cursor: "pointer", fontWeight: 800, fontSize: 15 };
 const sectionLabel: React.CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: 0.6, textTransform: "uppercase", color: "rgba(255,255,255,.62)" };
-const tabOn: React.CSSProperties = { padding: "12px 10px", borderRadius: 14, border: "none", background: "#ffffff", color: "#000000", cursor: "pointer", fontWeight: 800, fontSize: 14 };
-const tabOff: React.CSSProperties = { padding: "12px 10px", borderRadius: 14, border: "1px solid rgba(255,255,255,.10)", background: "rgba(255,255,255,.04)", color: "rgba(255,255,255,.5)", cursor: "pointer", fontWeight: 700, fontSize: 14 };
+const tabOn: React.CSSProperties = { padding: "12px 10px", borderRadius: 14, border: "none", background: "var(--color-primary)", color: "#ffffff", cursor: "pointer", fontWeight: 800, fontSize: 14 };
+const tabOff: React.CSSProperties = { padding: "12px 10px", borderRadius: 14, border: "1px solid rgba(255,255,255,0.10)", background: "rgba(255,255,255,.04)", color: "rgba(255,255,255,.5)", cursor: "pointer", fontWeight: 700, fontSize: 14 };

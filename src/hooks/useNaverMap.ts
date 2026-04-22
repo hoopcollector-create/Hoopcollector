@@ -14,7 +14,8 @@ export const useNaverMap = () => {
             return;
         }
 
-        const clientId = import.meta.env.VITE_NAVER_MAP_CLIENT_ID;
+        // .env에서 먼저 찾고, 없으면 사용자가 알려준 ID를 직접 사용 (확실한 연동 보장)
+        const clientId = import.meta.env.VITE_NAVER_MAP_CLIENT_ID || 'v5mt48x1bn';
         
         if (!clientId || clientId === 'YOUR_CLIENT_ID') {
             const msg = "VITE_NAVER_MAP_CLIENT_ID가 설정되지 않았습니다. .env 파일을 확인해 주세요.";

@@ -52,9 +52,9 @@ export const StudentRequest = ({
             </div>
             <div>
                 <div style={sectionLabel}>구/시 지역</div>
-                <select value={regionId} onChange={e => setRegionId(e.target.value)} style={input}>
+                <select value={regionId} onChange={e => setRegionId(e.target.value)} style={selectStyle}>
                     <option value="">선택</option>
-                    {regions.map((r: Region) => <option key={r.id} value={r.id}>{r.display_name}</option>)}
+                    {regions.map((r: Region) => <option key={r.id} value={r.id} style={{ background: '#2a2a2d' }}>{r.display_name}</option>)}
                 </select>
             </div>
             <div>
@@ -70,7 +70,25 @@ export const StudentRequest = ({
     );
 };
 
-const input: React.CSSProperties = { width: "100%", padding: "14px", borderRadius: 14, border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.07)", color: "white", outline: "none", boxSizing: "border-box", fontSize: 14 };
+const input: React.CSSProperties = { 
+    width: "100%", 
+    padding: "14px", 
+    borderRadius: 14, 
+    border: "1px solid rgba(255,255,255,.12)", 
+    background: "rgba(255,255,255,.1)", // Slightly lighter for readability
+    color: "white", 
+    outline: "none", 
+    boxSizing: "border-box", 
+    fontSize: 14,
+    colorScheme: 'dark' // Ensures browser-native date/time icons are visible
+};
+
+const selectStyle: React.CSSProperties = {
+    ...input,
+    background: "#2a2a2d", // Grey background as requested
+    cursor: "pointer"
+};
+
 const btnPrimary: React.CSSProperties = { width: "100%", padding: "14px", borderRadius: 14, border: "none", background: "white", color: "black", cursor: "pointer", fontWeight: 800, fontSize: 15 };
 const sectionLabel: React.CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: 0.6, textTransform: "uppercase", color: "rgba(255,255,255,.62)" };
 const tabOn: React.CSSProperties = { padding: "12px 10px", borderRadius: 14, border: "none", background: "#ffffff", color: "#000000", cursor: "pointer", fontWeight: 800, fontSize: 14 };

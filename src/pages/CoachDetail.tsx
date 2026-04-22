@@ -325,11 +325,15 @@ export const CoachDetail = () => {
                 </div>
             </div>
 
+import { UnifiedBookingForm } from "../components/dashboard/UnifiedBookingForm";
+// ...
             {showBookingModal && coach && (
-                <DirectBookingModal 
-                    coachId={coach.coach_id} 
-                    coachName={coach.display_name ?? '코치'} 
-                    onClose={() => setShowBookingModal(false)}
+                <UnifiedBookingForm 
+                    targetCoachId={coach.coach_id} 
+                    targetCoachName={coach.display_name ?? '코치'} 
+                    regions={allRegions}
+                    isModal={true}
+                    onCancel={() => setShowBookingModal(false)}
                     onSuccess={() => {
                         setShowBookingModal(false);
                         navigate('/dashboard?tab=history');

@@ -18,7 +18,7 @@ type MainTab = "home" | "request" | "history" | "cash";
 import { StudentHome } from '../components/dashboard/StudentHome';
 import { ChatList } from '../components/chat/ChatList';
 import { ChatWindow } from '../components/chat/ChatWindow';
-import { StudentRequest } from '../components/dashboard/StudentRequest';
+import { UnifiedBookingForm } from '../components/dashboard/UnifiedBookingForm';
 import { StudentHistory } from '../components/dashboard/StudentHistory';
 import { StudentCash } from '../components/dashboard/StudentCash';
 import { ShippingManager } from '../components/dashboard/ShippingManager';
@@ -70,16 +70,6 @@ export const Dashboard = () => {
     
     // Chat States
     const [selectedRoom, setSelectedRoom] = useState<{id: string, name: string, photo?: string} | null>(null);
-
-    // Request Fields
-    const [classType, setClassType] = useState<ClassType>("A"); 
-    const [date, setDate] = useState(""); 
-    const [time, setTime] = useState("");
-    const [regionId, setRegionId] = useState(""); 
-    const [regions, setRegions] = useState<Region[]>([]);
-    const [courtName, setCourtName] = useState(""); 
-    const [address, setAddress] = useState(""); 
-    const [note, setNote] = useState("");
 
     // Cash Fields
     const [products, setProducts] = useState<Product[]>([]); 
@@ -219,30 +209,6 @@ export const Dashboard = () => {
         } catch (e: any) { setMsg(e?.message || "저장 실패") } finally { setLoading(false) }
     }
 
-    async function submitRequest() {
-        if (!session) return setMsg("로그인이 필요합니다.");
-        const savedPhone = normalizePhone(String(profile?.phone ?? ""));
-        if (!savedPhone) return setMsg("전화번호를 먼저 내 계정에서 저장해 주세요.");
-        if (!date || !time) return setMsg("날짜와 시간을 선택해 주세요.");
-        if (!regionId) return setMsg("수업 지역을 선택해 주세요.");
-        if (!address.trim()) return setMsg("주소를 입력해 주세요.");
-        if ((tickets[classType] ?? 0) <= 0) return setMsg(`Class ${classType} 티켓이 없습니다.`);
-
-        let iso; try { iso = toISOStringFromKST(date, time) } catch (e: any) { return setMsg(e?.message) }
-        const fullAddress = courtName.trim() ? `${courtName.trim()} / ${address.trim()}` : address.trim();
-
-        setLoading(true);
-        const { error } = await supabase.rpc("request_class", {
-            p_class_type: classType, p_requested_start: iso, p_duration_min: FIXED_DURATION_MIN, p_address: fullAddress, p_note: note.trim() || null, p_ticket_cost: 1, p_region_id: regionId
-        });
-        setLoading(false);
-        if (error) return setMsg(`신청 실패: ${error.message}`);
-        setMsg("수업 신청 완료\n60분 수업 / 티켓 1장이 선차감되었습니다.");
-        resetRequestForm(); setMainTab("history"); refreshStudentData();
-    }
-
-    function resetRequestForm() { setClassType("A"); setDate(""); setTime(""); setRegionId(""); setCourtName(""); setAddress(""); setNote(""); }
-
     async function cancelRequest(requestId: string) {
         if (!session) return; setLoading(true); setMsg("");
         const { error } = await supabase.rpc("cancel_class_request", { p_request_id: requestId });
@@ -379,11 +345,13 @@ export const Dashboard = () => {
                     </>
                 )}
                 {mainTab === "request" && (
-                    <StudentRequest
-                        loading={loading} tickets={tickets} classType={classType} setClassType={setClassType}
-                        date={date} setDate={setDate} time={time} setTime={setTime} regionId={regionId} setRegionId={setRegionId}
-                        regions={regions} courtName={courtName} setCourtName={setCourtName} address={address} setAddress={setAddress}
-                        note={note} setNote={setNote} submitRequest={submitRequest}
+                    <UnifiedBookingForm
+                        tickets={tickets}
+                        regions={regions}
+                        onSuccess={() => {
+                            setMainTab("history");
+                            refreshStudentData();
+                        }}
                     />
                 )}
                 {mainTab === "history" && (

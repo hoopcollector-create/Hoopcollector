@@ -57,8 +57,8 @@ export const CoachDetail = () => {
     }
 
     async function loadRegions() {
-        const { data } = await supabase.from('service_regions').select('id, display_name').eq('active', true).order('display_name');
-        setAllRegions(data || []);
+        const { data } = await supabase.from('service_regions').select('*').eq('active', true).order('display_name');
+        setAllRegions((data as Region[]) || []);
     }
 
     async function loadCoach(targetSlug: string) {

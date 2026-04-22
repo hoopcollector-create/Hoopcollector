@@ -248,7 +248,16 @@ const modalOverlay: React.CSSProperties = { position: 'fixed', top: 0, left: 0, 
 const modalContent: React.CSSProperties = { width: '100%', maxWidth: '600px', padding: '2rem', border: '1px solid rgba(255,255,255,0.1)', background: 'var(--bg-surface-L1)' };
 const closeBtn: React.CSSProperties = { background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' };
 const label: React.CSSProperties = { fontSize: '0.75rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' };
-const input: React.CSSProperties = { width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)', color: 'white', outline: 'none' };
+const input: React.CSSProperties = { 
+    width: '100%', 
+    padding: '14px', 
+    borderRadius: '12px', 
+    border: '1px solid rgba(255,255,255,0.1)', 
+    background: 'rgba(0,0,0,0.3)', 
+    color: 'white', 
+    outline: 'none',
+    colorScheme: 'dark' // Ensures native picker icons are visible
+};
 const tabActive: React.CSSProperties = { flex: 1, padding: '12px', borderRadius: '12px', background: 'white', color: 'black', border: 'none', fontWeight: 800, cursor: 'pointer' };
 const tabInactive: React.CSSProperties = { flex: 1, padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 700, cursor: 'pointer' };
 const cancelBtn: React.CSSProperties = { flex: 1, padding: '16px', borderRadius: '14px', background: 'rgba(255,255,255,0.05)', color: 'white', border: 'none', fontWeight: 800, cursor: 'pointer' };

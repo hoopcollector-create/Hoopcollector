@@ -46,7 +46,7 @@ export const StudentRequest = ({
                 </div>
                 <div style={{ marginTop: 8, fontSize: 13, opacity: 0.8 }}>보유 티켓: {tickets[classType] ?? 0}장</div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
                 <div><div style={sectionLabel}>날짜</div><input type="date" value={date} onChange={e => setDate(e.target.value)} style={input} /></div>
                 <div><div style={sectionLabel}>시간</div><input type="time" value={time} onChange={e => setTime(e.target.value)} style={input} /></div>
             </div>

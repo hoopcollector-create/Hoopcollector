@@ -38,7 +38,14 @@ export const useNaverMap = () => {
 
         const handleLoad = () => setIsLoaded(true);
         const handleError = () => {
-            const msg = "네이버 지도 스크립트 로드에 실패했습니다. 도메인 등록 설정을 확인해 주세요.";
+            const msg = "네이버 지도 스크립트 로드에 실패했습니다. 네트워크 연결이나 도메인 설정을 확인해 주세요.";
+            console.error(msg);
+            setError(msg);
+        };
+
+        // 네이버 지도 인증 실패 시 전역 핸들러 등록
+        (window as any).navermap_auth_error = () => {
+            const msg = "네이버 지도 인증에 실패했습니다. [내 애플리케이션 > 서비스 설정]에서 'Web Dynamic Map'이 활성화되어 있는지, 그리고 현재 도메인(localhost 등)이 정확히 등록되어 있는지 확인해 주세요.";
             console.error(msg);
             setError(msg);
         };

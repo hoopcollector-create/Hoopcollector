@@ -19,10 +19,7 @@ type PublicCoach = {
     available_classes: string[] | null;
 };
 
-type Region = {
-    id: string;
-    display_name: string;
-};
+import { ClassType, Region } from "../types/dashboard";
 
 
 export const CoachDetail = () => {

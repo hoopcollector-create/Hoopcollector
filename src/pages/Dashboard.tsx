@@ -71,6 +71,10 @@ export const Dashboard = () => {
     // Chat States
     const [selectedRoom, setSelectedRoom] = useState<{id: string, name: string, photo?: string} | null>(null);
 
+    // Master Data & URL State
+    const [regions, setRegions] = useState<Region[]>([]);
+    const [classType, setClassType] = useState<ClassType>("A"); 
+
     // Cash Fields
     const [products, setProducts] = useState<Product[]>([]); 
     const [pending, setPending] = useState<PendingPurchase[]>([]);
@@ -251,7 +255,12 @@ export const Dashboard = () => {
         refreshStudentData();
     }
 
-    const regionMap = useMemo(() => new Map(regions.map((r) => [r.id, r.display_name])), [regions]);
+    const regionMap = useMemo(() => {
+        const m = new Map<string, string>();
+        regions.forEach(r => m.set(r.id, r.display_name));
+        return m;
+    }, [regions]);
+
     const productMap = useMemo(() => {
         const m = new Map<string, Product>();
         for (const p of products) m.set(`${p.class_type}-${p.ticket_qty}`, p);

@@ -15,6 +15,11 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
     useEffect(() => {
         checkCoachStatus();
+        
+        // Auto-cleanup expired class requests
+        import('../utils/cleanupHelpers').then(module => {
+            module.autoCancelExpiredRequests();
+        });
     }, []);
 
     async function checkCoachStatus() {

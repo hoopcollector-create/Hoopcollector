@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Check, X, Clock, MapPin, User, BookOpen } from 'lucide-react';
+import { Check, X, Clock, MapPin, User, BookOpen, Layers, Target, AlertCircle, Settings } from 'lucide-react';
 import { ClassJournalModal } from '../components/journal/ClassJournalModal';
 import { AttendanceQR } from '../components/AttendanceQR';
+import { Link } from 'react-router-dom';
 
 type RequestStatus = "requested" | "accepted" | "completed" | "cancelled" | "rejected";
 
 type ClassRequest = {
     id: string;
     student_id: string;
-    coach_id: string;
+    coach_id: string | null;
     class_type: string;
     requested_start: string;
     duration_min: number;
@@ -17,13 +18,14 @@ type ClassRequest = {
     note: string | null;
     status: RequestStatus;
     created_at: string;
+    region_id?: string | null;
     student_name?: string;
     student_phone?: string;
     reject_reason?: string | null;
 };
 
-
 export const CoachRequests = () => {
+    const [viewMode, setViewMode] = useState<"designated" | "general">("designated");
     const [requests, setRequests] = useState<ClassRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [msg, setMsg] = useState("");
@@ -31,11 +33,50 @@ export const CoachRequests = () => {
     const [showJournalModal, setShowJournalModal] = useState(false);
     const [rejectingId, setRejectingId] = useState<string | null>(null);
     const [rejectReason, setRejectReason] = useState<string>("일정 조율 불가(시간/장소)");
+    
+    // Coach regions for filtering general requests
+    const [coachRegions, setCoachRegions] = useState<string[]>([]);
+    const [regionIdMap, setRegionIdMap] = useState<Record<string, string>>({}); // name -> id
 
+    useEffect(() => {
+        loadInitialData();
+    }, []);
 
     useEffect(() => {
         loadRequests();
-    }, []);
+    }, [viewMode, coachRegions]);
+
+    async function loadInitialData() {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            // 1. Fetch coach profile to get service regions
+            const { data: cp } = await supabase
+                .from('coach_profiles')
+                .select('service_regions')
+                .eq('user_id', session.user.id)
+                .maybeSingle();
+            
+            const regions = cp?.service_regions || [];
+            setCoachRegions(regions);
+
+            // 2. Fetch all service regions to map names to IDs
+            const { data: allRegions } = await supabase
+                .from('service_regions')
+                .select('id, display_name')
+                .eq('active', true);
+            
+            const map: Record<string, string> = {};
+            (allRegions || []).forEach(r => {
+                map[r.display_name] = r.id;
+            });
+            setRegionIdMap(map);
+
+        } catch (e) {
+            console.error("Failed to load coach regions", e);
+        }
+    }
 
     async function loadRequests() {
         setLoading(true);
@@ -43,11 +84,28 @@ export const CoachRequests = () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
-            const { data: reqs, error: reqError } = await supabase
-                .from('class_requests')
-                .select('*')
-                .eq('coach_id', session.user.id)
-                .order('created_at', { ascending: false });
+            let query = supabase.from('class_requests').select('*');
+
+            if (viewMode === 'designated') {
+                // Designated: Specifically for me
+                query = query.eq('coach_id', session.user.id);
+            } else {
+                // General: No coach assigned, requested status, and in my regions
+                const regionIds = coachRegions.map(name => regionIdMap[name]).filter(Boolean);
+                
+                if (regionIds.length === 0) {
+                    setRequests([]);
+                    setLoading(false);
+                    return;
+                }
+
+                query = query
+                    .is('coach_id', null)
+                    .eq('status', 'requested')
+                    .in('region_id', regionIds);
+            }
+
+            const { data: reqs, error: reqError } = await query.order('created_at', { ascending: false });
 
             if (reqError) throw reqError;
 
@@ -78,30 +136,46 @@ export const CoachRequests = () => {
     async function handleAction(id: string, newStatus: RequestStatus, reason?: string) {
         setLoading(true);
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
             const updates: any = { status: newStatus };
             if (newStatus === 'rejected' && reason) {
                 updates.reject_reason = reason;
             }
 
-            const { error } = await supabase
-                .from('class_requests')
-                .update(updates)
-                .eq('id', id);
+            // If it's a general request (coach_id is null) being accepted, assign the coach
+            let updateQuery = supabase.from('class_requests').update(updates).eq('id', id);
+            
+            if (viewMode === 'general' && newStatus === 'accepted') {
+                updates.coach_id = session.user.id;
+                // Add a check to ensure no one else has taken it yet
+                updateQuery = updateQuery.is('coach_id', null);
+            }
+
+            const { error, data } = await updateQuery.select();
 
             if (error) throw error;
+            if (viewMode === 'general' && newStatus === 'accepted' && (!data || data.length === 0)) {
+                throw new Error("이미 다른 코치님이 선점한 수업입니다.");
+            }
 
             if (newStatus === 'accepted' && selectedRequest) {
-                // Auto reject overlapping requests
+                // Auto reject overlapping requests for this coach
+                const targetCoachId = selectedRequest.coach_id || session.user.id;
                 await supabase
                     .from('class_requests')
                     .update({ status: 'rejected', reject_reason: '코치님이 해당 시간대에 다른 예약 일정을 확정했습니다.' })
-                    .eq('coach_id', selectedRequest.coach_id)
+                    .eq('coach_id', targetCoachId)
                     .eq('requested_start', selectedRequest.requested_start)
                     .neq('id', id)
                     .eq('status', 'requested');
             }
 
-            setMsg(`요청이 ${newStatus === 'accepted' ? '승인' : '거절'}되었습니다.`);
+            setMsg(viewMode === 'general' && newStatus === 'accepted' 
+                ? "해당 수업의 담당 코치로 배정되었습니다!" 
+                : `요청이 ${newStatus === 'accepted' ? '승인' : '거절'}되었습니다.`);
+            
             setSelectedRequest(null);
             setRejectingId(null);
             await loadRequests();
@@ -122,25 +196,60 @@ export const CoachRequests = () => {
                 <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>학생들이 신청한 실시간 수업 요청 목록입니다.</p>
             </div>
 
+            {/* View Mode Tabs */}
+            <div style={tabsContainer}>
+                <button 
+                    onClick={() => { setViewMode("designated"); setSelectedRequest(null); }} 
+                    style={{ ...tabBtn, background: viewMode === 'designated' ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)', color: viewMode === 'designated' ? 'white' : 'rgba(255,255,255,0.4)', borderColor: viewMode === 'designated' ? 'var(--color-primary)' : 'rgba(255,255,255,0.1)' }}
+                >
+                    <Target size={16} /> 지목 수업
+                </button>
+                <button 
+                    onClick={() => { setViewMode("general"); setSelectedRequest(null); }} 
+                    style={{ ...tabBtn, background: viewMode === 'general' ? 'var(--color-coach)' : 'rgba(255,255,255,0.05)', color: viewMode === 'general' ? 'white' : 'rgba(255,255,255,0.4)', borderColor: viewMode === 'general' ? 'var(--color-coach)' : 'rgba(255,255,255,0.1)' }}
+                >
+                    <Layers size={16} /> 일반 클래스 (경쟁)
+                </button>
+            </div>
+
             {msg && <div style={{ padding: '12px', background: 'rgba(59, 130, 246, 0.2)', color: 'var(--color-primary)', borderRadius: '12px', marginBottom: '1.5rem', fontWeight: 700, fontSize: '0.9rem' }}>{msg}</div>}
 
+            {/* Empty State / Regional Setup Alert */}
+            {viewMode === 'general' && coachRegions.length === 0 && (
+                <div style={setupAlert}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem' }}>
+                        <AlertCircle size={24} color="#f59e0b" />
+                        <h3 style={{ margin: 0, fontWeight: 900 }}>활동 지역 미설정</h3>
+                    </div>
+                    <p style={{ opacity: 0.7, fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+                        일반 클래스 신청을 확인하려면 프로필에서 <strong>활동 지역</strong>을 최소 1개 이상 설정해야 합니다.<br />
+                        설정된 지역의 실시간 요청만 코치님께 노출됩니다.
+                    </p>
+                    <Link to="/coach" style={setupLink}>
+                        <Settings size={16} /> 프로필 설정하러 가기
+                    </Link>
+                </div>
+            )}
+
             <div style={{ 
-                display: 'grid', 
+                display: (viewMode === 'general' && coachRegions.length === 0) ? 'none' : 'grid', 
                 gridTemplateColumns: selectedRequest ? (window.innerWidth <= 768 ? '1fr' : '1fr 1fr') : '1fr', 
-                gap: '2.5rem' 
+                gap: '2.5rem'
             }} className="responsive-grid">
                 
                 <div style={{ display: 'grid', gap: '1rem', order: selectedRequest && window.innerWidth <= 768 ? 2 : 1 }}>
                     {loading && requests.length === 0 ? (
                         <div style={emptyBox}>요청을 불러오는 중...</div>
                     ) : requests.length === 0 ? (
-                        <div style={emptyBox}>새로운 수업 요청이 없습니다.</div>
+                        <div style={emptyBox}>
+                            {viewMode === 'designated' ? "지정된 수업 요청이 없습니다." : "현재 활동 지역에 가능한 일반 수업 요청이 없습니다."}
+                        </div>
                     ) : (
                         requests.map(req => (
                             <div key={req.id} onClick={() => { setSelectedRequest(req); if(window.innerWidth <= 768) window.scrollTo({top: 400, behavior: 'smooth'}); }} style={{
                                 ...card,
-                                borderColor: selectedRequest?.id === req.id ? 'var(--color-primary)' : 'rgba(255,255,255,0.08)',
-                                background: selectedRequest?.id === req.id ? 'rgba(59, 130, 246, 0.05)' : 'rgba(255,255,255,0.03)'
+                                borderColor: selectedRequest?.id === req.id ? (viewMode === 'designated' ? 'var(--color-primary)' : 'var(--color-coach)') : 'rgba(255,255,255,0.08)',
+                                background: selectedRequest?.id === req.id ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.03)'
                             }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -202,7 +311,9 @@ export const CoachRequests = () => {
 
                             {selectedRequest.status === 'requested' && !rejectingId && (
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-                                    <button onClick={() => handleAction(selectedRequest.id, 'accepted')} style={{ ...actionBtn, background: 'var(--color-primary)' }}><Check size={18} style={{ marginRight: 8 }} /> 수업 승인</button>
+                                    <button onClick={() => handleAction(selectedRequest.id, 'accepted')} style={{ ...actionBtn, background: viewMode === 'general' ? 'var(--color-coach)' : 'var(--color-primary)' }}>
+                                        <Check size={18} style={{ marginRight: 8 }} /> {viewMode === 'general' ? '수업 선점하기' : '수업 승인'}
+                                    </button>
                                     <button onClick={() => setRejectingId(selectedRequest.id)} style={{ ...actionBtn, background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}><X size={18} style={{ marginRight: 8 }} /> 거절</button>
                                 </div>
                             )}
@@ -260,6 +371,12 @@ export const CoachRequests = () => {
     );
 };
 
+const tabsContainer: React.CSSProperties = { display: 'flex', gap: '10px', marginBottom: '2rem' };
+const tabBtn: React.CSSProperties = { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '14px', border: '1px solid', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.9rem' };
+
+const setupAlert: React.CSSProperties = { padding: '2rem', borderRadius: '24px', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)', marginBottom: '2rem' };
+const setupLink: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '12px', background: '#f59e0b', color: 'white', textDecoration: 'none', fontWeight: 900, fontSize: '0.85rem' };
+
 const card: React.CSSProperties = { padding: '1.25rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', transition: 'all 0.2s' };
 const statusBadge: React.CSSProperties = { padding: '4px 10px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase' };
 const detailContainer: React.CSSProperties = { padding: '2rem', borderRadius: '24px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', height: 'fit-content', position: 'sticky', top: '24px' };
@@ -267,4 +384,4 @@ const detailSection: React.CSSProperties = { display: 'flex', flexDirection: 'co
 const detailLabel: React.CSSProperties = { fontSize: '0.75rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' };
 const itemBox: React.CSSProperties = { padding: '10px 14px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', fontSize: '0.95rem' };
 const actionBtn: React.CSSProperties = { padding: '14px', borderRadius: '14px', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' };
-const emptyBox: React.CSSProperties = { padding: '3rem', borderRadius: '20px', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)', textAlign: 'center', color: 'rgba(255,255,255,0.4)' };
+const emptyBox: React.CSSProperties = { padding: '3rem', borderRadius: '20px', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)', textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' };

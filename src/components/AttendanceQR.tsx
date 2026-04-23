@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import { supabase } from '../lib/supabase';
 import { QrCode, Loader2, CheckCircle2, XCircle, ShieldCheck } from 'lucide-react';
 
@@ -47,17 +47,25 @@ export const AttendanceQR: React.FC<AttendanceQRProps> = ({ classRequestId, isCo
 
     // 2. Student Side: Scan QR
     useEffect(() => {
+        let html5QrCode: Html5Qrcode;
         if (!isCoach && status === 'scanning') {
-            const scanner = new Html5QrcodeScanner(
-                "qr-reader",
+            html5QrCode = new Html5Qrcode("qr-reader");
+            
+            html5QrCode.start(
+                { facingMode: "environment" }, 
                 { fps: 10, qrbox: { width: 250, height: 250 } },
-                /* verbose= */ false
-            );
-
-            scanner.render(onScanSuccess, onScanFailure);
+                onScanSuccess,
+                onScanFailure
+            ).catch(err => {
+                console.error("Camera start failed", err);
+                setMessage("카메라에 접근할 수 없거나 기기에 카메라가 없습니다.");
+                setStatus('error');
+            });
 
             return () => {
-                scanner.clear().catch(error => console.error("Failed to clear scanner", error));
+                if (html5QrCode && html5QrCode.isScanning) {
+                    html5QrCode.stop().then(() => html5QrCode.clear()).catch(error => console.error("Failed to stop scanner", error));
+                }
             };
         }
     }, [status, isCoach]);

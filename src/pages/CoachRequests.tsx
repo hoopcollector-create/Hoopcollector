@@ -144,11 +144,13 @@ export const CoachRequests = () => {
                 updates.reject_reason = reason;
             }
 
-            // If it's a general request (coach_id is null) being accepted, assign the coach
+            if (viewMode === 'general' && newStatus === 'accepted') {
+                updates.coach_id = session.user.id;
+            }
+
             let updateQuery = supabase.from('class_requests').update(updates).eq('id', id);
             
             if (viewMode === 'general' && newStatus === 'accepted') {
-                updates.coach_id = session.user.id;
                 // Add a check to ensure no one else has taken it yet
                 updateQuery = updateQuery.is('coach_id', null);
             }

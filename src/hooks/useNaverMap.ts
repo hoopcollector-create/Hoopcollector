@@ -32,7 +32,7 @@ export const useNaverMap = () => {
             script = document.createElement('script');
             script.id = scriptId;
             // document.write 차단을 방지하기 위해 정적 <head> 태그 대신 동적 생성 + async 필수
-            script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${clientId}&submodules=geocoder`;
+            script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${clientId}&submodules=geocoder`;
             script.async = true; // 비동기 로딩으로 document.write 경고 및 서브모듈 차단 회피
             document.head.appendChild(script);
 

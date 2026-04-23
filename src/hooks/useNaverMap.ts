@@ -51,18 +51,20 @@ export const useNaverMap = () => {
         if (!script) {
             script = document.createElement('script');
             script.id = scriptId;
-            const timestamp = new Date().getTime();
-            script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${clientId}&submodules=geocoder&v=${timestamp}`;
+            script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${clientId}&submodules=geocoder`;
             script.async = true;
             script.defer = true;
             document.head.appendChild(script);
             
-            script.addEventListener('load', handleLoad);
+            script.addEventListener('load', () => {
+                script.setAttribute('data-loaded', 'true');
+                handleLoad();
+            });
             script.addEventListener('error', handleError);
         } else {
-            // 이미 스크립트가 있다면 이벤트 리스너만 추가 (아직 로딩 중일 수 있으므로)
-            if (script.hasAttribute('data-loaded')) {
-                handleLoad();
+            // 이미 스크립트가 있다면
+            if (window.naver && window.naver.maps && window.naver.maps.Service) {
+                setIsLoaded(true);
             } else {
                 script.addEventListener('load', handleLoad);
                 script.addEventListener('error', handleError);

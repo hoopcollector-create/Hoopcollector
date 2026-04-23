@@ -39,13 +39,14 @@ export const useNaverMap = () => {
             setError("지도 스크립트를 불러올 수 없습니다. 네트워크를 확인해 주세요.");
         };
 
-        // 3. 네이버 인증 실패 전역 핸들러 (창의 전역 함수로 등록해야 함)
-        (window as any).navermap_auth_error = () => {
-            setError("네이버 지도 인증 실패: 도메인 설정 또는 클라이언트 ID를 확인해 주세요.");
+        // 3. 네이버 인증 실패 전역 핸들러
+        (window as any).navermap_auth_error = (error: any) => {
+            console.error("Naver Map Auth Error Detail:", error);
+            setError("네이버 지도 인증 실패: NCP 콘솔에서 'Web 서비스 URL'에 현재 도메인이 등록되어 있는지, 그리고 'Web Dynamic Map' 서비스가 활성화되어 있는지 확인해 주세요.");
         };
 
-        // 4. 스크립트 태그 찾기 또는 생성
-        let script = document.getElementById(scriptId) as HTMLScriptElement;
+        // 4. 스크립트 로드 상태 확인을 위한 보조 핸들러
+        const scriptId = 'naver-map-script';
 
         if (!script) {
             script = document.createElement('script');

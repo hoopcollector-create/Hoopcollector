@@ -51,7 +51,7 @@ export const useNaverMap = () => {
         if (!script) {
             script = document.createElement('script');
             script.id = scriptId;
-            script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${clientId}&submodules=geocoder`;
+            script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${clientId}&submodules=geocoder`;
             script.async = true;
             script.defer = true;
             document.head.appendChild(script);

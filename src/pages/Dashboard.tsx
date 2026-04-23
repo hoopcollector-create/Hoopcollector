@@ -314,7 +314,9 @@ export const Dashboard = () => {
             {/* Profile Info Row */}
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: '2rem' }}>
                 <div style={chipStyle}>{emailText}</div>
-                <div style={chipStyle}>{points?.tier?.toUpperCase()} TIER</div>
+                <div style={{ ...chipStyle, background: 'rgba(255,255,255,0.05)', color: 'var(--color-primary)', border: '1px solid var(--color-primary)' }}>
+                    LV.{(profile?.basketball_level || 'FOUNDATION').toUpperCase()}
+                </div>
                 <div style={{ ...chipStyle, background: 'var(--color-student)', border: 'none', color: 'white' }}>{(points?.balance ?? 0).toLocaleString()} P</div>
             </div>
 

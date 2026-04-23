@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Lock, Star, Sparkles, BookOpen, Target, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Lock, Star, Sparkles, BookOpen, Target, Image as ImageIcon, CheckCircle2, BarChart3 } from 'lucide-react';
+import { SCORE_MEANING, CURRICULUM_DATA, BasketballLevel } from '../constants/curriculum';
 
 export const ClassJournalDetail = () => {
     const { id } = useParams<{ id: string }>();
@@ -72,14 +73,20 @@ export const ClassJournalDetail = () => {
     );
 
     const isLocked = !journal.student_evaluation;
+    const curriculumLevel = (journal.curriculum_level as BasketballLevel) || 'FOUNDATION';
+    const curriculum = CURRICULUM_DATA[curriculumLevel];
+    const evaluationEntries = journal.evaluation_data ? Object.entries(journal.evaluation_data) : [];
 
     return (
         <div style={container}>
             <button onClick={() => navigate(-1)} style={topBackBtn}><ArrowLeft size={18} /> 수업 목록으로</button>
             
             <div style={header}>
-                <div style={badge}>SESSION LOG</div>
-                <h1 style={title}>수업 일지: Class {request?.class_type}</h1>
+                <div style={{ display: 'flex', gap: 10, marginBottom: '1rem' }}>
+                    <div style={badge}>SESSION RECORD</div>
+                    <div style={{ ...badge, color: 'var(--color-coach)' }}>#{journal.session_number} CLASS</div>
+                </div>
+                <h1 style={title}>수업 일지 및 평가</h1>
                 <p style={subtitle}>{new Date(request?.requested_start).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}</p>
             </div>
 
@@ -90,7 +97,7 @@ export const ClassJournalDetail = () => {
                     
                     {isLocked ? (
                         <div style={formWrap}>
-                            <p style={formHint}>수업 피드백을 확인하려면 먼저 소감을 작성해 주세요. 🏀</p>
+                            <p style={formHint}>수업 피드백과 평가 리포트를 확인하려면 먼저 소감을 작성해 주세요. 🏀</p>
                             <div style={starRow}>
                                 {[1, 2, 3, 4, 5].map(s => (
                                     <Star 
@@ -131,13 +138,39 @@ export const ClassJournalDetail = () => {
                     )}
                 </div>
 
-                {/* 2. Coach Feedback (Locked until evaluation done) */}
+                {/* 2. Coach Feedback & Evaluation */}
                 <div className="card-premium glass-morphism" style={{ padding: '30px', position: 'relative' }}>
-                    <h2 style={sectionTitle}><Sparkles size={18} color="#f59e0b" /> COACH FEEDBACK</h2>
+                    <h2 style={sectionTitle}><Sparkles size={18} color="#f59e0b" /> COACH FEEDBACK \u0026 EVALUATION</h2>
                     
                     <div style={{ filter: isLocked ? 'blur(10px)' : 'none', opacity: isLocked ? 0.3 : 1, transition: 'all 0.5s ease' }}>
+                        
+                        {/* 2.1 Skill Evaluation Report */}
                         <div style={contentBlock}>
-                            <div style={label}>코치의 한마디</div>
+                            <div style={label}>커리큘럼 평가 리포트 ({curriculum?.title})</div>
+                            <div style={{ display: 'grid', gap: '8px', marginTop: '12px' }}>
+                                {evaluationEntries.length > 0 ? (
+                                    evaluationEntries.map(([skillId, score]: any) => {
+                                        const skillName = curriculum?.items.find(i => i.id === skillId)?.name || '기타 기술';
+                                        return (
+                                            <div key={skillId} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '10px' }}>
+                                                <div style={{ flex: 1, fontSize: '0.85rem', fontWeight: 700 }}>{skillName}</div>
+                                                <div style={{ display: 'flex', gap: 3 }}>
+                                                    {[1,2,3,4,5].map(s => (
+                                                        <div key={s} style={{ width: 12, height: 6, borderRadius: 2, background: s <= score ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)' }} />
+                                                    ))}
+                                                </div>
+                                                <div style={{ fontSize: '0.75rem', fontWeight: 900, width: 40, textAlign: 'right', color: 'var(--color-primary)' }}>{SCORE_MEANING[score]}</div>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>상세 기술 평가 데이터가 없습니다.</div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div style={contentBlock}>
+                            <div style={label}>코치의 피드백</div>
                             <p style={contentText}>{journal.coach_feedback}</p>
                         </div>
                         

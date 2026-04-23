@@ -13,6 +13,7 @@ export interface Profile {
     experience_years: number | null;
     phone: string | null;
     photo_url?: string | null;
+    basketball_level?: string | null;
 }
 
 export interface TicketRow {

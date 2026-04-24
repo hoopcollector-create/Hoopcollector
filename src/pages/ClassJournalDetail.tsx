@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, Lock, Star, Sparkles, BookOpen, Target, Image as ImageIcon, CheckCircle2, BarChart3 } from 'lucide-react';
 import { SCORE_MEANING, CURRICULUM_DATA, BasketballLevel } from '../constants/curriculum';
+import { HoopSketchPad } from '../components/journal/HoopSketchPad';
 
 export const ClassJournalDetail = () => {
     const { id } = useParams<{ id: string }>();
@@ -41,8 +42,31 @@ export const ClassJournalDetail = () => {
         }
     }
 
+    const [studentVisualLogUrl, setStudentVisualLogUrl] = useState("");
+    const [savingSketch, setSavingSketch] = useState(false);
+
+    const handleSaveStudentSketch = async (blob: Blob) => {
+        setSavingSketch(true);
+        try {
+            const fileName = `student-sketch-${id}-${Date.now()}.png`;
+            const filePath = `journals/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage.from('hoop-assets').upload(filePath, blob);
+            if (uploadError) throw uploadError;
+
+            const { data } = supabase.storage.from('hoop-assets').getPublicUrl(filePath);
+            setStudentVisualLogUrl(data.publicUrl);
+            alert("그림이 저장되었습니다. 이제 최종 제출을 진행해주세요!");
+        } catch (e: any) {
+            alert("그림 저장 실패: " + e.message);
+        } finally {
+            setSavingSketch(false);
+        }
+    };
+
     const handleUnlock = async () => {
         if (!evalData.comment) return alert("오늘 수업에 대한 소감을 입력해 주세요.");
+        if (!studentVisualLogUrl) return alert("오늘의 하이라이트 전술이나 배운 점을 그림으로 그려서 [그림 확정]을 눌러주세요!");
         
         setSubmitting(true);
         try {
@@ -50,7 +74,8 @@ export const ClassJournalDetail = () => {
                 .from('class_journals')
                 .update({
                     student_evaluation: evalData.comment,
-                    student_score: evalData.score
+                    student_score: evalData.score,
+                    student_visual_log_url: studentVisualLogUrl
                 })
                 .eq('request_id', id);
 
@@ -93,31 +118,50 @@ export const ClassJournalDetail = () => {
             <div style={grid}>
                 {/* 1. My Evaluation (Student) */}
                 <div className="card-minimal" style={{ padding: '30px' }}>
-                    <h2 style={sectionTitle}><CheckCircle2 size={18} color="var(--color-primary)" /> MY EVALUATION</h2>
+                    <h2 style={sectionTitle}><CheckCircle2 size={18} color="#10b981" /> MY EVALUATION</h2>
                     
                     {isLocked ? (
                         <div style={formWrap}>
-                            <p style={formHint}>수업 피드백과 평가 리포트를 확인하려면 먼저 소감을 작성해 주세요. 🏀</p>
-                            <div style={starRow}>
-                                {[1, 2, 3, 4, 5].map(s => (
-                                    <Star 
-                                        key={s} 
-                                        size={28} 
-                                        fill={s <= evalData.score ? '#f59e0b' : 'transparent'} 
-                                        color={s <= evalData.score ? '#f59e0b' : 'rgba(255,255,255,0.2)'}
-                                        style={{ cursor: 'pointer' }}
-                                        onClick={() => setEvalData(p => ({ ...p, score: s }))}
-                                    />
-                                ))}
+                            <p style={formHint}>수업 피드백과 평가 리포트를 확인하려면 소감 작성과 그림 그리기를 완료해 주세요. 🏀</p>
+                            
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={inputLabel}>코치님께 드리는 평점</label>
+                                <div style={starRow}>
+                                    {[1, 2, 3, 4, 5].map(s => (
+                                        <Star 
+                                            key={s} 
+                                            size={28} 
+                                            fill={s <= evalData.score ? '#f59e0b' : 'transparent'} 
+                                            color={s <= evalData.score ? '#f59e0b' : 'rgba(255,255,255,0.2)'}
+                                            style={{ cursor: 'pointer' }}
+                                            onClick={() => setEvalData(p => ({ ...p, score: s }))}
+                                        />
+                                    ))}
+                                </div>
                             </div>
-                            <textarea 
-                                style={textarea} 
-                                placeholder="오늘 수업에서 가장 기억에 남는 점이나 스스로 칭찬하고 싶은 내용을 적어보세요."
-                                value={evalData.comment}
-                                onChange={e => setEvalData(p => ({ ...p, comment: e.target.value }))}
-                            />
-                            <button onClick={handleUnlock} disabled={submitting} className="btn-primary" style={unlockBtn}>
-                                {submitting ? "제출 중..." : "소감 제출하고 피드백 보기"}
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={inputLabel}>오늘의 전술/과제 복습 (그림)</label>
+                                <HoopSketchPad onSave={handleSaveStudentSketch} saving={savingSketch} />
+                            </div>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={inputLabel}>오늘의 수업 소감</label>
+                                <textarea 
+                                    style={textarea} 
+                                    placeholder="오늘 수업에서 가장 기억에 남는 점이나 스스로 칭찬하고 싶은 내용을 적어보세요."
+                                    value={evalData.comment}
+                                    onChange={e => setEvalData(p => ({ ...p, comment: e.target.value }))}
+                                />
+                            </div>
+
+                            <button onClick={handleUnlock} disabled={submitting} className="btn-primary" style={{ 
+                                ...unlockBtn, 
+                                background: studentVisualLogUrl ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)',
+                                color: studentVisualLogUrl ? 'white' : 'rgba(255,255,255,0.3)',
+                                cursor: studentVisualLogUrl ? 'pointer' : 'not-allowed'
+                            }}>
+                                {submitting ? "제출 중..." : (studentVisualLogUrl ? "소감 제출하고 피드백 보기" : "그림을 먼저 저장해주세요")}
                             </button>
                         </div>
                     ) : (
@@ -133,6 +177,13 @@ export const ClassJournalDetail = () => {
                                 ))}
                             </div>
                             <p style={evalText}>"{journal.student_evaluation}"</p>
+                            
+                            {journal.student_visual_log_url && (
+                                <div style={{ marginTop: '20px', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <img src={journal.student_visual_log_url} alt="My Sketch" style={{ width: '100%', display: 'block' }} />
+                                </div>
+                            )}
+
                             <div style={completedBadge}>평가 완료</div>
                         </div>
                     )}
@@ -236,4 +287,5 @@ const evalText: React.CSSProperties = { fontSize: '1.1rem', fontStyle: 'italic',
 const completedBadge: React.CSSProperties = { fontSize: '0.75rem', fontWeight: 900, color: 'var(--color-primary)', textTransform: 'uppercase' };
 
 const msgBox: React.CSSProperties = { height: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', textAlign: 'center', padding: '20px' };
+const inputLabel: React.CSSProperties = { fontSize: '0.75rem', fontWeight: 900, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', display: 'block' };
 const backBtn: React.CSSProperties = { marginTop: '20px', padding: '10px 24px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', color: 'white', border: 'none', fontWeight: 800, cursor: 'pointer' };

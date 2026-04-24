@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, FileText, Scale, Info, ChevronRight, ArrowLeft } from 'lucide-react';
+import { ShieldCheck, FileText, Scale, Info, ChevronRight, ArrowLeft, CreditCard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const Terms = () => {
@@ -64,9 +64,28 @@ export const Terms = () => {
                     </div>
                     <ul style={list}>
                         <li>무통장 입금 완료 후 티켓 지급 전 취소는 100% 가능합니다.</li>
-                        <li>매칭 모임의 경우 주최자의 설정에 따라 취소 수수료가 발생할 수 있습니다.</li>
+                        <li>매칭 모임의 경우 참여 24시간 전 취소 시 100% 환불되나, 직전 취소 시 노쇼 방지금이 차감될 수 있습니다.</li>
                         <li>스토어 상품은 단순 변심의 경우 왕복 배송비가 청구됩니다.</li>
                     </ul>
+                </section>
+
+                {/* 5. Coach Settlement Policy */}
+                <section style={{ ...card, gridColumn: '1 / -1' }}>
+                    <div style={cardHeader}>
+                        <div style={iconBox}><CreditCard size={20} color="var(--color-coach)" /></div>
+                        <h2 style={cardTitle}>코치 수업료 정산 정책</h2>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth > 768 ? '1fr 1fr' : '1fr', gap: '40px' }}>
+                        <ul style={list}>
+                            <li><strong>정산 주기</strong>: 매주 월요일 일괄 정산 신청을 받으며, 목요일에 지급됩니다.</li>
+                            <li><strong>플랫폼 수수료</strong>: 서비스 유지 및 마케팅을 위해 <strong>수업료의 10%</strong>가 수수료로 공제됩니다.</li>
+                            <li><strong>정산 대상</strong>: 학생이 '수업 완료'를 승인하고 코치가 일지를 작성한 건에 한합니다.</li>
+                        </ul>
+                        <ul style={list}>
+                            <li><strong>증빙 서류</strong>: 최초 정산 신청 시 신분증 사본 및 통장 사본 등록이 필수입니다.</li>
+                            <li><strong>세금 처리</strong>: 사업자 코치의 경우 세금계산서 발행, 개인 코치의 경우 3.3% 원천징수 후 지급됩니다.</li>
+                        </ul>
+                    </div>
                 </section>
             </div>
 

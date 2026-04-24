@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Users, Award, MapPin, Calendar, Plus, Search, Filter, ChevronRight, UserCircle, Shield, LucideIcon, X, Clock } from 'lucide-react';
+import { Users, Award, MapPin, Calendar, Plus, Search, Filter, ChevronRight, UserCircle, Shield, LucideIcon, X, Clock, Map as MapIcon, LayoutList, Trash2 } from 'lucide-react';
+import { useNaverMap } from '../hooks/useNaverMap';
 
 interface Match {
     id: string;
@@ -12,6 +13,8 @@ interface Match {
     min_grade: string;
     host_id: string;
     status: string;
+    lat?: number;
+    lng?: number;
     profiles: { 
         name: string;
         photo_url: string;
@@ -23,21 +26,60 @@ export const MatchBoard: React.FC = () => {
     const [matches, setMatches] = useState<Match[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
+    const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    const { isLoaded: mapLoaded } = useNaverMap();
 
     // New Match Fields
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [location, setLocation] = useState('');
+    const [lat, setLat] = useState<number | null>(null);
+    const [lng, setLng] = useState<number | null>(null);
     const [matchDate, setMatchDate] = useState('');
     const [matchTime, setMatchTime] = useState('');
     const [maxPlayers, setMaxPlayers] = useState(10);
     const [minGrade, setMinGrade] = useState('C');
 
     useEffect(() => {
+        const checkAuth = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                setCurrentUserId(session.user.id);
+                // Check Admin
+                const { data: roles } = await supabase
+                    .from('user_roles')
+                    .select('role')
+                    .eq('user_id', session.user.id);
+                
+                const hasAdmin = roles?.some(r => r.role === 'admin');
+                setIsAdmin(!!hasAdmin);
+            }
+        };
+        checkAuth();
         fetchMatches();
     }, [filter]);
+
+    const handleDeleteMatch = async (matchId: string) => {
+        if (!window.confirm("정말 이 매칭 정보를 삭제하시겠습니까? (삭제된 정보는 복구할 수 없습니다)")) return;
+        
+        try {
+            const { error } = await supabase
+                .from('community_matches')
+                .delete()
+                .eq('id', matchId);
+
+            if (error) throw error;
+            alert("매칭이 삭제되었습니다.");
+            fetchMatches();
+        } catch (e: any) {
+            alert("삭제 실패: " + e.message);
+        }
+    };
 
     const fetchMatches = async () => {
         setLoading(true);
@@ -81,6 +123,8 @@ export const MatchBoard: React.FC = () => {
                     title,
                     description,
                     location,
+                    lat,
+                    lng,
                     match_time: fullMatchTime,
                     max_players: maxPlayers,
                     min_grade: minGrade,
@@ -95,6 +139,8 @@ export const MatchBoard: React.FC = () => {
             setTitle('');
             setDescription('');
             setLocation('');
+            setLat(null);
+            setLng(null);
             setMatchDate('');
             setMatchTime('');
             fetchMatches();
@@ -120,57 +166,102 @@ export const MatchBoard: React.FC = () => {
 
             <div style={boardControls}>
                 <div style={filterTabs}>
-                    <button style={filter === 'all' ? activeTab : tab} onClick={() => setFilter('all')}>전체 보기</button>
-                    <button style={filter === 'my' ? activeTab : tab} onClick={() => setFilter('my')}>내 신청</button>
-                    <button style={filter === 'recruitment' ? activeTab : tab} onClick={() => setFilter('recruitment')}>코치 구인</button>
+                    <button 
+                        onClick={() => setFilter('all')} 
+                        style={filter === 'all' ? activeTab : tab}
+                    >
+                        전체 매칭
+                    </button>
+                    <button 
+                        onClick={() => setFilter('open')} 
+                        style={filter === 'open' ? activeTab : tab}
+                    >
+                        모집 중
+                    </button>
                 </div>
-                <button style={createBtn} onClick={() => setIsModalOpen(true)}>
-                    <Plus size={20} />
-                    <span>매치 만들기</span>
-                </button>
+
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <div style={{ ...filterTabs, background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '14px' }}>
+                        <button 
+                            onClick={() => setViewMode('list')} 
+                            style={viewMode === 'list' ? { ...tab, background: 'var(--accent-primary)', color: 'white', border: 'none' } : { ...tab, border: 'none' }}
+                        >
+                            <LayoutList size={18} />
+                        </button>
+                        <button 
+                            onClick={() => setViewMode('map')} 
+                            style={viewMode === 'map' ? { ...tab, background: 'var(--accent-primary)', color: 'white', border: 'none' } : { ...tab, border: 'none' }}
+                        >
+                            <MapIcon size={18} />
+                        </button>
+                    </div>
+                    <button onClick={() => setIsModalOpen(true)} style={createBtn}>
+                        <Plus size={20} /> 매치 만들기
+                    </button>
+                </div>
             </div>
 
-            <div style={matchGrid}>
-                {loading ? (
-                    <div style={emptyBox}>로딩 중...</div>
-                ) : matches.length === 0 ? (
-                    <div style={emptyBox}>현재 진행 중인 매칭이 없습니다.</div>
-                ) : (
-                    matches.map(match => (
-                        <div key={match.id} style={matchCard}>
-                            <div style={cardHeader}>
-                                <div style={hostInfo}>
-                                    <img src={match.profiles?.photo_url || ""} style={hostAvatar} alt="" />
-                                    <div>
-                                        <div style={hostName}>{match.profiles?.name || '익명'}</div>
+            {viewMode === 'map' ? (
+                <div style={{ marginBottom: '40px' }}>
+                    <MatchMap matches={matches} />
+                </div>
+            ) : (
+                <div style={matchGrid}>
+                    {loading ? (
+                        <div style={emptyBox}>매칭 데이터를 불러오는 중...</div>
+                    ) : matches.length === 0 ? (
+                        <div style={emptyBox}>등록된 매칭이 없습니다. 첫 매치를 만들어보세요!</div>
+                    ) : (
+                        matches.map((match) => (
+                            <div key={match.id} style={matchCard}>
+                                <div style={cardHeader}>
+                                    <div style={hostInfo}>
+                                        <img src={match.profiles?.photo_url || "/default-avatar.png"} alt="Host" style={hostAvatar} />
+                                        <div>
+                                            <div style={hostName}>{match.profiles?.name}</div>
+                                            <div style={hostScore}>Host Score 98%</div>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                        <div style={{
+                                            ...statusBadge,
+                                            backgroundColor: match.status === 'open' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.05)',
+                                            color: match.status === 'open' ? '#10b981' : 'rgba(255,255,255,0.3)'
+                                        }}>
+                                            {match.status === 'open' ? 'RECRUITING' : 'CLOSED'}
+                                        </div>
+                                        {(isAdmin || match.host_id === currentUserId) && (
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteMatch(match.id); }}
+                                                style={{ background: 'transparent', border: 'none', color: '#ff4d4d', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', opacity: 0.6 }}
+                                                title="매치 삭제"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
-                                <div style={{ ...statusBadge, backgroundColor: match.status === 'open' ? 'rgba(0, 194, 255, 0.1)' : 'rgba(255,255,255,0.05)' }}>
-                                    {match.status.toUpperCase()}
+
+                                <h3 style={matchTitle}>{match.title}</h3>
+                                
+                                <div style={matchDetails}>
+                                    <DetailItem icon={MapPin} text={match.location} />
+                                    <DetailItem icon={Calendar} text={new Date(match.match_time).toLocaleString()} />
+                                    <DetailItem icon={Shield} text={`${match.min_grade}+ 티어`} />
+                                </div>
+
+                                <div style={cardFooter}>
+                                    <div style={playerCount}>
+                                        <span style={{ color: 'var(--accent-primary)' }}>{match.participants_count}</span>
+                                        <span> / {match.max_players} 명 참여 중</span>
+                                    </div>
+                                    <button style={joinBtn}>참여 신청</button>
                                 </div>
                             </div>
-
-                            <h3 style={matchTitle}>{match.title}</h3>
-                            
-                            <div style={matchDetails}>
-                                <DetailItem icon={MapPin} text={match.location} />
-                                <DetailItem icon={Calendar} text={new Date(match.match_time).toLocaleString()} />
-                                <DetailItem icon={Shield} text={`${match.min_grade}+ 티어`} />
-                            </div>
-
-                            <div style={cardFooter}>
-                                <div style={playerCount}>
-                                    <span style={{ color: 'var(--accent-primary)' }}>{match.participants_count}</span>
-                                    <span> / {match.max_players} 명 참여 중</span>
-                                </div>
-                                <button style={joinBtn}>참여 신청</button>
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
-
-            {/* Create Match Modal */}
+                        ))
+                    )}
+                </div>
+            )}
             {isModalOpen && (
                 <div style={modalOverlay}>
                     <div style={modalContent}>
@@ -216,18 +307,18 @@ export const MatchBoard: React.FC = () => {
                             </div>
 
                             <div style={formGroup}>
-                                <label style={labelStyle}>장소</label>
-                                <div style={{ position: 'relative' }}>
-                                    <MapPin size={16} style={{ position: 'absolute', left: '14px', top: '15px', color: 'rgba(255,255,255,0.3)' }} />
-                                    <input 
-                                        type="text" 
-                                        placeholder="경기 장소 또는 코트 이름" 
-                                        value={location} 
-                                        onChange={e => setLocation(e.target.value)}
-                                        required
-                                        style={{ ...inputStyle, paddingLeft: '40px' }} 
-                                    />
-                                </div>
+                                <label style={labelStyle}>장소 (검색 후 선택)</label>
+                                <MatchLocationPicker onLocationSelect={(loc) => {
+                                    setLocation(loc.address);
+                                    setLat(loc.lat);
+                                    setLng(loc.lng);
+                                    alert(`위치가 설정되었습니다: ${loc.address}`);
+                                }} />
+                                {location && (
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', marginTop: '4px', fontWeight: 600 }}>
+                                        📍 선택됨: {location}
+                                    </div>
+                                )}
                             </div>
 
                             <div style={formRow}>
@@ -289,7 +380,102 @@ export const MatchBoard: React.FC = () => {
     );
 };
 
-// ... (Sub-components: StatItem, DetailItem) - Keep as is but check profiles safely
+// Sub-components
+const MatchMap: React.FC<{ matches: Match[] }> = ({ matches }) => {
+    const mapRef = useRef<HTMLDivElement>(null);
+    const { isLoaded } = useNaverMap();
+
+    useEffect(() => {
+        if (!isLoaded || !mapRef.current || !window.naver) return;
+
+        const initialCenter = new window.naver.maps.LatLng(37.5666805, 126.9784147);
+        const map = new window.naver.maps.Map(mapRef.current, {
+            center: initialCenter,
+            zoom: 12,
+            mapDataControl: false,
+        });
+
+        const bounds = new window.naver.maps.LatLngBounds();
+        let hasCoords = false;
+
+        matches.forEach(m => {
+            if (m.lat && m.lng) {
+                const pos = new window.naver.maps.LatLng(m.lat, m.lng);
+                new window.naver.maps.Marker({
+                    position: pos,
+                    map: map,
+                    title: m.title,
+                    icon: {
+                        content: `
+                            <div style="background: var(--accent-primary); color: white; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; border: 2px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.3); white-space: nowrap;">
+                                ${m.title}
+                            </div>
+                        `,
+                        anchor: new window.naver.maps.Point(20, 20)
+                    }
+                });
+                bounds.extend(pos);
+                hasCoords = true;
+            }
+        });
+
+        if (hasCoords) {
+            map.fitBounds(bounds);
+        }
+    }, [isLoaded, matches]);
+
+    return (
+        <div style={mapContainerStyle}>
+            {!isLoaded && <div style={mapOverlayStyle}>지도를 불러오는 중...</div>}
+            <div ref={mapRef} style={{ width: '100%', height: '100%', borderRadius: '24px' }} />
+        </div>
+    );
+};
+
+const MatchLocationPicker: React.FC<{ onLocationSelect: (loc: {address: string, lat: number, lng: number}) => void }> = ({ onLocationSelect }) => {
+    const [query, setQuery] = useState('');
+    const { isLoaded } = useNaverMap();
+
+    const handleSearch = () => {
+        if (!isLoaded || !window.naver?.maps?.Service?.geocode) return;
+        
+        window.naver.maps.Service.geocode({ query }, (status: any, response: any) => {
+            if (status !== window.naver.maps.Service.Status.OK) {
+                return alert('주소를 찾을 수 없습니다.');
+            }
+            const item = response.v2.addresses[0];
+            onLocationSelect({
+                address: item.roadAddress || item.jibunAddress,
+                lat: parseFloat(item.y),
+                lng: parseFloat(item.x)
+            });
+        });
+    };
+
+    return (
+        <div style={{ display: 'grid', gap: '8px' }}>
+            <div style={{ position: 'relative' }}>
+                <MapPin size={16} style={{ position: 'absolute', left: '14px', top: '15px', color: 'rgba(255,255,255,0.3)' }} />
+                <input 
+                    type="text" 
+                    placeholder="경기 장소 검색 (예: 서초동 구민체육센터)" 
+                    value={query} 
+                    onChange={e => setQuery(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleSearch())}
+                    style={{ ...inputStyle, paddingLeft: '40px', paddingRight: '70px' }} 
+                />
+                <button 
+                    type="button" 
+                    onClick={handleSearch}
+                    style={searchBtnStyle}
+                >
+                    검색
+                </button>
+            </div>
+        </div>
+    );
+};
+
 const StatItem = ({ icon: Icon, label, value }: { icon: LucideIcon, label: string, value: string }) => (
     <div style={statBox}>
         <div style={statIcon}><Icon size={18} /></div>
@@ -349,3 +535,41 @@ const formGroup: React.CSSProperties = { display: 'flex', flexDirection: 'column
 const formRow: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' };
 const labelStyle: React.CSSProperties = { fontSize: '0.85rem', fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginLeft: '4px' };
 const inputStyle: React.CSSProperties = { width: '100%', padding: '14px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '0.95rem', boxSizing: 'border-box' };
+
+const mapContainerStyle: React.CSSProperties = { 
+    width: '100%', 
+    height: '400px', 
+    borderRadius: '24px', 
+    overflow: 'hidden', 
+    border: '1px solid var(--border-subtle)',
+    position: 'relative',
+    background: '#0a0a0b'
+};
+
+const mapOverlayStyle: React.CSSProperties = { 
+    position: 'absolute', 
+    inset: 0, 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    background: 'rgba(0,0,0,0.5)', 
+    zIndex: 5, 
+    color: 'white', 
+    fontSize: '0.9rem', 
+    fontWeight: 700 
+};
+
+const searchBtnStyle: React.CSSProperties = { 
+    position: 'absolute', 
+    right: '8px', 
+    top: '8px', 
+    bottom: '8px', 
+    padding: '0 16px', 
+    borderRadius: '8px', 
+    background: 'var(--accent-primary)', 
+    color: 'white', 
+    border: 'none', 
+    fontWeight: 700, 
+    fontSize: '0.85rem', 
+    cursor: 'pointer' 
+};

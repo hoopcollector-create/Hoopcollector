@@ -12,6 +12,7 @@ export interface CurriculumLevel {
     title: string;
     subtitle: string;
     items: CurriculumItem[];
+    requiredGrade: 'C' | 'B' | 'A';
 }
 
 export const SCORE_MEANING: Record<number, string> = {
@@ -27,6 +28,7 @@ export const CURRICULUM_DATA: Record<BasketballLevel, CurriculumLevel> = {
         id: 'FOUNDATION',
         title: 'LEVEL 1. FOUNDATION',
         subtitle: '최우선: 슛·레이업 마무리 및 기본 움직임',
+        requiredGrade: 'C',
         items: [
             { id: 'f-m-1', category: 'Move', name: '정지 슛 (릴리즈/손 모양/밸런스)' },
             { id: 'f-m-2', category: 'Move', name: '근거리 슛 (반복 안정)' },
@@ -48,6 +50,7 @@ export const CURRICULUM_DATA: Record<BasketballLevel, CurriculumLevel> = {
         id: 'CONTROL',
         title: 'LEVEL 2. CONTROL',
         subtitle: '마무리 + 움직임의 완벽한 연결',
+        requiredGrade: 'B',
         items: [
             { id: 'c-m-1', category: 'Move', name: '다양한 각도 양손 레이업' },
             { id: 'c-m-2', category: 'Move', name: '미드레인지 슛' },
@@ -70,6 +73,7 @@ export const CURRICULUM_DATA: Record<BasketballLevel, CurriculumLevel> = {
         id: 'ATTACK',
         title: 'LEVEL 3. ATTACK',
         subtitle: '공격자로서의 상황 선택과 1:1 파괴력',
+        requiredGrade: 'A',
         items: [
             { id: 'a-m-1', category: 'Move', name: '컨택 피니시 (Contact Finish)' },
             { id: 'a-m-2', category: 'Move', name: '플로터 (Floater)' },
@@ -87,6 +91,7 @@ export const CURRICULUM_DATA: Record<BasketballLevel, CurriculumLevel> = {
         id: 'GAME_APPLY',
         title: 'LEVEL 4. GAME APPLY',
         subtitle: '실전 게임 적용 및 팀 전술 이해',
+        requiredGrade: 'A',
         items: [
             { id: 'g-m-1', category: 'Move', name: '경기 중 컨택 마무리' },
             { id: 'g-m-2', category: 'Move', name: '올바른 타이밍의 빠른 슛' },

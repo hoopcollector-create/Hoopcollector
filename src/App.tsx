@@ -22,9 +22,8 @@ import { MatchBoard } from './pages/MatchBoard';
 import { Terms } from './pages/Terms';
 import { CourtMap } from './pages/CourtMap';
 import { Messages } from './pages/Messages';
-
-const CoachFinancials = () => <div style={{ color: 'white', padding: 40 }}>내 정산내역 (준비중)</div>;
-
+import { CoachFinancials } from './pages/CoachFinancials';
+import { CurriculumGuide } from './pages/CurriculumGuide';
 
 export const App = () => {
     return (
@@ -47,6 +46,7 @@ export const App = () => {
                 <Route path="/coach/schedule" element={<AppLayout><CoachSchedule /></AppLayout>} />
                 <Route path="/coach/grade" element={<AppLayout><GradeSystem /></AppLayout>} />
                 <Route path="/coach/financials" element={<AppLayout><CoachFinancials /></AppLayout>} />
+                <Route path="/coach/curriculum" element={<AppLayout><CurriculumGuide /></AppLayout>} />
                 
                 <Route path="/community" element={<AppLayout><CommunityList /></AppLayout>} />
                 <Route path="/community/post/:id" element={<AppLayout><PostDetail /></AppLayout>} />

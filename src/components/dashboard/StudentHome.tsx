@@ -30,7 +30,7 @@ export const StudentHome = ({
     tickets, points, activeCount, editProfile, setEditProfile, 
     name, setName, birthday, setBirthday, position, setPosition, 
     exp, setExp, phone, setPhone, saveProfile, ageText, loading,
-    photoUrl, setPhotoUrl 
+    photoUrl, setPhotoUrl, recentJournals 
 }: StudentHomeProps) => {
     return (
         <div>

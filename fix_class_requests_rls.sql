@@ -14,7 +14,7 @@ FOR SELECT USING (
     auth.uid() = student_id OR 
     auth.uid() = coach_id OR 
     coach_id IS NULL OR 
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+    EXISTS (SELECT 1 FROM user_roles WHERE user_id = auth.uid() AND role = 'admin')
 );
 
 -- INSERT: 학생 본인이 자신의 요청을 생성 가능
@@ -29,5 +29,5 @@ FOR UPDATE USING (
     auth.uid() = student_id OR 
     auth.uid() = coach_id OR 
     coach_id IS NULL OR 
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+    EXISTS (SELECT 1 FROM user_roles WHERE user_id = auth.uid() AND role = 'admin')
 );

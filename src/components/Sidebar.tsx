@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Home, Compass, UserCircle, Search, Gift, Heart, Menu, X, ArrowLeft, LogOut, CheckCircle2, ShoppingBag, PlusCircle, PenTool, LayoutDashboard, Target, Users, MessageSquare, Calendar, Award, Instagram, MessageCircle, ShieldCheck } from 'lucide-react';
+import { Home, Compass, UserCircle, Search, Gift, Heart, Menu, X, ArrowLeft, LogOut, CheckCircle2, ShoppingBag, PlusCircle, PenTool, LayoutDashboard, Target, Users, MessageSquare, Calendar, Award, Instagram, MessageCircle, ShieldCheck, History as HistoryIcon } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 
@@ -168,10 +168,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { name: "코치 대시보드", icon: LayoutDashboard, link: "/coach/dashboard" },
         { name: "메시지 보관함", icon: MessageCircle, link: "/messages" },
         { name: "수업 요청 관리", icon: Target, link: "/coach/requests" },
-        { name: "수업기록 보관함", icon: History, link: "/coach/requests?tab=completed" },
+        { name: "수업기록 보관함", icon: HistoryIcon, link: "/coach/requests?tab=completed" },
         { name: "매칭 및 구인", icon: Target, link: "/match" },
         { name: "스케줄 관리", icon: Calendar, link: "/coach/schedule" },
         { name: "등급 및 승급", icon: Award, link: "/coach/grade" },
+        { name: "커리큘럼 열람실", icon: BookOpen, link: "/coach/curriculum" },
+        { name: "정산 및 수익관리", icon: CreditCard, link: "/coach/financials" },
         { name: "스토어", icon: ShoppingBag, link: "/shop" },
         { name: "정책 및 약관", icon: ShieldCheck, link: "/terms" }
     ];

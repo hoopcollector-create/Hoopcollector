@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Users, Award, MapPin, Calendar, Plus, Search, Filter, ChevronRight, UserCircle, Shield, LucideIcon, X, Clock, Map as MapIcon, LayoutList, Trash2 } from 'lucide-react';
 import { useNaverMap } from '../hooks/useNaverMap';
+import { NaverMapSelector } from '../components/NaverMapSelector';
 
 interface Match {
     id: string;
@@ -307,16 +308,20 @@ export const MatchBoard: React.FC = () => {
                             </div>
 
                             <div style={formGroup}>
-                                <label style={labelStyle}>장소 (검색 후 선택)</label>
-                                <MatchLocationPicker onLocationSelect={(loc) => {
-                                    setLocation(loc.address);
-                                    setLat(loc.lat);
-                                    setLng(loc.lng);
-                                    alert(`위치가 설정되었습니다: ${loc.address}`);
-                                }} />
+                                <label style={labelStyle}>수업 장소 선택 (지도 클릭)</label>
+                                <div style={{ marginTop: 8 }}>
+                                    <NaverMapSelector 
+                                        onLocationSelected={(lat, lng, addr) => {
+                                            setLocation(addr);
+                                            setLat(lat);
+                                            setLng(lng);
+                                        }} 
+                                    />
+                                </div>
                                 {location && (
-                                    <div style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', marginTop: '4px', fontWeight: 600 }}>
-                                        📍 선택됨: {location}
+                                    <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <MapPin size={16} color="var(--accent-primary)" />
+                                        <span>{location}</span>
                                     </div>
                                 )}
                             </div>
@@ -432,49 +437,8 @@ const MatchMap: React.FC<{ matches: Match[] }> = ({ matches }) => {
     );
 };
 
-const MatchLocationPicker: React.FC<{ onLocationSelect: (loc: {address: string, lat: number, lng: number}) => void }> = ({ onLocationSelect }) => {
-    const [query, setQuery] = useState('');
-    const { isLoaded } = useNaverMap();
 
-    const handleSearch = () => {
-        if (!isLoaded || !window.naver?.maps?.Service?.geocode) return;
-        
-        window.naver.maps.Service.geocode({ query }, (status: any, response: any) => {
-            if (status !== window.naver.maps.Service.Status.OK) {
-                return alert('주소를 찾을 수 없습니다.');
-            }
-            const item = response.v2.addresses[0];
-            onLocationSelect({
-                address: item.roadAddress || item.jibunAddress,
-                lat: parseFloat(item.y),
-                lng: parseFloat(item.x)
-            });
-        });
-    };
 
-    return (
-        <div style={{ display: 'grid', gap: '8px' }}>
-            <div style={{ position: 'relative' }}>
-                <MapPin size={16} style={{ position: 'absolute', left: '14px', top: '15px', color: 'rgba(255,255,255,0.3)' }} />
-                <input 
-                    type="text" 
-                    placeholder="경기 장소 검색 (예: 서초동 구민체육센터)" 
-                    value={query} 
-                    onChange={e => setQuery(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleSearch())}
-                    style={{ ...inputStyle, paddingLeft: '40px', paddingRight: '70px' }} 
-                />
-                <button 
-                    type="button" 
-                    onClick={handleSearch}
-                    style={searchBtnStyle}
-                >
-                    검색
-                </button>
-            </div>
-        </div>
-    );
-};
 
 const StatItem = ({ icon: Icon, label, value }: { icon: LucideIcon, label: string, value: string }) => (
     <div style={statBox}>

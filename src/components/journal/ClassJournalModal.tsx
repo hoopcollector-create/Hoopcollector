@@ -48,10 +48,10 @@ export const ClassJournalModal: React.FC<ClassJournalModalProps> = ({ request, o
             const fileName = `sketch-${request.id}-${Date.now()}.png`;
             const filePath = `journals/${fileName}`;
 
-            const { error: uploadError } = await supabase.storage.from('class_visual_logs').upload(filePath, blob);
+            const { error: uploadError } = await supabase.storage.from('hoop-assets').upload(filePath, blob);
             if (uploadError) throw uploadError;
 
-            const { data } = supabase.storage.from('class_visual_logs').getPublicUrl(filePath);
+            const { data } = supabase.storage.from('hoop-assets').getPublicUrl(filePath);
             setVisualLogUrl(data.publicUrl);
             alert("그림이 저장되었습니다. 최종 제출을 진행해주세요!");
         } catch (e: any) {

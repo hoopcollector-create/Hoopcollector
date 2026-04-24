@@ -62,7 +62,7 @@ export const MatchExplore: React.FC = () => {
             
             let query = supabase
                 .from('match_rooms')
-                .select('*, host:profiles!match_rooms_host_id_fkey(name, photo_url)')
+                .select('*, host:profiles(name, photo_url)')
                 .eq('is_hidden', false)
                 .order('start_at', { ascending: true });
 

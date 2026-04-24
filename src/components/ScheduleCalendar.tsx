@@ -79,7 +79,7 @@ export const ScheduleCalendar = () => {
             if (!session) return;
 
             // Generate for next 4 weeks
-            const newSlots = [];
+            const newSlots: any[] = [];
             const now = new Date();
             
             for (let i = 0; i < 28; i++) {

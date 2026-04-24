@@ -39,24 +39,39 @@ export const MatchExplore: React.FC = () => {
     const [matches, setMatches] = useState<MatchRoom[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [filterType, setFilterType] = useState('all');
+    const [filterType, setFilterType] = useState('all'); // all, my
+    const [matchType, setMatchType] = useState('all'); // 5대5, 3대3 등
 
     useEffect(() => {
         loadMatches();
-    }, [filterType]);
+    }, [filterType, matchType]);
 
     async function loadMatches() {
         setLoading(true);
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            
             let query = supabase
                 .from('match_rooms')
-                .select('*, host_profiles:profiles(name, photo_url)')
-                .eq('status', 'open')
+                .select('*, host_profiles:profiles!match_rooms_host_id_fkey(name, photo_url)')
                 .eq('is_hidden', false)
                 .order('start_at', { ascending: true });
 
-            if (filterType !== 'all') {
-                query = query.eq('match_type', filterType);
+            if (filterType === 'my' && session) {
+                // Fetch match IDs I'm participating in
+                const { data: myParts } = await supabase
+                    .from('match_participants')
+                    .select('match_id')
+                    .eq('user_id', session.user.id);
+                
+                const matchIds = myParts?.map(p => p.match_id) || [];
+                query = query.or(`id.in.(${matchIds.join(',')}),host_id.eq.${session.user.id}`);
+            } else {
+                query = query.eq('status', 'open');
+            }
+
+            if (matchType !== 'all') {
+                query = query.eq('match_type', matchType);
             }
 
             const { data, error } = await query;
@@ -83,6 +98,19 @@ export const MatchExplore: React.FC = () => {
                 </button>
             </div>
 
+            {/* Tab Navigation */}
+            <div style={tabContainer}>
+                <button 
+                    onClick={() => setFilterType('all')} 
+                    style={filterType === 'all' ? activeTab : inactiveTab}
+                >전체 탐색</button>
+                <button 
+                    onClick={() => setFilterType('my')} 
+                    style={filterType === 'my' ? activeTab : inactiveTab}
+                >나의 모임</button>
+                <div style={filterType === 'all' ? tabUnderlineLeft : tabUnderlineRight} />
+            </div>
+
             {/* Filter & View Switcher */}
             <div style={controlBar}>
                 <div style={searchBox}>
@@ -95,6 +123,12 @@ export const MatchExplore: React.FC = () => {
                     />
                 </div>
                 
+                <div style={filterBar}>
+                    <FilterBtn active={matchType === 'all'} label="전체" onClick={() => setMatchType('all')} />
+                    <FilterBtn active={matchType === '5대5'} label="5대5" onClick={() => setMatchType('5대5')} />
+                    <FilterBtn active={matchType === '3대3'} label="3대3" onClick={() => setMatchType('3대3')} />
+                </div>
+
                 <div style={actionGroup}>
                     <div style={viewSwitch}>
                         <button 
@@ -102,14 +136,12 @@ export const MatchExplore: React.FC = () => {
                             style={viewMode === 'list' ? activeSwitch : inactiveSwitch}
                         >
                             <LayoutList size={18} />
-                            <span>목록</span>
                         </button>
                         <button 
                             onClick={() => setViewMode('map')} 
                             style={viewMode === 'map' ? activeSwitch : inactiveSwitch}
                         >
                             <MapIcon size={18} />
-                            <span>지도</span>
                         </button>
                     </div>
                 </div>
@@ -256,7 +288,17 @@ const title: React.CSSProperties = { fontSize: '40px', fontWeight: 950, letterSp
 const subtitle: React.CSSProperties = { color: 'rgba(255,255,255,0.5)', fontSize: '1.1rem' };
 const createBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 24px', borderRadius: '16px', background: 'var(--accent-primary)', color: 'white', border: 'none', fontWeight: 900, cursor: 'pointer', boxShadow: '0 10px 20px rgba(249, 115, 22, 0.3)' };
 
+const tabContainer: React.CSSProperties = { display: 'flex', position: 'relative', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' };
+const activeTab: React.CSSProperties = { flex: 1, padding: '16px', background: 'transparent', border: 'none', color: 'white', fontWeight: 900, fontSize: '1rem', cursor: 'pointer' };
+const inactiveTab: React.CSSProperties = { ...activeTab, color: 'rgba(255,255,255,0.3)', fontWeight: 700 };
+const tabUnderlineLeft: React.CSSProperties = { position: 'absolute', bottom: 0, left: 0, width: '50%', height: '2px', background: 'var(--accent-primary)', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' };
+const tabUnderlineRight: React.CSSProperties = { ...tabUnderlineLeft, left: '50%' };
+
 const controlBar: React.CSSProperties = { display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' };
+const filterBar: React.CSSProperties = { display: 'flex', gap: '8px' };
+const activeFilter: React.CSSProperties = { padding: '8px 16px', borderRadius: '100px', background: 'var(--accent-primary)', color: 'white', border: 'none', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' };
+const inactiveFilter: React.CSSProperties = { ...activeFilter, background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', fontWeight: 600 };
+
 const searchBox: React.CSSProperties = { flex: 1, minWidth: '280px', display: 'flex', alignItems: 'center', gap: '12px', padding: '0 20px', height: '56px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' };
 const searchInput: React.CSSProperties = { background: 'transparent', border: 'none', color: 'white', fontSize: '1rem', width: '100%' };
 

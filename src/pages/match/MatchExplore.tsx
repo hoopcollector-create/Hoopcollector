@@ -74,7 +74,13 @@ export const MatchExplore: React.FC = () => {
                     .eq('user_id', session.user.id);
                 
                 const matchIds = myParts?.map(p => p.match_id) || [];
-                query = query.or(`id.in.(${matchIds.join(',')}),host_id.eq.${session.user.id}`);
+                
+                if (matchIds.length > 0) {
+                    const idList = matchIds.map(id => id).join(',');
+                    query = query.or(`id.in.(${idList}),host_id.eq.${session.user.id}`);
+                } else {
+                    query = query.eq('host_id', session.user.id);
+                }
             } else {
                 query = query.eq('status', 'open');
             }

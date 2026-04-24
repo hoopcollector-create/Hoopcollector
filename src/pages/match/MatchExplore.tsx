@@ -157,7 +157,11 @@ export const MatchExplore: React.FC = () => {
                             <div style={emptyBox}>현재 참여 가능한 모임이 없습니다.</div>
                         ) : (
                             matches
-                                .filter(m => m.title.includes(searchQuery) || m.place_name?.includes(searchQuery))
+                                .filter(m => 
+                                    m.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                    m.place_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                    (m as any).match_code?.toLowerCase().includes(searchQuery.toLowerCase())
+                                )
                                 .map(match => (
                                     <MatchCard key={match.id} match={match} onClick={() => navigate(`/match/room/${match.id}`)} />
                                 ))
@@ -194,7 +198,9 @@ const MatchCard: React.FC<{ match: MatchRoom, onClick: () => void }> = ({ match,
                 </div>
             </div>
 
-            <h3 style={cardTitle}>{match.title}</h3>
+            <h3 style={cardTitle}>
+                <span style={codeText}>#{ (match as any).match_code }</span> {match.title}
+            </h3>
 
             <div style={infoRow}>
                 <div style={infoItem}>
@@ -315,7 +321,8 @@ const cardStyle: React.CSSProperties = { background: 'var(--bg-surface-L1)', pad
 const cardHeader: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
 const recurringBadge: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '6px', background: 'rgba(139, 92, 246, 0.15)', color: '#a78bfa', fontSize: '0.7rem', fontWeight: 900 };
 const typeText: React.CSSProperties = { fontSize: '0.85rem', fontWeight: 800, color: 'var(--accent-primary)', opacity: 0.8 };
-const cardTitle: React.CSSProperties = { fontSize: '1.25rem', fontWeight: 850, lineHeight: 1.3 };
+const cardTitle: React.CSSProperties = { fontSize: '1.25rem', fontWeight: 850, lineHeight: 1.3, display: 'flex', gap: '8px', alignItems: 'center' };
+const codeText: React.CSSProperties = { fontSize: '0.9rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, letterSpacing: '0.05em' };
 const infoRow: React.CSSProperties = { display: 'flex', gap: '16px' };
 const infoItem: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600 };
 const locationBox: React.CSSProperties = { padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' };

@@ -75,7 +75,10 @@ export const MatchRoom: React.FC = () => {
                 <div style={headerTop}>
                     <button onClick={() => navigate('/match')} style={iconBtn}><ArrowLeft size={20}/></button>
                     <div style={headerTitleGroup}>
-                        <div style={matchTypeBadge}>{match.match_type}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={matchTypeBadge}>{match.match_type}</div>
+                            <div style={codeBadge}>#{match.match_code}</div>
+                        </div>
                         <h1 style={roomTitle}>{match.title}</h1>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
@@ -132,8 +135,9 @@ const container: React.CSSProperties = { display: 'flex', flexDirection: 'column
 const header: React.CSSProperties = { background: '#121214', borderBottom: '1px solid rgba(255,255,255,0.08)', zIndex: 100 };
 const headerTop: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', gap: '12px' };
 const headerTitleGroup: React.CSSProperties = { flex: 1, minWidth: 0 };
-const matchTypeBadge: React.CSSProperties = { fontSize: '10px', fontWeight: 900, color: 'var(--accent-primary)', textTransform: 'uppercase', marginBottom: '2px' };
-const roomTitle: React.CSSProperties = { fontSize: '1.1rem', fontWeight: 850, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: 0 };
+const matchTypeBadge: React.CSSProperties = { fontSize: '10px', fontWeight: 900, color: 'var(--accent-primary)', textTransform: 'uppercase' };
+const codeBadge: React.CSSProperties = { fontSize: '10px', fontWeight: 900, color: 'rgba(255,255,255,0.3)', padding: '2px 6px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', letterSpacing: '0.05em' };
+const roomTitle: React.CSSProperties = { fontSize: '1.1rem', fontWeight: 850, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: '4px 0 0' };
 const iconBtn: React.CSSProperties = { width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' };
 
 const tabScroller: React.CSSProperties = { overflowX: 'auto', WebkitOverflowScrolling: 'touch' };

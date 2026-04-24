@@ -323,6 +323,14 @@ body.theme-student {
   /* Input / Button size normalization */
   input, select, textarea, button {
     font-size: var(--font-base) !important;
+    background-color: var(--bg-surface-L1);
+    color: var(--color-white);
+    border: 1px solid var(--border-subtle);
+  }
+
+  select option {
+    background-color: #1a1a1c;
+    color: white;
   }
 }
 

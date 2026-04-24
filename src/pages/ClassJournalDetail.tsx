@@ -103,8 +103,8 @@ export const ClassJournalDetail = () => {
                                     <Star 
                                         key={s} 
                                         size={28} 
-                                        fill={s <= evalData.score ? 'var(--color-primary)' : 'transparent'} 
-                                        color={s <= evalData.score ? 'var(--color-primary)' : 'rgba(255,255,255,0.2)'}
+                                        fill={s <= evalData.score ? '#f59e0b' : 'transparent'} 
+                                        color={s <= evalData.score ? '#f59e0b' : 'rgba(255,255,255,0.2)'}
                                         style={{ cursor: 'pointer' }}
                                         onClick={() => setEvalData(p => ({ ...p, score: s }))}
                                     />
@@ -127,8 +127,8 @@ export const ClassJournalDetail = () => {
                                     <Star 
                                         key={s} 
                                         size={20} 
-                                        fill={s <= journal.student_score ? 'var(--color-primary)' : 'transparent'} 
-                                        color={s <= journal.student_score ? 'var(--color-primary)' : 'rgba(255,255,255,0.1)'}
+                                        fill={s <= journal.student_score ? '#f59e0b' : 'transparent'} 
+                                        color={s <= journal.student_score ? '#f59e0b' : 'rgba(255,255,255,0.1)'}
                                     />
                                 ))}
                             </div>
@@ -156,10 +156,10 @@ export const ClassJournalDetail = () => {
                                                 <div style={{ flex: 1, fontSize: '0.85rem', fontWeight: 700 }}>{skillName}</div>
                                                 <div style={{ display: 'flex', gap: 3 }}>
                                                     {[1,2,3,4,5].map(s => (
-                                                        <div key={s} style={{ width: 12, height: 6, borderRadius: 2, background: s <= score ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)' }} />
+                                                        <div key={s} style={{ width: 12, height: 6, borderRadius: 2, background: s <= score ? '#10b981' : 'rgba(255,255,255,0.05)' }} />
                                                     ))}
                                                 </div>
-                                                <div style={{ fontSize: '0.75rem', fontWeight: 900, width: 40, textAlign: 'right', color: 'var(--color-primary)' }}>{SCORE_MEANING[score]}</div>
+                                                <div style={{ fontSize: '0.75rem', fontWeight: 900, width: 40, textAlign: 'right', color: '#10b981' }}>{SCORE_MEANING[score]}</div>
                                             </div>
                                         );
                                     })

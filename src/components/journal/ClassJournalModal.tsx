@@ -163,9 +163,9 @@ export const ClassJournalModal: React.FC<ClassJournalModalProps> = ({ request, o
                                                     onClick={() => handleEvaluation(item.id, evaluations[item.id] === score ? 0 : score)}
                                                     style={{ 
                                                         flex: 1, padding: '8px 0', fontSize: '0.75rem', fontWeight: 800, borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s',
-                                                        background: evaluations[item.id] === score ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)',
+                                                        background: evaluations[item.id] === score ? '#10b981' : 'rgba(255,255,255,0.05)',
                                                         color: evaluations[item.id] === score ? 'white' : '#666',
-                                                        border: `1px solid ${evaluations[item.id] === score ? 'var(--color-primary)' : 'transparent'}`
+                                                        border: `1px solid ${evaluations[item.id] === score ? '#10b981' : 'transparent'}`
                                                     }}
                                                     title={SCORE_MEANING[score]}
                                                 >

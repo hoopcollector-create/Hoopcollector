@@ -50,9 +50,10 @@
 
 html {
   font-size: 16px;
-  /* Prevent font size adjustment on orientation change */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 body {
@@ -62,6 +63,8 @@ body {
   background-color: #070708;
   color: #ffffff;
   overflow-x: hidden;
+  width: 100%;
+  position: relative;
 }
 
 /* Minimalist Utilities */
@@ -306,9 +309,10 @@ body.theme-student {
   }
 
   /* Ensure no overflow from wide elements */
-  img, video, iframe, canvas {
+  img, video, iframe, canvas, div, section, main, header, footer {
     max-width: 100%;
     height: auto;
+    overflow-wrap: break-word;
   }
 
   /* Table responsiveness */

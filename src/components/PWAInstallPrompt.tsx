@@ -49,6 +49,9 @@ export const PWAInstallPrompt: React.FC = () => {
                     exit={{ y: 100, opacity: 0 }}
                     style={bannerContainer}
                 >
+                    <button onClick={() => setIsVisible(false)} style={floatingCloseBtn}>
+                        <X size={18} />
+                    </button>
                     <div style={contentWrap}>
                         <div style={iconWrap}>
                             <Smartphone size={24} color="var(--accent-primary)" />
@@ -61,18 +64,31 @@ export const PWAInstallPrompt: React.FC = () => {
                                     : '훕콜렉터를 홈 화면에 추가하고 실시간 알림을 받아보세요.'}
                             </div>
                         </div>
-                        <div style={actionRow}>
-                            {!isIOS && (
+                        {!isIOS && (
+                            <div style={actionRow}>
                                 <button onClick={handleInstall} style={installBtn}>
-                                    <Download size={16} /> 설치하기
+                                    <Download size={16} /> 설치
                                 </button>
-                            )}
-                            <button onClick={() => setIsVisible(false)} style={closeBtn}>
-                                <X size={20} />
-                            </button>
-                        </div>
+                            </div>
+                        )}
                     </div>
                 </motion.div>
+// ... (skip in replacement content just to show styles)
+const floatingCloseBtn: React.CSSProperties = {
+    position: 'absolute',
+    top: '8px',
+    right: '8px',
+    background: 'rgba(255,255,255,0.1)',
+    border: 'none',
+    color: 'rgba(255,255,255,0.6)',
+    cursor: 'pointer',
+    padding: '4px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10
+};
             )}
         </AnimatePresence>
     );
@@ -149,10 +165,20 @@ const installBtn: React.CSSProperties = {
     whiteSpace: 'nowrap'
 };
 
-const closeBtn: React.CSSProperties = {
-    background: 'transparent',
+const floatingCloseBtn: React.CSSProperties = {
+    position: 'absolute',
+    top: '10px',
+    right: '10px',
+    background: 'rgba(255,255,255,0.05)',
     border: 'none',
-    color: 'rgba(255,255,255,0.3)',
+    color: 'rgba(255,255,255,0.4)',
     cursor: 'pointer',
-    padding: '4px'
+    width: '28px',
+    height: '28px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+    transition: 'all 0.2s'
 };

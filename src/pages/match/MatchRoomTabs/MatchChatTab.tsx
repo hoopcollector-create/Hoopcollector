@@ -1,0 +1,183 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from '../../../lib/supabase';
+import { Send, User, Shield, Info, Zap } from 'lucide-react';
+
+interface MatchChatTabProps {
+    matchId: string;
+    currentUser: any;
+    participantStatus: string | null;
+    onJoinUpdate: () => void;
+}
+
+export const MatchChatTab: React.FC<MatchChatTabProps> = ({ matchId, currentUser, participantStatus, onJoinUpdate }) => {
+    const [messages, setMessages] = useState<any[]>([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [loading, setLoading] = useState(false);
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        loadMessages();
+        const subscription = subscribeToMessages();
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [matchId]);
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
+    async function loadMessages() {
+        const { data } = await supabase
+            .from('match_messages')
+            .select('*, profiles:profiles!match_messages_user_id_fkey(name, photo_url)')
+            .eq('match_id', matchId)
+            .order('created_at', { ascending: true });
+        setMessages(data || []);
+    }
+
+    function subscribeToMessages() {
+        return supabase
+            .channel(`match:${matchId}`)
+            .on('postgres_changes', { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'match_messages', 
+                filter: `match_id=eq.${matchId}` 
+            }, (payload) => {
+                loadMessages(); // Re-fetch to get profile info
+            })
+            .subscribe();
+    }
+
+    const scrollToBottom = () => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+    };
+
+    const handleSend = async (e?: React.FormEvent) => {
+        e?.preventDefault();
+        if (!newMessage.trim() || !currentUser || participantStatus !== 'joined') return;
+
+        const { error } = await supabase.from('match_messages').insert({
+            match_id: matchId,
+            user_id: currentUser.id,
+            message: newMessage.trim(),
+            message_type: 'user'
+        });
+
+        if (error) alert('메시지 전송 실패: ' + error.message);
+        else setNewMessage('');
+    };
+
+    const handleJoin = async () => {
+        setLoading(true);
+        const { data, error } = await supabase.rpc('join_match_room', { p_match_id: matchId });
+        if (error) alert(error.message);
+        else {
+            onJoinUpdate();
+        }
+        setLoading(false);
+    };
+
+    return (
+        <div style={container}>
+            {/* Messages Area */}
+            <div ref={scrollRef} style={messagesArea}>
+                {messages.map((msg) => {
+                    const isSystem = msg.message_type === 'system';
+                    const isMe = msg.user_id === currentUser?.id;
+
+                    if (isSystem) {
+                        return (
+                            <div key={msg.id} style={systemMsgWrap}>
+                                <div style={systemMsg}>{msg.message}</div>
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <div key={msg.id} style={isMe ? myMsgRow : otherMsgRow}>
+                            {!isMe && (
+                                <div style={avatarWrap}>
+                                    {msg.profiles?.photo_url ? (
+                                        <img src={msg.profiles.photo_url} style={avatar} />
+                                    ) : (
+                                        <div style={avatarFallback}><User size={14}/></div>
+                                    )}
+                                </div>
+                            )}
+                            <div style={msgContentWrap}>
+                                {!isMe && <div style={userName}>{msg.profiles?.name}</div>}
+                                <div style={isMe ? myBubble : otherBubble}>
+                                    {msg.message}
+                                </div>
+                                <div style={msgTime}>
+                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Bottom Actions */}
+            <div style={bottomBar}>
+                {participantStatus === 'joined' ? (
+                    <form onSubmit={handleSend} style={inputWrap}>
+                        <input 
+                            placeholder="메시지를 입력하세요..." 
+                            value={newMessage}
+                            onChange={e => setNewMessage(e.target.value)}
+                            style={input}
+                        />
+                        <button type="submit" style={sendBtn} disabled={!newMessage.trim()}>
+                            <Send size={18} fill={newMessage.trim() ? "white" : "transparent"} />
+                        </button>
+                    </form>
+                ) : (
+                    <div style={joinPrompt}>
+                        <div style={joinInfo}>
+                            <Info size={14} />
+                            <span>대화에 참여하려면 모임에 참가 신청을 해주세요.</span>
+                        </div>
+                        <button onClick={handleJoin} disabled={loading} style={joinBtn}>
+                            <Zap size={18} fill="white" />
+                            <span>{loading ? '처리 중...' : '매치 참여하기'}</span>
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// Styles
+const container: React.CSSProperties = { display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' };
+const messagesArea: React.CSSProperties = { flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' };
+
+const systemMsgWrap: React.CSSProperties = { display: 'flex', justifyContent: 'center', margin: '8px 0' };
+const systemMsg: React.CSSProperties = { padding: '6px 16px', borderRadius: '100px', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: 700 };
+
+const myMsgRow: React.CSSProperties = { display: 'flex', flexDirection: 'row-reverse', gap: '10px', alignItems: 'flex-end', marginLeft: '40px' };
+const otherMsgRow: React.CSSProperties = { display: 'flex', gap: '10px', alignItems: 'flex-start', marginRight: '40px' };
+
+const avatarWrap: React.CSSProperties = { flexShrink: 0, marginTop: '4px' };
+const avatar: React.CSSProperties = { width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' };
+const avatarFallback: React.CSSProperties = { width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.3)' };
+
+const msgContentWrap: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '4px' };
+const userName: React.CSSProperties = { fontSize: '0.75rem', fontWeight: 800, color: 'rgba(255,255,255,0.5)', marginLeft: '4px' };
+const otherBubble: React.CSSProperties = { padding: '12px 16px', borderRadius: '4px 16px 16px 16px', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: '0.9rem', lineHeight: 1.5, wordBreak: 'break-all' };
+const myBubble: React.CSSProperties = { ...otherBubble, borderRadius: '16px 16px 4px 16px', background: 'var(--accent-primary)', color: 'white', fontWeight: 600 };
+const msgTime: React.CSSProperties = { fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)', fontWeight: 700, margin: '0 4px' };
+
+const bottomBar: React.CSSProperties = { padding: '16px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom))', background: '#121214', borderTop: '1px solid rgba(255,255,255,0.05)' };
+const inputWrap: React.CSSProperties = { display: 'flex', gap: '10px', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '6px 6px 6px 16px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' };
+const input: React.CSSProperties = { flex: 1, background: 'transparent', border: 'none', color: 'white', fontSize: '0.95rem', height: '36px' };
+const sendBtn: React.CSSProperties = { width: '36px', height: '36px', borderRadius: '50%', background: 'transparent', border: 'none', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' };
+
+const joinPrompt: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' };
+const joinInfo: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 };
+const joinBtn: React.CSSProperties = { width: '100%', height: '52px', borderRadius: '16px', background: 'var(--accent-primary)', color: 'white', border: 'none', fontWeight: 900, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(249, 115, 22, 0.3)' };

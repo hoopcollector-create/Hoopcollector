@@ -1,0 +1,292 @@
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+import { 
+    Search, Filter, Map as MapIcon, LayoutList, Plus, 
+    Calendar, Users, Award, MapPin, ChevronRight, 
+    Clock, Zap, LayoutGrid, Heart 
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useNaverMap } from '../../hooks/useNaverMap';
+
+// Types from SQL schema
+interface MatchRoom {
+    id: string;
+    title: string;
+    description: string;
+    match_type: string;
+    required_grade: string;
+    max_players: number;
+    current_players: number;
+    start_at: string;
+    end_at: string;
+    occurrence_date: string;
+    place_name: string;
+    address: string;
+    fee_type: string;
+    fee_amount: number;
+    status: string;
+    is_recurring: boolean;
+    latitude: number;
+    longitude: number;
+    host_profiles?: { name: string; photo_url: string };
+}
+
+export const MatchExplore: React.FC = () => {
+    const navigate = useNavigate();
+    const { isLoaded: mapLoaded } = useNaverMap();
+    
+    const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+    const [matches, setMatches] = useState<MatchRoom[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterType, setFilterType] = useState('all');
+
+    useEffect(() => {
+        loadMatches();
+    }, [filterType]);
+
+    async function loadMatches() {
+        setLoading(true);
+        try {
+            let query = supabase
+                .from('match_rooms')
+                .select('*, host_profiles:profiles(name, photo_url)')
+                .eq('status', 'open')
+                .eq('is_hidden', false)
+                .order('start_at', { ascending: true });
+
+            if (filterType !== 'all') {
+                query = query.eq('match_type', filterType);
+            }
+
+            const { data, error } = await query;
+            if (error) throw error;
+            setMatches(data || []);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    return (
+        <div style={container}>
+            {/* Header Section */}
+            <div style={header}>
+                <div>
+                    <h1 style={title}>게임 매칭 & 모임</h1>
+                    <p style={subtitle}>지도와 목록에서 주변 농구 모임을 찾아보세요.</p>
+                </div>
+                <button onClick={() => navigate('/match/create')} style={createBtn}>
+                    <Plus size={20} strokeWidth={3} />
+                    <span>개설하기</span>
+                </button>
+            </div>
+
+            {/* Filter & View Switcher */}
+            <div style={controlBar}>
+                <div style={searchBox}>
+                    <Search size={18} style={{ opacity: 0.4 }} />
+                    <input 
+                        placeholder="장소 또는 제목 검색..." 
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        style={searchInput} 
+                    />
+                </div>
+                
+                <div style={actionGroup}>
+                    <div style={viewSwitch}>
+                        <button 
+                            onClick={() => setViewMode('list')} 
+                            style={viewMode === 'list' ? activeSwitch : inactiveSwitch}
+                        >
+                            <LayoutList size={18} />
+                            <span>목록</span>
+                        </button>
+                        <button 
+                            onClick={() => setViewMode('map')} 
+                            style={viewMode === 'map' ? activeSwitch : inactiveSwitch}
+                        >
+                            <MapIcon size={18} />
+                            <span>지도</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content Area */}
+            <div style={contentArea}>
+                {viewMode === 'list' ? (
+                    <div style={matchGrid}>
+                        {loading ? (
+                            <div style={loadingBox}>모임을 불러오는 중...</div>
+                        ) : matches.length === 0 ? (
+                            <div style={emptyBox}>현재 참여 가능한 모임이 없습니다.</div>
+                        ) : (
+                            matches
+                                .filter(m => m.title.includes(searchQuery) || m.place_name?.includes(searchQuery))
+                                .map(match => (
+                                    <MatchCard key={match.id} match={match} onClick={() => navigate(`/match/room/${match.id}`)} />
+                                ))
+                        )}
+                    </div>
+                ) : (
+                    <ExplorationMap matches={matches} navigate={navigate} />
+                )}
+            </div>
+        </div>
+    );
+};
+
+// Sub-component: Match Card
+const MatchCard: React.FC<{ match: MatchRoom, onClick: () => void }> = ({ match, onClick }) => {
+    const dateObj = new Date(match.start_at);
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+    const dateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()} (${dayNames[dateObj.getDay()]})`;
+    const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+
+    return (
+        <div style={cardStyle} onClick={onClick} className="card-premium hover-lift">
+            <div style={cardHeader}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    {match.is_recurring && (
+                        <div style={recurringBadge}>
+                            <Zap size={10} fill="currentColor" /> 정기
+                        </div>
+                    )}
+                    <span style={typeText}>{match.match_type}</span>
+                </div>
+                <div style={gradeBadge(match.required_grade)}>
+                    {match.required_grade === 'all' ? '전체등급' : `${match.required_grade} 이상`}
+                </div>
+            </div>
+
+            <h3 style={cardTitle}>{match.title}</h3>
+
+            <div style={infoRow}>
+                <div style={infoItem}>
+                    <Calendar size={14} />
+                    <span>{dateStr}</span>
+                </div>
+                <div style={infoItem}>
+                    <Clock size={14} />
+                    <span>{timeStr}</span>
+                </div>
+            </div>
+
+            <div style={locationBox}>
+                <MapPin size={14} style={{ color: 'var(--accent-primary)' }} />
+                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{match.place_name}</span>
+            </div>
+
+            <div style={cardFooter}>
+                <div style={playerCount}>
+                    <Users size={14} />
+                    <span>{match.current_players} / {match.max_players}명</span>
+                </div>
+                <div style={priceText}>
+                    {match.fee_amount > 0 ? `${match.fee_amount.toLocaleString()}원` : '무료'}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Sub-component: Naver Map View
+const ExplorationMap: React.FC<{ matches: MatchRoom[], navigate: any }> = ({ matches, navigate }) => {
+    const mapRef = React.useRef<HTMLDivElement>(null);
+    const { isLoaded } = useNaverMap();
+
+    useEffect(() => {
+        if (!isLoaded || !mapRef.current || !window.naver) return;
+
+        // Geolocation or Default Seoul
+        const initMap = (lat: number, lng: number) => {
+            const map = new window.naver.maps.Map(mapRef.current!, {
+                center: new window.naver.maps.LatLng(lat, lng),
+                zoom: 13,
+                logoControl: false,
+                mapDataControl: false,
+            });
+
+            matches.forEach(m => {
+                if (!m.latitude || !m.longitude) return;
+                
+                const marker = new window.naver.maps.Marker({
+                    position: new window.naver.maps.LatLng(m.latitude, m.longitude),
+                    map: map,
+                    icon: {
+                        content: `
+                            <div style="background: ${m.is_recurring ? '#8b5cf6' : '#f97316'}; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); white-space: nowrap;">
+                                ${m.match_type}
+                            </div>
+                        `,
+                        anchor: new window.naver.maps.Point(20, 20)
+                    }
+                });
+
+                window.naver.maps.Event.addListener(marker, 'click', () => {
+                    navigate(`/match/room/${m.id}`);
+                });
+            });
+        };
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                p => initMap(p.coords.latitude, p.coords.longitude),
+                () => initMap(37.5665, 126.9780)
+            );
+        } else {
+            initMap(37.5665, 126.9780);
+        }
+    }, [isLoaded, matches]);
+
+    return (
+        <div style={mapWrap}>
+            <div ref={mapRef} style={{ width: '100%', height: '100%', borderRadius: '24px' }} />
+        </div>
+    );
+};
+
+// Styles
+const container: React.CSSProperties = { padding: '24px', maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '32px' };
+const header: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' };
+const title: React.CSSProperties = { fontSize: '40px', fontWeight: 950, letterSpacing: '-0.04em', marginBottom: '8px' };
+const subtitle: React.CSSProperties = { color: 'rgba(255,255,255,0.5)', fontSize: '1.1rem' };
+const createBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 24px', borderRadius: '16px', background: 'var(--accent-primary)', color: 'white', border: 'none', fontWeight: 900, cursor: 'pointer', boxShadow: '0 10px 20px rgba(249, 115, 22, 0.3)' };
+
+const controlBar: React.CSSProperties = { display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' };
+const searchBox: React.CSSProperties = { flex: 1, minWidth: '280px', display: 'flex', alignItems: 'center', gap: '12px', padding: '0 20px', height: '56px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' };
+const searchInput: React.CSSProperties = { background: 'transparent', border: 'none', color: 'white', fontSize: '1rem', width: '100%' };
+
+const actionGroup: React.CSSProperties = { display: 'flex', gap: '12px', alignItems: 'center' };
+const viewSwitch: React.CSSProperties = { display: 'flex', padding: '4px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' };
+const activeSwitch: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' };
+const inactiveSwitch: React.CSSProperties = { ...activeSwitch, background: 'transparent', color: 'rgba(255,255,255,0.4)', fontWeight: 600 };
+
+const contentArea: React.CSSProperties = { minHeight: '600px' };
+const matchGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' };
+const mapWrap: React.CSSProperties = { width: '100%', height: '70vh', background: '#121214', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' };
+
+const cardStyle: React.CSSProperties = { background: 'var(--bg-surface-L1)', padding: '24px', borderRadius: '24px', border: '1px solid var(--border-subtle)', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '16px' };
+const cardHeader: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
+const recurringBadge: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '6px', background: 'rgba(139, 92, 246, 0.15)', color: '#a78bfa', fontSize: '0.7rem', fontWeight: 900 };
+const typeText: React.CSSProperties = { fontSize: '0.85rem', fontWeight: 800, color: 'var(--accent-primary)', opacity: 0.8 };
+const cardTitle: React.CSSProperties = { fontSize: '1.25rem', fontWeight: 850, lineHeight: 1.3 };
+const infoRow: React.CSSProperties = { display: 'flex', gap: '16px' };
+const infoItem: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600 };
+const locationBox: React.CSSProperties = { padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' };
+const cardFooter: React.CSSProperties = { marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)' };
+const playerCount: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 700 };
+const priceText: React.CSSProperties = { fontSize: '0.9rem', fontWeight: 900, color: 'white' };
+
+const gradeBadge = (grade: string): React.CSSProperties => ({
+    padding: '4px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900,
+    background: grade === 'all' ? 'rgba(255,255,255,0.05)' : 'rgba(16, 185, 129, 0.1)',
+    color: grade === 'all' ? 'rgba(255,255,255,0.5)' : '#10b981',
+    border: `1px solid ${grade === 'all' ? 'rgba(255,255,255,0.1)' : 'rgba(16, 185, 129, 0.2)'}`
+});
+
+const loadingBox: React.CSSProperties = { gridColumn: '1/-1', textAlign: 'center', padding: '100px', fontSize: '1.2rem', fontWeight: 900, opacity: 0.2 };
+const emptyBox: React.CSSProperties = { ...loadingBox };

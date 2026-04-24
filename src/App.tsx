@@ -18,7 +18,9 @@ import { Shop } from './pages/Shop';
 import { ShopDetail } from './pages/ShopDetail';
 import { Home } from './pages/Home';
 import { ClassJournalDetail } from './pages/ClassJournalDetail';
-import { MatchBoard } from './pages/MatchBoard';
+import { MatchExplore } from './pages/match/MatchExplore';
+import { MatchCreate } from './pages/match/MatchCreate';
+import { MatchRoom } from './pages/match/MatchRoom';
 import { Terms } from './pages/Terms';
 import { CourtMap } from './pages/CourtMap';
 import { Messages } from './pages/Messages';
@@ -53,7 +55,9 @@ export const App = () => {
                 <Route path="/community/write" element={<AppLayout><PostWrite /></AppLayout>} />
                 <Route path="/community/edit/:id" element={<AppLayout><PostWrite /></AppLayout>} />
                 
-                <Route path="/match" element={<AppLayout><MatchBoard /></AppLayout>} />
+                <Route path="/match" element={<AppLayout><MatchExplore /></AppLayout>} />
+                <Route path="/match/create" element={<AppLayout><MatchCreate /></AppLayout>} />
+                <Route path="/match/room/:id" element={<MatchRoom />} />
                 <Route path="/terms" element={<AppLayout><Terms /></AppLayout>} />
                 <Route path="/court-map" element={<AppLayout><CourtMap /></AppLayout>} />
                 

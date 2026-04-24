@@ -24,8 +24,13 @@ export const Messages = () => {
         setUserId(session.user.id);
         
         // check if user is admin or coach
-        const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', session.user.id);
-        if (roles && roles.some(r => r.role === 'coach')) {
+        const { data: roles } = await supabase.from('user_roles').select('*').eq('user_id', session.user.id);
+        const hasCoachRole = roles?.some(r => {
+            const val = (r.role || r.role_name || r.name || "").toLowerCase();
+            return val === 'coach' || val === 'admin';
+        });
+        
+        if (hasCoachRole) {
             setIsCoachMode(true);
         }
 

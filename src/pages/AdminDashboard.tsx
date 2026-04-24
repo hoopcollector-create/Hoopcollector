@@ -48,8 +48,9 @@ export const AdminDashboard = () => {
         }
         
         try {
-            const { data } = await supabase.from('user_roles').select('role').eq('user_id', session.user.id).eq('role', 'admin').maybeSingle();
-            if (!data) {
+            const { data } = await supabase.from('user_roles').select('*').eq('user_id', session.user.id);
+            const isAdmin = data?.some(r => (r.role || r.role_name || r.name) === 'admin');
+            if (!isAdmin) {
                 navigate('/dashboard'); 
             }
         } catch {

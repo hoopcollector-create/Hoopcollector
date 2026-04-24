@@ -28,14 +28,14 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
             if (!session) return;
 
             // 1. Check user_roles first (Ultimate authority)
-            const { data: roles, error: roleErr } = await supabase.from('user_roles').select('role').eq('user_id', session.user.id);
+            const { data: roles, error: roleErr } = await supabase.from('user_roles').select('*').eq('user_id', session.user.id);
             
             if (roleErr) console.error("Role check error:", roleErr);
 
-            const hasPower = roles?.some(r => 
-                r.role?.toLowerCase() === 'coach' || 
-                r.role?.toLowerCase() === 'admin'
-            );
+            const hasPower = roles?.some(r => {
+                const val = (r.role || r.role_name || r.name || "").toLowerCase();
+                return val === 'coach' || val === 'admin';
+            });
 
             // 2. Check coach_profiles (Operational status)
             const { data: coachProp } = await supabase
@@ -45,10 +45,8 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
                 .maybeSingle();
             
             if (hasPower || coachProp?.active) {
-                console.log("Coach verification successful. Role:", roles);
                 setIsCoachVerified(true);
             } else {
-                console.log("Coach verification failed. User is not a coach/admin in user_roles.");
                 setIsCoachVerified(false);
             }
         } catch (e) {

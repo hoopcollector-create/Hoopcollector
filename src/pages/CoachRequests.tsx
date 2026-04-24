@@ -275,39 +275,40 @@ export const CoachRequests = () => {
                             {viewMode === 'upcoming' && "확정된 향후 수업 일정이 없습니다."}
                         </div>
                     ) : (
-                        <div style={{ padding: '4px', fontSize: '0.75rem', fontWeight: 900, color: 'rgba(255,255,255,0.2)', marginBottom: '8px', textTransform: 'uppercase' }}>
-                            {viewMode === 'designated' && "New Designated Requests"}
-                            {viewMode === 'general' && "Public Open Classes"}
-                            {viewMode === 'pending' && "Needs Completion Journal"}
-                            {viewMode === 'upcoming' && "Scheduled Sessions"}
-                        </div>
-                    )}
-                    {requests.map(req => (
-                            <div key={req.id} onClick={() => { setSelectedRequest(req); if(window.innerWidth <= 768) window.scrollTo({top: 400, behavior: 'smooth'}); }} style={{
-                                ...card,
-                                borderColor: selectedRequest?.id === req.id ? (viewMode === 'designated' ? 'var(--color-primary)' : 'var(--color-coach)') : 'rgba(255,255,255,0.08)',
-                                background: selectedRequest?.id === req.id ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.03)'
-                            }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <User size={18} />
-                                        </div>
-                                        <div>
-                                            <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>{req.student_name} 학생</div>
-                                            <div style={{ fontSize: '0.7rem', opacity: 0.5 }}>{new Date(req.created_at).toLocaleDateString()} 신청</div>
-                                        </div>
-                                    </div>
-                                    <div style={{ ...statusBadge, background: req.status === 'requested' ? 'rgba(245, 158, 11, 0.2)' : req.status === 'accepted' ? 'rgba(34, 197, 94, 0.2)' : req.status === 'completed' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.1)', color: req.status === 'requested' ? '#f59e0b' : req.status === 'accepted' ? '#4ade80' : req.status === 'completed' ? '#3b82f6' : 'rgba(255,255,255,0.6)' }}>
-                                        {req.status === 'requested' ? '대기중' : req.status === 'accepted' ? '승인됨' : req.status === 'completed' ? '완료됨' : req.status}
-                                    </div>
-                                </div>
-                                <div style={{ display: 'grid', gap: '6px', fontSize: '0.85rem', opacity: 0.8 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Clock size={14} /> {fmtDate(req.requested_start)} ({req.duration_min}분)</div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MapPin size={14} /> {req.address || "장소 협의 필요"}</div>
-                                </div>
+                        <>
+                            <div style={{ padding: '4px', fontSize: '0.75rem', fontWeight: 900, color: 'rgba(255,255,255,0.2)', marginBottom: '8px', textTransform: 'uppercase' }}>
+                                {viewMode === 'designated' && "New Designated Requests"}
+                                {viewMode === 'general' && "Public Open Classes"}
+                                {viewMode === 'pending' && "Needs Completion Journal"}
+                                {viewMode === 'upcoming' && "Scheduled Sessions"}
                             </div>
-                        ))
+                            {requests.map(req => (
+                                <div key={req.id} onClick={() => { setSelectedRequest(req); if(window.innerWidth <= 768) window.scrollTo({top: 400, behavior: 'smooth'}); }} style={{
+                                    ...card,
+                                    borderColor: selectedRequest?.id === req.id ? (viewMode === 'designated' ? 'var(--color-primary)' : 'var(--color-coach)') : 'rgba(255,255,255,0.08)',
+                                    background: selectedRequest?.id === req.id ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.03)'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <User size={18} />
+                                            </div>
+                                            <div>
+                                                <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>{req.student_name} 학생</div>
+                                                <div style={{ fontSize: '0.7rem', opacity: 0.5 }}>{new Date(req.created_at).toLocaleDateString()} 신청</div>
+                                            </div>
+                                        </div>
+                                        <div style={{ ...statusBadge, background: req.status === 'requested' ? 'rgba(245, 158, 11, 0.2)' : req.status === 'accepted' ? 'rgba(34, 197, 94, 0.2)' : req.status === 'completed' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.1)', color: req.status === 'requested' ? '#f59e0b' : req.status === 'accepted' ? '#4ade80' : req.status === 'completed' ? '#3b82f6' : 'rgba(255,255,255,0.6)' }}>
+                                            {req.status === 'requested' ? '대기중' : req.status === 'accepted' ? '승인됨' : req.status === 'completed' ? '완료됨' : req.status}
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'grid', gap: '6px', fontSize: '0.85rem', opacity: 0.8 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Clock size={14} /> {fmtDate(req.requested_start)} ({req.duration_min}분)</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MapPin size={14} /> {req.address || "장소 협의 필요"}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </>
                     )}
                 </div>
 

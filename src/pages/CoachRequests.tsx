@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Check, X, Clock, MapPin, User, BookOpen, Layers, Target, AlertCircle, Settings } from 'lucide-react';
+import { Check, X, Clock, MapPin, User, BookOpen, Layers, Target, AlertCircle, Settings, Calendar } from 'lucide-react';
 import { ClassJournalModal } from '../components/journal/ClassJournalModal';
 import { AttendanceQR } from '../components/AttendanceQR';
 import { Link } from 'react-router-dom';
@@ -25,9 +25,10 @@ type ClassRequest = {
 };
 
 export const CoachRequests = () => {
-    const [viewMode, setViewMode] = useState<"designated" | "general">("designated");
+    const [viewMode, setViewMode] = useState<"designated" | "general" | "pending" | "upcoming">("designated");
     const [requests, setRequests] = useState<ClassRequest[]>([]);
     const [loading, setLoading] = useState(true);
+    const [counts, setCounts] = useState({ designated: 0, general: 0, pending: 0, upcoming: 0 });
     const [msg, setMsg] = useState("");
     const [selectedRequest, setSelectedRequest] = useState<ClassRequest | null>(null);
     const [showJournalModal, setShowJournalModal] = useState(false);
@@ -44,7 +45,7 @@ export const CoachRequests = () => {
 
     useEffect(() => {
         loadRequests();
-    }, [viewMode, coachRegions]);
+    }, [viewMode, coachRegions, regionIdMap]);
 
     async function loadInitialData() {
         try {
@@ -85,27 +86,36 @@ export const CoachRequests = () => {
             if (!session) return;
 
             let query = supabase.from('class_requests').select('*');
+            const now = new Date().toISOString();
+            const regionIds = coachRegions.map(name => regionIdMap[name]).filter(Boolean);
+
+            // Fetch counts
+            const [cDes, cGen, cPen, cUp] = await Promise.all([
+                supabase.from('class_requests').select('id', { count: 'exact', head: true }).eq('coach_id', session.user.id).eq('status', 'requested'),
+                regionIds.length > 0 ? supabase.from('class_requests').select('id', { count: 'exact', head: true }).is('coach_id', null).eq('status', 'requested').in('region_id', regionIds) : { count: 0 },
+                supabase.from('class_requests').select('id', { count: 'exact', head: true }).eq('coach_id', session.user.id).eq('status', 'accepted').lt('requested_start', now),
+                supabase.from('class_requests').select('id', { count: 'exact', head: true }).eq('coach_id', session.user.id).eq('status', 'accepted').gt('requested_start', now)
+            ]);
+
+            setCounts({ 
+                designated: cDes.count || 0, 
+                general: cGen.count || 0, 
+                pending: cPen.count || 0,
+                upcoming: cUp.count || 0
+            });
 
             if (viewMode === 'designated') {
-                // Designated: Specifically for me
-                query = query.eq('coach_id', session.user.id);
-            } else {
-                // General: No coach assigned, requested status, and in my regions
-                const regionIds = coachRegions.map(name => regionIdMap[name]).filter(Boolean);
-                
-                if (regionIds.length === 0) {
-                    setRequests([]);
-                    setLoading(false);
-                    return;
-                }
-
-                query = query
-                    .is('coach_id', null)
-                    .eq('status', 'requested')
-                    .in('region_id', regionIds);
+                query = query.eq('coach_id', session.user.id).eq('status', 'requested');
+            } else if (viewMode === 'general') {
+                if (regionIds.length === 0) { setRequests([]); setLoading(false); return; }
+                query = query.is('coach_id', null).eq('status', 'requested').in('region_id', regionIds);
+            } else if (viewMode === 'pending') {
+                query = query.eq('coach_id', session.user.id).eq('status', 'accepted').lt('requested_start', now);
+            } else if (viewMode === 'upcoming') {
+                query = query.eq('coach_id', session.user.id).eq('status', 'accepted').gt('requested_start', now);
             }
 
-            const { data: reqs, error: reqError } = await query.order('created_at', { ascending: false });
+            const { data: reqs, error: reqError } = await query.order('requested_start', { ascending: viewMode === 'upcoming' });
 
             if (reqError) throw reqError;
 
@@ -204,13 +214,28 @@ export const CoachRequests = () => {
                     onClick={() => { setViewMode("designated"); setSelectedRequest(null); }} 
                     style={{ ...tabBtn, background: viewMode === 'designated' ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)', color: viewMode === 'designated' ? 'white' : 'rgba(255,255,255,0.4)', borderColor: viewMode === 'designated' ? 'var(--color-primary)' : 'rgba(255,255,255,0.1)' }}
                 >
-                    <Target size={16} /> 지목 수업
+                    <Target size={16} /> 지목 신규
+                    {counts.designated > 0 && <span style={tabBadge}>{counts.designated}</span>}
                 </button>
                 <button 
                     onClick={() => { setViewMode("general"); setSelectedRequest(null); }} 
                     style={{ ...tabBtn, background: viewMode === 'general' ? 'var(--color-coach)' : 'rgba(255,255,255,0.05)', color: viewMode === 'general' ? 'white' : 'rgba(255,255,255,0.4)', borderColor: viewMode === 'general' ? 'var(--color-coach)' : 'rgba(255,255,255,0.1)' }}
                 >
-                    <Layers size={16} /> 일반 클래스 (경쟁)
+                    <Layers size={16} /> 일반 클래스
+                    {counts.general > 0 && <span style={tabBadge}>{counts.general}</span>}
+                </button>
+                <button 
+                    onClick={() => { setViewMode("pending"); setSelectedRequest(null); }} 
+                    style={{ ...tabBtn, background: viewMode === 'pending' ? '#ef4444' : 'rgba(255,255,255,0.05)', color: viewMode === 'pending' ? 'white' : 'rgba(255,255,255,0.4)', borderColor: viewMode === 'pending' ? '#ef4444' : 'rgba(255,255,255,0.1)' }}
+                >
+                    <Clock size={16} /> 완료 대기
+                    {counts.pending > 0 && <span style={tabBadge}>{counts.pending}</span>}
+                </button>
+                <button 
+                    onClick={() => { setViewMode("upcoming"); setSelectedRequest(null); }} 
+                    style={{ ...tabBtn, background: viewMode === 'upcoming' ? '#34d399' : 'rgba(255,255,255,0.05)', color: viewMode === 'upcoming' ? 'white' : 'rgba(255,255,255,0.4)', borderColor: viewMode === 'upcoming' ? '#34d399' : 'rgba(255,255,255,0.1)' }}
+                >
+                    <Calendar size={16} /> 확정 일정
                 </button>
             </div>
 
@@ -244,10 +269,20 @@ export const CoachRequests = () => {
                         <div style={emptyBox}>요청을 불러오는 중...</div>
                     ) : requests.length === 0 ? (
                         <div style={emptyBox}>
-                            {viewMode === 'designated' ? "지정된 수업 요청이 없습니다." : "현재 활동 지역에 가능한 일반 수업 요청이 없습니다."}
+                            {viewMode === 'designated' && "지정된 신규 수업 요청이 없습니다."}
+                            {viewMode === 'general' && "현재 활동 지역에 가능한 일반 수업 요청이 없습니다."}
+                            {viewMode === 'pending' && "일지가 작성되지 않은 '완료 대기' 수업이 없습니다."}
+                            {viewMode === 'upcoming' && "확정된 향후 수업 일정이 없습니다."}
                         </div>
                     ) : (
-                        requests.map(req => (
+                        <div style={{ padding: '4px', fontSize: '0.75rem', fontWeight: 900, color: 'rgba(255,255,255,0.2)', marginBottom: '8px', textTransform: 'uppercase' }}>
+                            {viewMode === 'designated' && "New Designated Requests"}
+                            {viewMode === 'general' && "Public Open Classes"}
+                            {viewMode === 'pending' && "Needs Completion Journal"}
+                            {viewMode === 'upcoming' && "Scheduled Sessions"}
+                        </div>
+                    )}
+                    {requests.map(req => (
                             <div key={req.id} onClick={() => { setSelectedRequest(req); if(window.innerWidth <= 768) window.scrollTo({top: 400, behavior: 'smooth'}); }} style={{
                                 ...card,
                                 borderColor: selectedRequest?.id === req.id ? (viewMode === 'designated' ? 'var(--color-primary)' : 'var(--color-coach)') : 'rgba(255,255,255,0.08)',
@@ -373,8 +408,9 @@ export const CoachRequests = () => {
     );
 };
 
-const tabsContainer: React.CSSProperties = { display: 'flex', gap: '10px', marginBottom: '2rem' };
-const tabBtn: React.CSSProperties = { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '14px', border: '1px solid', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.9rem' };
+const tabsContainer: React.CSSProperties = { display: 'flex', gap: '10px', marginBottom: '2rem', overflowX: 'auto', paddingBottom: '8px' };
+const tabBtn: React.CSSProperties = { minWidth: '120px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '14px', border: '1px solid', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.9rem', position: 'relative' };
+const tabBadge: React.CSSProperties = { minWidth: '18px', height: '18px', padding: '0 4px', background: 'white', color: 'black', borderRadius: '6px', fontSize: '10px', fontWeight: 950, display: 'flex', alignItems: 'center', justifyContent: 'center' };
 
 const setupAlert: React.CSSProperties = { padding: '2rem', borderRadius: '24px', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)', marginBottom: '2rem' };
 const setupLink: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '12px', background: '#f59e0b', color: 'white', textDecoration: 'none', fontWeight: 900, fontSize: '0.85rem' };

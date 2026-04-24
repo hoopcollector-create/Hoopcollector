@@ -22,6 +22,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const [isAdmin, setIsAdmin] = useState(false);
     const [isCoachRole, setIsCoachRole] = useState(false);
     const [unreadChatCount, setUnreadChatCount] = useState(0);
+    const [activeRequestsCount, setActiveRequestsCount] = useState(0);
 
     
     // Internal state fallback if not provided
@@ -54,6 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
             if (currentSession) {
                 fetchUnreadChats(currentSession.user.id);
+                fetchActiveRequests(currentSession.user.id);
                 setupChatSubscription(currentSession.user.id);
             }
         });
@@ -62,9 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }, [appMode]);
 
     let chatSubChannel: any = null;
-    
     async function fetchUnreadChats(uid: string) {
-        // Fetch rooms first
         const { data: rooms } = await supabase
             .from('chat_rooms')
             .select('id')
@@ -81,6 +81,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
             .eq('is_read', false);
             
         setUnreadChatCount(count || 0);
+    }
+
+    async function fetchActiveRequests(uid: string) {
+        try {
+            const { data: cp } = await supabase.from('coach_profiles').select('service_regions').eq('user_id', uid).maybeSingle();
+            const regions = cp?.service_regions || [];
+            const { data: regionRecs } = await supabase.from('service_regions').select('id').in('display_name', regions);
+            const regionIds = (regionRecs || []).map(r => r.id);
+
+            const { count: designatedNew } = await supabase.from('class_requests').select('id', { count: 'exact', head: true }).eq('coach_id', uid).eq('status', 'requested');
+            
+            let generalNew = 0;
+            if (regionIds.length > 0) {
+                const { count } = await supabase.from('class_requests').select('id', { count: 'exact', head: true }).is('coach_id', null).eq('status', 'requested').in('region_id', regionIds);
+                generalNew = count || 0;
+            }
+
+            const { count: pendingCompletion } = await supabase.from('class_requests')
+                .select('id', { count: 'exact', head: true })
+                .eq('coach_id', uid)
+                .eq('status', 'accepted')
+                .lt('requested_start', new Date().toISOString());
+
+            setActiveRequestsCount((designatedNew || 0) + generalNew + (pendingCompletion || 0));
+        } catch (e) {
+            console.error("Failed to fetch active requests count", e);
+        }
     }
 
     function setupChatSubscription(uid: string) {
@@ -137,8 +164,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const coachMenuItems = [
         { name: "코치 대시보드", icon: LayoutDashboard, link: "/coach/dashboard" },
         { name: "메시지 보관함", icon: MessageCircle, link: "/messages" },
-        { name: "매칭 및 구인", icon: Target, link: "/match" },
         { name: "수업 요청 관리", icon: Target, link: "/coach/requests" },
+        { name: "매칭 및 구인", icon: Target, link: "/match" },
         { name: "스케줄 관리", icon: Calendar, link: "/coach/schedule" },
         { name: "등급 및 승급", icon: Award, link: "/coach/grade" },
         { name: "스토어", icon: ShoppingBag, link: "/shop" },
@@ -224,6 +251,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                     {item.link === "/messages" && unreadChatCount > 0 && (
                                         <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: '#ef4444', color: 'white', fontSize: '10px', fontWeight: 900, borderRadius: '100px', padding: '2px 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                             {unreadChatCount > 9 ? '9+' : unreadChatCount}
+                                        </span>
+                                    )}
+                                    {item.link === "/coach/requests" && activeRequestsCount > 0 && (
+                                        <span style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', background: '#3b82f6', color: 'white', fontSize: '10px', fontWeight: 900, borderRadius: '100px', padding: '2px 6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            {activeRequestsCount > 9 ? '9+' : activeRequestsCount}
                                         </span>
                                     )}
                                 </Link>

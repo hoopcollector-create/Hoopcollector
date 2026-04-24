@@ -66,6 +66,9 @@ export const MatchExplore: React.FC = () => {
                 .eq('is_hidden', false)
                 .order('start_at', { ascending: true });
 
+            // Note: If you get PGRST200 error, please run the SQL to add FK constraint.
+            // ALTER TABLE match_rooms ADD CONSTRAINT match_rooms_host_id_fkey FOREIGN KEY (host_id) REFERENCES profiles(id);
+
             if (filterType === 'my') {
                 if (!session) {
                     setMatches([]);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Smartphone, Download, MapPin, Target, Zap, CheckCircle, X } from 'lucide-react';
+import { Smartphone, Download, X } from 'lucide-react';
 
 export const PWAInstallPrompt: React.FC = () => {
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -73,22 +73,6 @@ export const PWAInstallPrompt: React.FC = () => {
                         )}
                     </div>
                 </motion.div>
-// ... (skip in replacement content just to show styles)
-const floatingCloseBtn: React.CSSProperties = {
-    position: 'absolute',
-    top: '8px',
-    right: '8px',
-    background: 'rgba(255,255,255,0.1)',
-    border: 'none',
-    color: 'rgba(255,255,255,0.6)',
-    cursor: 'pointer',
-    padding: '4px',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10
-};
             )}
         </AnimatePresence>
     );

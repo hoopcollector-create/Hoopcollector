@@ -31,6 +31,15 @@ interface MatchRoom {
     host_profiles?: { name: string; photo_url: string };
 }
 
+const FilterBtn = ({ active, label, onClick }: any) => (
+    <button 
+        onClick={onClick}
+        style={active ? activeFilter : inactiveFilter}
+    >
+        {label}
+    </button>
+);
+
 export const MatchExplore: React.FC = () => {
     const navigate = useNavigate();
     const { isLoaded: mapLoaded } = useNaverMap();

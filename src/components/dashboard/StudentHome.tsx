@@ -23,6 +23,7 @@ interface StudentHomeProps {
     loading: boolean;
     photoUrl: string;
     setPhotoUrl: (v: string) => void;
+    recentJournals?: any[];
 }
 
 export const StudentHome = ({
@@ -98,16 +99,102 @@ export const StudentHome = ({
                         </div>
                         <div><div style={sectionLabel}>Experience (Yrs)</div><input value={exp} onChange={e=>setExp(e.target.value)} style={input}/></div>
                         
-                        <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-                            <button style={btnPrimary} onClick={saveProfile} disabled={loading}>{loading ? '저장 중...' : '저장'}</button>
-                            <button style={{ ...btnPrimary, background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }} onClick={() => setEditProfile(false)}>취소</button>
+                        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                            <button style={btnPrimary} onClick={saveProfile} disabled={loading}>{loading ? "Saving..." : "저장하기"}</button>
+                            <button style={{ ...btnPrimary, background: "transparent", color: "white", border: "1px solid rgba(255,255,255,.1)" }} onClick={() => setEditProfile(false)}>취소</button>
                         </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Recent Journals History Section */}
+            {!editProfile && recentJournals && recentJournals.length > 0 && (
+                <div style={{ marginTop: 40 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                        <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>나의 성장 히스토리</h2>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 800 }}>전체 보기</span>
+                    </div>
+                    <div style={{ 
+                        display: 'flex', 
+                        gap: 16, 
+                        overflowX: 'auto', 
+                        paddingBottom: 16,
+                        maskImage: 'linear-gradient(to right, black 85%, transparent 100%)'
+                    }}>
+                        {recentJournals.map((j) => (
+                            <div key={j.id} style={journalCard}>
+                                <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+                                    <div style={journalThumb}>
+                                        {j.visual_log_url ? (
+                                            <img src={j.visual_log_url} alt="Sketch" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                            <div style={{ opacity: 0.2 }}>No Sketch</div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>{new Date(j.class_requests?.requested_start).toLocaleDateString()}</div>
+                                        <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>Session #{j.session_number}</div>
+                                    </div>
+                                </div>
+                                <p style={{ 
+                                    fontSize: '0.85rem', 
+                                    opacity: 0.8, 
+                                    lineHeight: 1.5, 
+                                    height: '3em', 
+                                    overflow: 'hidden', 
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    marginBottom: 12
+                                }}>
+                                    {j.coach_feedback}
+                                </p>
+                                <a href={`/journal/${j.request_id}`} style={{ textDecoration: 'none' }}>
+                                    <button style={viewBtn}>피드백 확인</button>
+                                </a>
+                            </div>
+                        ))}
                     </div>
                 </div>
             )}
-            </div>
         </div>
     );
+};
+
+const journalCard: React.CSSProperties = { 
+    minWidth: '240px', 
+    maxWidth: '240px', 
+    padding: '16px', 
+    background: 'rgba(255,255,255,0.03)', 
+    borderRadius: '20px', 
+    border: '1px solid rgba(255,255,255,0.05)',
+    flexShrink: 0
+};
+
+const journalThumb: React.CSSProperties = { 
+    width: '44px', 
+    height: '44px', 
+    borderRadius: '10px', 
+    background: '#000', 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    fontSize: '0.6rem',
+    overflow: 'hidden',
+    border: '1px solid rgba(255,255,255,0.1)'
+};
+
+const viewBtn: React.CSSProperties = { 
+    width: '100%', 
+    padding: '8px', 
+    borderRadius: '10px', 
+    background: 'rgba(255,255,255,0.05)', 
+    color: 'white', 
+    border: 'none', 
+    fontSize: '0.8rem', 
+    fontWeight: 800,
+    cursor: 'pointer'
 };
 
 const InfoLine = ({ label, value }: { label: string, value: string }) => (

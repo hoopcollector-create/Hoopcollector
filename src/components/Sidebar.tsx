@@ -168,6 +168,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { name: "코치 대시보드", icon: LayoutDashboard, link: "/coach/dashboard" },
         { name: "메시지 보관함", icon: MessageCircle, link: "/messages" },
         { name: "수업 요청 관리", icon: Target, link: "/coach/requests" },
+        { name: "수업기록 보관함", icon: History, link: "/coach/requests?tab=completed" },
         { name: "매칭 및 구인", icon: Target, link: "/match" },
         { name: "스케줄 관리", icon: Calendar, link: "/coach/schedule" },
         { name: "등급 및 승급", icon: Award, link: "/coach/grade" },

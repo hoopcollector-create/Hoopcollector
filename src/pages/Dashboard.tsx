@@ -67,6 +67,7 @@ export const Dashboard = () => {
     const [showCancelled, setShowCancelled] = useState(false);
     const [points, setPoints] = useState<PointsStats | null>(null);
     const [shopRequests, setShopRequests] = useState<ShopPurchaseRequest[]>([]);
+    const [recentJournals, setRecentJournals] = useState<any[]>([]);
     
     // Chat States
     const [selectedRoom, setSelectedRoom] = useState<{id: string, name: string, photo?: string} | null>(null);
@@ -151,6 +152,15 @@ export const Dashboard = () => {
         const { data } = await supabase.from("shop_purchase_requests").select("*").eq("user_id", uid).order("created_at", { ascending: false }).limit(20);
         setShopRequests((data ?? []) as ShopPurchaseRequest[]);
     }
+    async function loadRecentJournals(uid: string) {
+        const { data } = await supabase
+            .from('class_journals')
+            .select('*, class_requests(requested_start)')
+            .eq('student_id', uid)
+            .order('created_at', { ascending: false })
+            .limit(10);
+        setRecentJournals(data || []);
+    }
     async function loadShippingAddresses(_uid: string) {}
 
     async function loadAll(user: any) {
@@ -175,7 +185,8 @@ export const Dashboard = () => {
 
             await Promise.all([
                 loadTickets(user.id), loadMyRequests(user.id), loadPoints(user.id),
-                loadMyPendingPurchases(user.id), loadShopRequests(user.id)
+                loadMyPendingPurchases(user.id), loadShopRequests(user.id),
+                loadRecentJournals(user.id)
             ]);
         } catch (e: any) {
             setMsg(e?.message || "불러오기 실패");
@@ -346,7 +357,7 @@ export const Dashboard = () => {
                         name={name} setName={setName} birthday={birthday} setBirthday={setBirthday} 
                         position={position} setPosition={setPosition} exp={exp} setExp={setExp} 
                         phone={phone} setPhone={setPhone} photoUrl={photoUrl} setPhotoUrl={setPhotoUrl}
-                        saveProfile={saveProfile} ageText={ageText}
+                        saveProfile={saveProfile} ageText={ageText} recentJournals={recentJournals}
                     />
                 )}
                 {mainTab === "home" && !editProfile && (

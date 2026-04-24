@@ -22,6 +22,7 @@ export const CoachDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [msg, setMsg] = useState("");
+    const [recentJournals, setRecentJournals] = useState<any[]>([]);
 
     // Edit states
     const [isEditing, setIsEditing] = useState(false);
@@ -71,6 +72,14 @@ export const CoachDashboard = () => {
                 supabase.from('coach_slots').select('id', { count: 'exact', head: true }).eq('coach_id', session.user.id).eq('is_booked', false).gte('start_at', new Date().toISOString())
             ]);
 
+            const { data: journals } = await supabase
+                .from('class_journals')
+                .select('*, profiles:student_id(name), class_requests(requested_start)')
+                .eq('coach_id', session.user.id)
+                .order('created_at', { ascending: false })
+                .limit(5);
+
+            setRecentJournals(journals || []);
             setStats({
                 pendingRequests: pendingCount || 0,
                 upcomingClasses: upcomingCount || 0,
@@ -300,6 +309,34 @@ export const CoachDashboard = () => {
                         <li style={guideItemStyle}>● 개인 사정으로 취소 시 학생에게 미리 연락 부탁드립니다.</li>
                     </ul>
                 </div>
+
+                {/* Recent Feedback Archive Section */}
+                {recentJournals && recentJournals.length > 0 && (
+                    <div style={{ gridColumn: '1 / -1', marginTop: '20px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h2 style={{ ...panelTitleStyle, marginBottom: 0 }}>STUDENT SUCCESS LOG</h2>
+                            <Link to="/coach/requests" style={{ fontSize: '0.85rem', color: 'var(--color-coach)', fontWeight: 800, textDecoration: 'none' }}>전체 기록 보기</Link>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+                            {recentJournals.map(j => (
+                                <div key={j.id} style={{ ...quickLinkStyle, background: 'rgba(255,255,255,0.01)', padding: '20px' }}>
+                                    <div style={{ display: 'flex', gap: '14px', alignItems: 'center', width: '100%' }}>
+                                        <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: '#000', overflow: 'hidden', flexShrink: 0, border: '1px solid rgba(255,255,255,0.05)' }}>
+                                            {j.visual_log_url ? <img src={j.visual_log_url} alt="Sketch" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.2, fontSize: '0.6rem' }}>NO SKETCH</div>}
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontSize: '0.75rem', opacity: 0.4, marginBottom: '2px' }}>{new Date(j.class_requests?.requested_start).toLocaleDateString()}</div>
+                                            <div style={{ fontWeight: 900, fontSize: '1.05rem' }}>{j.profiles?.name} 학생 <span style={{ fontSize: '0.8rem', opacity: 0.5, fontWeight: 500 }}>#{j.session_number}</span></div>
+                                            <p style={{ fontSize: '0.8rem', opacity: 0.6, margin: '6px 0 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.5 }}>
+                                                {j.coach_feedback}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

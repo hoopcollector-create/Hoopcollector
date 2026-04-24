@@ -28,7 +28,7 @@ interface MatchRoom {
     is_recurring: boolean;
     latitude: number;
     longitude: number;
-    host_profiles?: { name: string; photo_url: string };
+    host?: { name: string; photo_url: string };
 }
 
 const FilterBtn = ({ active, label, onClick }: any) => (
@@ -62,12 +62,18 @@ export const MatchExplore: React.FC = () => {
             
             let query = supabase
                 .from('match_rooms')
-                .select('*, host_profiles:profiles!match_rooms_host_id_fkey(name, photo_url)')
+                .select('*, host:profiles!match_rooms_host_id_fkey(name, photo_url)')
                 .eq('is_hidden', false)
                 .order('start_at', { ascending: true });
 
-            if (filterType === 'my' && session) {
-                // Fetch match IDs I'm participating in
+            if (filterType === 'my') {
+                if (!session) {
+                    setMatches([]);
+                    setLoading(false);
+                    return;
+                }
+
+                // 1. Get participation IDs
                 const { data: myParts } = await supabase
                     .from('match_participants')
                     .select('match_id')
@@ -75,12 +81,13 @@ export const MatchExplore: React.FC = () => {
                 
                 const matchIds = myParts?.map(p => p.match_id) || [];
                 
+                // 2. Build bulletproof OR condition
+                const conditions = [`host_id.eq.${session.user.id}`];
                 if (matchIds.length > 0) {
-                    const idList = matchIds.map(id => id).join(',');
-                    query = query.or(`id.in.(${idList}),host_id.eq.${session.user.id}`);
-                } else {
-                    query = query.eq('host_id', session.user.id);
+                    conditions.push(`id.in.(${matchIds.map(id => id).join(',')})`);
                 }
+                
+                query = query.or(conditions.join(','));
             } else {
                 query = query.eq('status', 'open');
             }
@@ -90,7 +97,10 @@ export const MatchExplore: React.FC = () => {
             }
 
             const { data, error } = await query;
-            if (error) throw error;
+            if (error) {
+                console.error("Query Error:", error);
+                throw error;
+            }
             setMatches(data || []);
         } catch (e) {
             console.error(e);

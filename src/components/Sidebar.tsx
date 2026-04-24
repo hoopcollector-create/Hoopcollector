@@ -151,11 +151,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const studentMenuItems = [
         { name: "대시보드", icon: Home, link: "/dashboard" },
         { name: "메시지 보관함", icon: MessageCircle, link: "/messages" },
+        { name: "코치 찾기", icon: Users, link: "/coaches" },
         { name: "매칭 및 모임", icon: Target, link: "/match" },
         { name: "수업 보러가기", icon: Compass, link: "/class-info" },
         { name: "훕콜렉터 스토어", icon: ShoppingBag, link: "/shop" },
         { name: "훕콜렉터 코트 맵", icon: MapPin, link: "/court-map" },
-        { name: "코치 찾기", icon: Users, link: "/coaches" },
         { name: "커뮤니티", icon: MessageSquare, link: "/community" },
         { name: "정책 및 약관", icon: ShieldCheck, link: "/terms" }
     ];

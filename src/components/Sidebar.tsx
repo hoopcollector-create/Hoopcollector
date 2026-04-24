@@ -128,13 +128,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     async function checkUserRoles(uid: string) {
         try {
-            const { data } = await supabase.from('user_roles').select('role').eq('user_id', uid);
+            const { data, error } = await supabase.from('user_roles').select('*').eq('user_id', uid);
+            if (error) throw error;
             if (data) {
-                setIsAdmin(data.some(r => r.role === 'admin'));
-                setIsCoachRole(data.some(r => r.role === 'coach'));
+                // Check common column names for role
+                const roles = data.map(r => r.role || r.role_name || r.name).filter(Boolean);
+                setIsAdmin(roles.includes('admin'));
+                setIsCoachRole(roles.includes('coach'));
             }
         } catch (e) {
-            console.error(e);
+            console.error("Role check failed:", e);
         }
     }
 

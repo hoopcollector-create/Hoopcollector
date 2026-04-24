@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalIcon, Clock, User, Check, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalIcon, Clock, User, Check, X, Trash2, Zap } from 'lucide-react';
 
 interface Event {
     id: string;
@@ -17,9 +17,16 @@ export const ScheduleCalendar = () => {
     const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [showRulesModal, setShowRulesModal] = useState(false);
     const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
     const [msg, setMsg] = useState("");
     const [errorMsg, setErrorMsg] = useState("");
+
+    // Recurring rules state
+    const [rules, setRules] = useState<any[]>([]);
+    const [ruleDay, setRuleDay] = useState(1); // Mon defaults
+    const [ruleStart, setRuleStart] = useState("18:00");
+    const [ruleEnd, setRuleEnd] = useState("19:00");
 
     // Form states
     const [newTitle, setNewTitle] = useState("");
@@ -30,7 +37,88 @@ export const ScheduleCalendar = () => {
 
     useEffect(() => {
         loadEvents();
-    }, [viewDate]);
+        if (showRulesModal) loadRules();
+    }, [viewDate, showRulesModal]);
+
+    async function loadRules() {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const { data } = await supabase.from('coach_slot_rules').select('*').eq('coach_id', session.user.id);
+        setRules(data || []);
+    }
+
+    async function handleAddRule() {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            const { error } = await supabase.from('coach_slot_rules').insert({
+                coach_id: session.user.id,
+                day_of_week: ruleDay,
+                start_time: ruleStart,
+                end_time: ruleEnd
+            });
+
+            if (error) throw error;
+            setMsg("반복 규칙이 추가되었습니다.");
+            loadRules();
+        } catch (e: any) {
+            setErrorMsg(e.message);
+        }
+    }
+
+    async function handleDeleteRule(id: string) {
+        const { error } = await supabase.from('coach_slot_rules').delete().eq('id', id);
+        if (!error) loadRules();
+    }
+
+    async function generateSlotsFromRules() {
+        setLoading(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            // Generate for next 4 weeks
+            const newSlots = [];
+            const now = new Date();
+            
+            for (let i = 0; i < 28; i++) {
+                const targetDate = new Date();
+                targetDate.setDate(now.getDate() + i);
+                const dayOfWeek = targetDate.getDay();
+
+                const matchedRules = rules.filter(r => r.day_of_week === dayOfWeek);
+                matchedRules.forEach(r => {
+                    const startAt = new Date(targetDate.toISOString().split('T')[0] + 'T' + r.start_time);
+                    const endAt = new Date(targetDate.toISOString().split('T')[0] + 'T' + r.end_time);
+
+                    newSlots.push({
+                        coach_id: session.user.id,
+                        title: "반복 일정 (레슨 가능)",
+                        start_at: startAt.toISOString(),
+                        end_at: endAt.toISOString(),
+                        type: 'slot',
+                        is_booked: false,
+                        status: 'open'
+                    });
+                });
+            }
+
+            if (newSlots.length > 0) {
+                const { error } = await supabase.from('coach_slots').insert(newSlots);
+                if (error) throw error;
+                setMsg(`${newSlots.length}개의 슬롯이 자동 생성되었습니다.`);
+                loadEvents();
+                setShowRulesModal(false);
+            } else {
+                setMsg("생성할 규칙이 없습니다.");
+            }
+        } catch (e: any) {
+            setErrorMsg(e.message);
+        } finally {
+            setLoading(false);
+        }
+    }
 
     async function loadEvents() {
         setLoading(true);
@@ -200,11 +288,77 @@ export const ScheduleCalendar = () => {
                         <button onClick={() => setViewMode('week')} style={viewMode === 'week' ? tabOn : tabOff}>주</button>
                         <button onClick={() => setViewMode('day')} style={viewMode === 'day' ? tabOn : tabOff}>일</button>
                     </div>
+                    <button onClick={() => setShowRulesModal(true)} style={{ ...addBtn, background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <Clock size={18} style={{ marginRight: 8 }} /> 반복 일정 설정
+                    </button>
                     <button onClick={() => setShowModal(true)} style={addBtn}>
                         <Plus size={18} style={{ marginRight: 8 }} /> 새로운 일정 추가
                     </button>
                 </div>
             </div>
+
+            {/* Recurring Rules Modal */}
+            {showRulesModal && (
+                <div style={modalOverlay}>
+                    <div style={{ ...modalBody, maxWidth: '600px' }} className="card-premium glass-morphism">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
+                            <div>
+                                <h3 style={{ fontSize: '1.5rem', fontWeight: 900 }}>매주 반복 일정 관리</h3>
+                                <p style={{ fontSize: '0.85rem', opacity: 0.5, marginTop: '4px' }}>요일별로 반복되는 고정 수업 가능 시간을 설정하세요.</p>
+                            </div>
+                            <button onClick={() => setShowRulesModal(false)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}><X/></button>
+                        </div>
+
+                        {/* Add New Rule Form */}
+                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '16px', marginBottom: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 80px', gap: '12px', alignItems: 'flex-end' }}>
+                                <div>
+                                    <label style={label}>요일</label>
+                                    <select value={ruleDay} onChange={e => setRuleDay(parseInt(e.target.value))} style={input}>
+                                        {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => <option key={i} value={i}>{d}요일</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={label}>시작</label>
+                                    <input type="time" value={ruleStart} onChange={e => setRuleStart(e.target.value)} style={input} />
+                                </div>
+                                <div>
+                                    <label style={label}>종료</label>
+                                    <input type="time" value={ruleEnd} onChange={e => setRuleEnd(e.target.value)} style={input} />
+                                </div>
+                                <button onClick={handleAddRule} style={{ ...saveBtn, marginTop: 0, padding: '12px' }}>추가</button>
+                            </div>
+                        </div>
+
+                        {/* Rules List */}
+                        <div style={{ maxHeight: '30vh', overflowY: 'auto', marginBottom: '24px' }}>
+                            <label style={{ ...label, marginBottom: '12px' }}>현재 설정된 규칙</label>
+                            {rules.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '30px', opacity: 0.3, fontSize: '0.9rem' }}>등록된 반복 규칙이 없습니다.</div>
+                            ) : (
+                                <div style={{ display: 'grid', gap: '8px' }}>
+                                    {rules.map(r => (
+                                        <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}>
+                                            <div style={{ fontWeight: 700 }}>
+                                                <span style={{ color: 'var(--color-primary)', marginRight: '8px' }}>{['일', '월', '화', '수', '목', '금', '토'][r.day_of_week]}요일</span>
+                                                {r.start_time} ~ {r.end_time}
+                                            </div>
+                                            <button onClick={() => handleDeleteRule(r.id)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}><Trash2 size={16} /></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '24px', textAlign: 'center' }}>
+                            <button onClick={generateSlotsFromRules} disabled={loading} style={{ ...saveBtn, background: 'var(--color-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                                {loading ? '생성 중...' : <><Zap size={18} /> 설정된 규칙으로 4주치 슬롯 자동 생성</>}
+                            </button>
+                            <p style={{ fontSize: '0.75rem', opacity: 0.4, marginTop: '12px' }}>기존 슬롯과 겹치는 경우 중복 생성될 수 있습니다.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {msg && (
                 <div style={{ padding: '16px 24px', background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', borderRadius: '16px', marginBottom: '1.5rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid rgba(34, 197, 94, 0.2)' }}>

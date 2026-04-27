@@ -29,6 +29,8 @@ export interface PointsStats {
     completed_count: number;
     review_count: number;
     tier: string;
+    xp_total: number;
+    level: number;
     updated_at?: string;
 }
 

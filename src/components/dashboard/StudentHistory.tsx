@@ -12,12 +12,13 @@ interface StudentHistoryProps {
     showCancelled: boolean;
     setShowCancelled: (v: boolean) => void;
     cancelRequest: (id: string) => Promise<void>;
+    reportCoachNoShow: (id: string) => Promise<void>;
     loading: boolean;
     regionMap: Map<string, string>;
 }
 
 export const StudentHistory = ({
-    rows, filter, setFilter, cancelRequest, loading, regionMap
+    rows, filter, setFilter, cancelRequest, reportCoachNoShow, loading, regionMap
 }: StudentHistoryProps) => {
     return (
         <div>
@@ -44,8 +45,17 @@ export const StudentHistory = ({
                             </button>
                         )}
                         {r.status === 'accepted' && (
-                            <div style={{ marginTop: 16 }}>
+                            <div style={{ marginTop: 16, display: 'grid', gap: '8px' }}>
                                 <AttendanceQR classRequestId={r.id} isCoach={false} />
+                                {new Date(r.requested_start) < new Date() && (
+                                    <button 
+                                        style={{ ...cancelBtn, marginTop: 8 }} 
+                                        onClick={() => reportCoachNoShow(r.id)} 
+                                        disabled={loading}
+                                    >
+                                        코치가 오지 않았어요 (노쇼 신고)
+                                    </button>
+                                )}
                             </div>
                         )}
                         {r.status === 'completed' && (

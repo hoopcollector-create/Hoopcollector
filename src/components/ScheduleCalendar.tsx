@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalIcon, Clock, User, Check, X, Trash2, Zap } from 'lucide-react';
+import { useTranslation } from '../lib/i18n';
 
 interface Event {
     id: string;
@@ -21,6 +22,7 @@ export const ScheduleCalendar = () => {
     const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
     const [msg, setMsg] = useState("");
     const [errorMsg, setErrorMsg] = useState("");
+    const { t } = useTranslation();
 
     // Recurring rules state
     const [rules, setRules] = useState<any[]>([]);
@@ -289,10 +291,10 @@ export const ScheduleCalendar = () => {
                         <button onClick={() => setViewMode('day')} style={viewMode === 'day' ? tabOn : tabOff}>일</button>
                     </div>
                     <button onClick={() => setShowRulesModal(true)} style={{ ...addBtn, background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <Clock size={18} style={{ marginRight: 8 }} /> 반복 일정 설정
+                        <Clock size={18} style={{ marginRight: 8 }} /> {t('dashboard.booking')} 규칙 설정
                     </button>
                     <button onClick={() => setShowModal(true)} style={addBtn}>
-                        <Plus size={18} style={{ marginRight: 8 }} /> 새로운 일정 추가
+                        <Plus size={18} style={{ marginRight: 8 }} /> 일정 추가
                     </button>
                 </div>
             </div>
@@ -402,7 +404,8 @@ export const ScheduleCalendar = () => {
                                             fontSize: viewMode === 'month' ? '0.75rem' : '0.85rem',
                                             background: ev.type === 'class' ? 'rgba(59, 130, 246, 0.2)' : ev.type === 'personal' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255,255,255,0.05)',
                                             color: ev.type === 'class' ? '#60a5fa' : ev.type === 'personal' ? '#a78bfa' : 'white',
-                                            borderLeft: `3px solid ${ev.type === 'class' ? '#3b82f6' : ev.type === 'personal' ? '#8b5cf6' : 'rgba(255,255,255,0.2)'}`
+                                            borderLeft: `4px solid ${ev.type === 'class' ? '#3b82f6' : ev.type === 'personal' ? '#8b5cf6' : 'rgba(255,255,255,0.2)'}`,
+                                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                                         }}>
                                             <div style={{ fontWeight: 800 }}>{ev.title}</div>
                                             {viewMode !== 'month' && (

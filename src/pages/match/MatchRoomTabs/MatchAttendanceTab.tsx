@@ -33,6 +33,7 @@ export const MatchAttendanceTab: React.FC<{ matchId: string; isHost: boolean }> 
         if (!isHost) return;
         const { data: { session } } = await supabase.auth.getSession();
         
+        // 1. Update attendance status
         await supabase.from('match_attendance').upsert({
             match_id: matchId,
             user_id: userId,
@@ -43,12 +44,21 @@ export const MatchAttendanceTab: React.FC<{ matchId: string; isHost: boolean }> 
         
         loadAttendance();
 
-        // System message for attendance (optional but good for tracking)
+        // 2. System message for attendance
         if (status === 'no_show') {
+            const userName = (attendances.find(a => a.user_id === userId) as any)?.profiles?.name || '익명';
             await supabase.from('match_messages').insert({
                 match_id: matchId,
-                message: `${(attendances.find(a => a.user_id === userId) as any)?.profiles?.name}님이 노쇼 처리되었습니다. 유의해주세요.`,
+                message: `${userName}님이 노쇼 처리되었습니다. (XP 차감 됨)`,
                 message_type: 'system'
+            });
+
+            // 3. XP Penalty
+            await supabase.rpc('add_user_xp_with_log', {
+                p_user_id: userId,
+                p_amount: -50,
+                p_type: 'penalty',
+                p_desc: '매치 무단 불참(노쇼)에 의한 패널티'
             });
         }
     };

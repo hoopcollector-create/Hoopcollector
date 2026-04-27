@@ -1,6 +1,8 @@
 import React from 'react';
 import { Profile, TicketRow, PointsStats, PositionType } from '../../types/dashboard';
 import { ImageUploadField } from '../admin/ImageUploadField';
+import { ActivityLogsModal } from '../ActivityLogsModal';
+import { History } from 'lucide-react';
 
 interface StudentHomeProps {
     tickets: Record<string, number>;
@@ -24,14 +26,17 @@ interface StudentHomeProps {
     photoUrl: string;
     setPhotoUrl: (v: string) => void;
     recentJournals?: any[];
+    profile: Profile | null;
 }
 
 export const StudentHome = ({
     tickets, points, activeCount, editProfile, setEditProfile, 
     name, setName, birthday, setBirthday, position, setPosition, 
     exp, setExp, phone, setPhone, saveProfile, ageText, loading,
-    photoUrl, setPhotoUrl, recentJournals 
+    photoUrl, setPhotoUrl, recentJournals, profile
 }: StudentHomeProps) => {
+    const [showLogs, setShowLogs] = React.useState(false);
+
     return (
         <div>
             <h2 style={{ fontSize: 22, fontWeight: 900, marginBottom: 16 }}>내 계정 및 프로필</h2>
@@ -70,12 +75,42 @@ export const StudentHome = ({
                             )}
                         </div>
                         <div style={{ display: 'grid', gap: 12, width: '100%' }}>
-                        <InfoLine label="이름" value={name || "-"} />
-                        <InfoLine label="생일/나이" value={`${birthday || "-"} (${ageText})`} />
-                        <InfoLine label="전화번호" value={phone || "-"} />
-                        <InfoLine label="포지션" value={position || "-"} />
-                        <InfoLine label="농구 경력" value={exp ? `${exp}년` : "-"} />
-                            <button style={{ ...btnPrimary, marginTop: 12, background: 'rgba(255,255,255,0.1)', color: 'white' }} onClick={() => setEditProfile(true)}>프로필 수정</button>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div>
+                                    <h2 style={{ fontSize: '1.5rem', fontWeight: 950, margin: 0 }}>{name || "이름 없음"}</h2>
+                                    <div style={{ ...classBadge, marginTop: 4 }}>CLASS {profile?.basketball_level || 'C'}</div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', fontWeight: 800 }}>MEMBER SINCE</div>
+                                    <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{birthday || "-"}</div>
+                                </div>
+                            </div>
+
+                            {/* XP Progress Bar */}
+                            <div style={levelContainer}>
+                                <div style={levelInfo}>
+                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                        <div style={levelText}>LV.{points?.level || 1} {points?.tier || 'ROOKIE'}</div>
+                                        <button 
+                                            onClick={() => setShowLogs(true)}
+                                            style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', fontWeight: 800 }}
+                                        >
+                                            <History size={12} /> 내역 보기
+                                        </button>
+                                    </div>
+                                    <div style={xpText}>{points?.xp_total || 0} XP</div>
+                                </div>
+                                <div style={xpBarBg}>
+                                    <div style={xpBarFill(Math.min(100, ((points?.xp_total || 0) % 1000) / 10))} />
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
+                                <InfoLine label="포지션" value={position || "-"} />
+                                <InfoLine label="농구 경력" value={exp ? `${exp}년` : "-"} />
+                            </div>
+                            
+                            <button style={{ ...btnPrimary, marginTop: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} onClick={() => setEditProfile(true)}>프로필 수정</button>
                         </div>
                     </div>
                 ) : (
@@ -158,6 +193,10 @@ export const StudentHome = ({
                     </div>
                 </div>
             )}
+
+            {showLogs && profile?.id && (
+                <ActivityLogsModal userId={profile.id} onClose={() => setShowLogs(false)} />
+            )}
         </div>
     );
 };
@@ -212,6 +251,16 @@ const InfoLine = ({ label, value }: { label: string, value: string }) => (
 const cardMini: React.CSSProperties = { padding: 14, borderRadius: 14, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)" };
 const cardLabel: React.CSSProperties = { fontSize: 12, opacity: 0.6 };
 const cardValue: React.CSSProperties = { fontSize: 24, fontWeight: 800 };
+
+const levelContainer: React.CSSProperties = { marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' };
+const levelInfo: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
+const levelText: React.CSSProperties = { fontSize: '0.85rem', fontWeight: 900, color: 'var(--color-primary)' };
+const xpText: React.CSSProperties = { fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700 };
+const xpBarBg: React.CSSProperties = { width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '100px', overflow: 'hidden' };
+const xpBarFill = (progress: number): React.CSSProperties => ({ width: `${progress}%`, height: '100%', background: 'var(--color-primary)', borderRadius: '100px', transition: 'width 0.5s ease-out' });
+
+const classBadge: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '4px 12px', borderRadius: '8px', background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: 'white', fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.05em' };
+
 const input: React.CSSProperties = { width: "100%", padding: "14px", borderRadius: 14, border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.07)", color: "white", outline: "none", boxSizing: "border-box", fontSize: 14 };
 const btnPrimary: React.CSSProperties = { width: "100%", padding: "14px", borderRadius: 14, border: "none", background: "white", color: "black", cursor: "pointer", fontWeight: 800, fontSize: 15 };
 const sectionLabel: React.CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: 0.6, textTransform: "uppercase", color: "rgba(255,255,255,.62)" };

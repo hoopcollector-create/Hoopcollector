@@ -15,6 +15,7 @@ export const Login = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [isSignUp, setIsSignUp] = useState(false);
+    const [isForgotPassword, setIsForgotPassword] = useState(false);
     const [msg, setMsg] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -52,7 +53,7 @@ export const Login = () => {
 
     const isFormValid = isSignUp 
         ? (Object.values(passwordValidation).every(v => v) && name && birthday && phone)
-        : (email && password);
+        : isForgotPassword ? !!email : (email && password);
 
     async function handleAuth(e: React.FormEvent) {
         e.preventDefault();
@@ -82,6 +83,13 @@ export const Login = () => {
                     setPassword('');
                     setConfirmPassword('');
                 }
+            } else if (isForgotPassword) {
+                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: `${window.location.origin}/dashboard?tab=security#type=recovery`
+                });
+                if (error) throw error;
+                setMsg('비밀번호 재설정 이메일이 발송되었습니다. 메일함을 확인해 주세요.');
+                setIsForgotPassword(false);
             } else {
                 const { error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) throw error;
@@ -125,25 +133,33 @@ export const Login = () => {
                 )}
 
                 <form onSubmit={handleAuth}>
+                    {isForgotPassword && (
+                        <div style={{ marginBottom: '24px', textAlign: 'center' }}>
+                            <h2 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: '8px' }}>비밀번호 찾기</h2>
+                            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)' }}>가입하신 이메일로 재설정 링크를 보내드립니다.</p>
+                        </div>
+                    )}
                     <input type="email" placeholder="이메일" value={email} onChange={e => setEmail(e.target.value)} required style={inputStyle} />
                     
-                    <div style={{ position: 'relative' }}>
-                        <input 
-                            type={showPassword ? "text" : "password"} 
-                            placeholder="비밀번호" 
-                            value={password} 
-                            onChange={e => setPassword(e.target.value)} 
-                            required 
-                            style={inputStyle} 
-                        />
-                        <button 
-                            type="button" 
-                            onClick={() => setShowPassword(!showPassword)} 
-                            style={{ position: 'absolute', right: '14px', top: '14px', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer' }}
-                        >
-                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                        </button>
-                    </div>
+                    {!isForgotPassword && (
+                        <div style={{ position: 'relative' }}>
+                            <input 
+                                type={showPassword ? "text" : "password"} 
+                                placeholder="비밀번호" 
+                                value={password} 
+                                onChange={e => setPassword(e.target.value)} 
+                                required 
+                                style={inputStyle} 
+                            />
+                            <button 
+                                type="button" 
+                                onClick={() => setShowPassword(!showPassword)} 
+                                style={{ position: 'absolute', right: '14px', top: '14px', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer' }}
+                            >
+                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                        </div>
+                    )}
 
                     {isSignUp && (
                         <>
@@ -212,12 +228,17 @@ export const Login = () => {
                             transition: 'all 0.3s ease'
                         }}
                     >
-                        {loading ? 'PROCESSING...' : (isSignUp ? 'REGISTER' : 'LOG IN')}
+                        {loading ? 'PROCESSING...' : (isSignUp ? 'REGISTER' : isForgotPassword ? 'SEND RESET LINK' : 'LOG IN')}
                     </button>
                 </form>
 
-                <div style={{ textAlign: 'center', marginTop: '24px' }}>
-                    <button onClick={() => { setIsSignUp(!isSignUp); setMsg(''); }} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline' }}>
+                <div style={{ textAlign: 'center', marginTop: '24px', display: 'grid', gap: '12px' }}>
+                    {!isSignUp && (
+                        <button onClick={() => { setIsForgotPassword(!isForgotPassword); setMsg(''); }} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.85rem' }}>
+                            {isForgotPassword ? 'Back to Login' : 'Forgot password?'}
+                        </button>
+                    )}
+                    <button onClick={() => { setIsSignUp(!isSignUp); setIsForgotPassword(false); setMsg(''); }} style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline' }}>
                         {isSignUp ? 'Already have an account? Login' : "Don't have an account? Sign Up"}
                     </button>
                 </div>

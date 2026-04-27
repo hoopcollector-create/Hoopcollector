@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Home, Compass, UserCircle, Search, Gift, Heart, Menu, X, ArrowLeft, LogOut, CheckCircle2, ShoppingBag, PlusCircle, PenTool, LayoutDashboard, Target, Users, MessageSquare, Calendar, Award, Instagram, MessageCircle, ShieldCheck, History as HistoryIcon, BookOpen, CreditCard } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useTranslation, Language } from '../lib/i18n';
 
 export interface SidebarProps {
     appMode: 'student' | 'coach';
@@ -18,6 +19,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { lang, setLang, t } = useTranslation();
     const [session, setSession] = useState<any>(null);
     const [isAdmin, setIsAdmin] = useState(false);
     const [isCoachRole, setIsCoachRole] = useState(false);
@@ -147,42 +149,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
 
     const unauthMenuItems = [
-        { name: "훕콜렉터 안내", icon: Compass, link: "/class-info" },
-        { name: "스토어", icon: ShoppingBag, link: "/shop" }
+        { name: t('sidebar.dashboard'), icon: Compass, link: "/class-info" },
+        { name: t('sidebar.shop'), icon: ShoppingBag, link: "/shop" }
     ];
 
     const studentMenuItems = [
-        { name: "대시보드", icon: Home, link: "/dashboard" },
-        { name: "메시지 보관함", icon: MessageCircle, link: "/messages" },
-        { name: "코치 찾기", icon: Users, link: "/coaches" },
-        { name: "매칭 및 모임", icon: Target, link: "/match" },
-        { name: "수업 보러가기", icon: Compass, link: "/class-info" },
-        { name: "훕콜렉터 스토어", icon: ShoppingBag, link: "/shop" },
-        { name: "훕콜렉터 코트 맵", icon: MapPin, link: "/court-map" },
-        { name: "커뮤니티", icon: MessageSquare, link: "/community" },
-        { name: "정책 및 약관", icon: ShieldCheck, link: "/terms" }
+        { name: t('sidebar.dashboard'), icon: Home, link: "/dashboard" },
+        { name: t('sidebar.messages'), icon: MessageCircle, link: "/messages" },
+        { name: t('sidebar.coach'), icon: Users, link: "/coaches" },
+        { name: t('sidebar.match'), icon: Target, link: "/match" },
+        { name: t('sidebar.class_info'), icon: Compass, link: "/class-info" },
+        { name: t('sidebar.shop'), icon: ShoppingBag, link: "/shop" },
+        { name: t('sidebar.court'), icon: MapPin, link: "/court-map" },
+        { name: t('sidebar.community'), icon: MessageSquare, link: "/community" },
+        { name: t('sidebar.terms'), icon: ShieldCheck, link: "/terms" }
     ];
 
 
     const coachMenuItems = [
-        { name: "코치 대시보드", icon: LayoutDashboard, link: "/coach/dashboard" },
-        { name: "메시지 보관함", icon: MessageCircle, link: "/messages" },
-        { name: "수업 요청 관리", icon: Target, link: "/coach/requests" },
-        { name: "수업기록 보관함", icon: HistoryIcon, link: "/coach/requests?tab=completed" },
-        { name: "매칭 및 구인", icon: Target, link: "/match" },
-        { name: "스케줄 관리", icon: Calendar, link: "/coach/schedule" },
-        { name: "등급 및 승급", icon: Award, link: "/coach/grade" },
-        { name: "커리큘럼 열람실", icon: BookOpen, link: "/coach/curriculum" },
-        { name: "정산 및 수익관리", icon: CreditCard, link: "/coach/financials" },
-        { name: "스토어", icon: ShoppingBag, link: "/shop" },
-        { name: "정책 및 약관", icon: ShieldCheck, link: "/terms" }
+        { name: t('sidebar.dashboard'), icon: LayoutDashboard, link: "/coach/dashboard" },
+        { name: t('sidebar.messages'), icon: MessageCircle, link: "/messages" },
+        { name: t('sidebar.coach_requests'), icon: Target, link: "/coach/requests" },
+        { name: t('sidebar.coach_history'), icon: HistoryIcon, link: "/coach/requests?tab=completed" },
+        { name: t('sidebar.match'), icon: Target, link: "/match" },
+        { name: t('sidebar.coach_schedule'), icon: Calendar, link: "/coach/schedule" },
+        { name: t('sidebar.coach_grade'), icon: Award, link: "/coach/grade" },
+        { name: t('sidebar.coach_curriculum'), icon: BookOpen, link: "/coach/curriculum" },
+        { name: t('sidebar.coach_financials'), icon: CreditCard, link: "/coach/financials" },
+        { name: t('sidebar.shop'), icon: ShoppingBag, link: "/shop" },
+        { name: t('sidebar.terms'), icon: ShieldCheck, link: "/terms" }
     ];
 
     const adminMenuItems = [
-        { name: "회원관리", icon: UserCircle, link: "/admin/users" },
-        { name: "쇼핑몰 관리", icon: ShoppingBag, link: "/admin/shop" },
-        { name: "가입승인", icon: CheckCircle2, link: "/admin/approvals" },
-        { name: "지역관리", icon: MapPin, link: "/admin/regions" }
+        { name: t('sidebar.admin_users'), icon: UserCircle, link: "/admin/users" },
+        { name: t('sidebar.admin_shop'), icon: ShoppingBag, link: "/admin/shop" },
+        { name: t('sidebar.admin_approvals'), icon: CheckCircle2, link: "/admin/approvals" },
+        { name: t('sidebar.admin_regions'), icon: MapPin, link: "/admin/regions" }
     ];
 
     function getMenuItems() {
@@ -216,7 +218,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }}
                 className={`sidebar-container${isMobileOpen ? ' is-open' : ''}`}
             >
-                <div style={{ padding: '40px 32px' }}>
+                <div style={{ padding: '40px 32px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Link to="/" onClick={() => setIsMobileOpen(false)} style={{ color: 'white', fontSize: '1.4rem', fontWeight: 900, textDecoration: 'none', letterSpacing: '-0.04em' }}>
                         HOOP<span style={{ opacity: 0.4 }}>COLLECTOR</span>
                     </Link>
@@ -230,14 +232,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
                                     background: appMode === 'student' ? 'var(--color-student)' : 'transparent', color: appMode === 'student' ? 'white' : 'rgba(255,255,255,0.4)', transition: 'all 0.3s' }}
                             >
-                                STUDENT
+                                {t('sidebar.mode_student')}
                             </button>
                             <button
                                 onClick={() => handleModeSwitch('coach')}
                                 style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
                                     background: appMode === 'coach' ? 'var(--color-coach)' : 'transparent', color: appMode === 'coach' ? 'white' : 'rgba(255,255,255,0.4)', transition: 'all 0.3s' }}
                             >
-                                COACH
+                                {t('sidebar.mode_coach')}
                             </button>
                         </div>
                     </div>
@@ -271,7 +273,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                     {isAdmin && (
                         <div style={{ marginTop: '2.5rem' }}>
-                            <div style={{ padding: '0 16px', fontSize: '0.7rem', fontWeight: 900, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.1em' }}>Management</div>
+                            <div style={{ padding: '0 16px', fontSize: '0.7rem', fontWeight: 900, color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.1em' }}>{t('sidebar.management')}</div>
                             <nav style={{ display: 'grid', gap: '2px' }}>
                                 {adminMenuItems.map(item => {
                                     const isSelected = location.pathname.startsWith(item.link);
@@ -299,6 +301,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             <Users size={18} />
                         </a>
                     </div>
+
+                    {/* Language Switcher */}
+                    <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        {(['ko', 'en', 'ja', 'zh'] as Language[]).map(l => (
+                            <button 
+                                key={l}
+                                onClick={() => setLang(l)}
+                                style={{
+                                    flex: 1, padding: '6px 0', borderRadius: '8px', border: 'none', fontSize: '0.7rem', fontWeight: 900, cursor: 'pointer',
+                                    background: lang === l ? 'rgba(255,255,255,0.08)' : 'transparent',
+                                    color: lang === l ? 'white' : 'rgba(255,255,255,0.2)',
+                                    textTransform: 'uppercase'
+                                }}
+                            >
+                                {l}
+                            </button>
+                        ))}
+                    </div>
                     
                     {session ? (
                         <div style={{ padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -316,7 +336,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         </div>
                     ) : (
                         <Link to="/login" onClick={() => setIsMobileOpen(false)} style={btnLoginStyle}>
-                            START JOURNEY
+                            {t('sidebar.start_journey')}
                         </Link>
                     )}
                 </div>

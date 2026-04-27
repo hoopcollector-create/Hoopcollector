@@ -1,0 +1,22 @@
+{
+  "name": "Hoopcollector",
+  "short_name": "Hoopcollector",
+  "description": "당신의 프리미엄 농구 라이프 파트너",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070708",
+  "theme_color": "#f97316",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1546514355-7fdc90ccbd03?q=80&w=192&auto=format&fit=crop",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1546514355-7fdc90ccbd03?q=80&w=512&auto=format&fit=crop",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

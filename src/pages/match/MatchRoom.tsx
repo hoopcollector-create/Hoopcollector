@@ -24,11 +24,28 @@ export const MatchRoom: React.FC = () => {
     const [match, setMatch] = useState<any>(null);
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [participantStatus, setParticipantStatus] = useState<string | null>(null);
+    const [otherDates, setOtherDates] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         loadMatchData();
     }, [id]);
+
+    useEffect(() => {
+        if (match?.is_recurring && match?.template_id) {
+            loadOtherDates();
+        }
+    }, [match?.template_id]);
+
+    async function loadOtherDates() {
+        const { data } = await supabase
+            .from('match_rooms')
+            .select('id, start_at')
+            .eq('template_id', match.template_id)
+            .eq('status', 'open')
+            .order('start_at', { ascending: true });
+        setOtherDates(data || []);
+    }
 
     async function loadMatchData() {
         setLoading(true);
@@ -74,12 +91,29 @@ export const MatchRoom: React.FC = () => {
             <header style={header}>
                 <div style={headerTop}>
                     <button onClick={() => navigate('/match')} style={iconBtn}><ArrowLeft size={20}/></button>
-                    <div style={headerTitleGroup}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={matchTypeBadge}>{match.match_type}</div>
-                            <div style={codeBadge}>#{match.match_code}</div>
+                    <div style={headerContent}>
+                        <div style={titleArea}>
+                            <h1 style={title}>{match.title}</h1>
+                            {match.is_recurring && (
+                                <div style={dateSelectorWrap}>
+                                    <select 
+                                        value={match.id} 
+                                        onChange={e => navigate(`/match/room/${e.target.value}`)}
+                                        style={dateSelect}
+                                    >
+                                        {otherDates.map(d => (
+                                            <option key={d.id} value={d.id}>
+                                                {new Date(d.start_at).toLocaleDateString()} 경기
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                         </div>
-                        <h1 style={roomTitle}>{match.title}</h1>
+                        <div style={badgeArea}>
+                            <div style={typeBadge}>{match.match_type}</div>
+                            <div style={statusBadge}>{match.status === 'open' ? '모집 중' : '마감'}</div>
+                        </div>
                     </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <button style={iconBtn}><Share2 size={18}/></button>
@@ -106,7 +140,7 @@ export const MatchRoom: React.FC = () => {
 
             {/* Main Content View */}
             <main style={mainContent}>
-                {activeTab === 'chat' && <MatchChatTab matchId={match.id} currentUser={currentUser} participantStatus={participantStatus} onJoinUpdate={loadMatchData} />}
+                {activeTab === 'chat' && <MatchChatTab match={match} currentUser={currentUser} participantStatus={participantStatus} onJoinUpdate={loadMatchData} />}
                 {activeTab === 'info' && <MatchInfoTab match={match} />}
                 {activeTab === 'participants' && <MatchParticipantsTab matchId={match.id} hostId={match.host_id} isHost={isHost} />}
                 {activeTab === 'map' && <MatchMapTab match={match} />}
@@ -134,9 +168,14 @@ const TabItem = ({ id, label, icon: Icon, activeTab, setActiveTab }: any) => (
 const container: React.CSSProperties = { display: 'flex', flexDirection: 'column', height: '100vh', background: '#070708', overflow: 'hidden' };
 const header: React.CSSProperties = { background: '#121214', borderBottom: '1px solid rgba(255,255,255,0.08)', zIndex: 100 };
 const headerTop: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', gap: '12px' };
-const headerTitleGroup: React.CSSProperties = { flex: 1, minWidth: 0 };
-const matchTypeBadge: React.CSSProperties = { fontSize: '10px', fontWeight: 900, color: 'var(--accent-primary)', textTransform: 'uppercase' };
-const codeBadge: React.CSSProperties = { fontSize: '10px', fontWeight: 900, color: 'rgba(255,255,255,0.3)', padding: '2px 6px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', letterSpacing: '0.05em' };
+const headerContent: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '12px' };
+const titleArea: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '4px' };
+const title: React.CSSProperties = { fontSize: '24px', fontWeight: 950, letterSpacing: '-0.02em', color: 'white' };
+const dateSelectorWrap: React.CSSProperties = { marginTop: '4px' };
+const dateSelect: React.CSSProperties = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'rgba(255,255,255,0.6)', padding: '6px 12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', outline: 'none' };
+const badgeArea: React.CSSProperties = { display: 'flex', gap: '8px' };
+const typeBadge: React.CSSProperties = { fontSize: '10px', fontWeight: 900, color: 'var(--accent-primary)', textTransform: 'uppercase' };
+const statusBadge: React.CSSProperties = { fontSize: '10px', fontWeight: 900, color: 'rgba(255,255,255,0.3)', padding: '2px 6px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', letterSpacing: '0.05em' };
 const roomTitle: React.CSSProperties = { fontSize: '1.1rem', fontWeight: 850, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: '4px 0 0' };
 const iconBtn: React.CSSProperties = { width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' };
 

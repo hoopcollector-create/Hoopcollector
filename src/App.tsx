@@ -21,15 +21,18 @@ import { ClassJournalDetail } from './pages/ClassJournalDetail';
 import { MatchExplore } from './pages/match/MatchExplore';
 import { MatchCreate } from './pages/match/MatchCreate';
 import { MatchRoom } from './pages/match/MatchRoom';
+import { MatchEdit } from './pages/match/MatchEdit';
 import { Terms } from './pages/Terms';
 import { CourtMap } from './pages/CourtMap';
 import { Messages } from './pages/Messages';
 import { CoachFinancials } from './pages/CoachFinancials';
 import { CurriculumGuide } from './pages/CurriculumGuide';
+import { I18nProvider } from './lib/i18n';
 
 export const App = () => {
     return (
-        <BrowserRouter>
+        <I18nProvider>
+            <BrowserRouter>
             <Routes>
                 <Route path="/" element={<AppLayout><Home /></AppLayout>} />
                 <Route path="/login" element={<Login />} />
@@ -58,6 +61,7 @@ export const App = () => {
                 <Route path="/match" element={<AppLayout><MatchExplore /></AppLayout>} />
                 <Route path="/match/create" element={<AppLayout><MatchCreate /></AppLayout>} />
                 <Route path="/match/room/:id" element={<MatchRoom />} />
+                <Route path="/match/edit/:id" element={<AppLayout><MatchEdit /></AppLayout>} />
                 <Route path="/terms" element={<AppLayout><Terms /></AppLayout>} />
                 <Route path="/court-map" element={<AppLayout><CourtMap /></AppLayout>} />
                 
@@ -65,5 +69,6 @@ export const App = () => {
 
             </Routes>
         </BrowserRouter>
+        </I18nProvider>
     );
 };

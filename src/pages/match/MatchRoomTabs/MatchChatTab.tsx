@@ -1,51 +1,77 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Send, User, Shield, Info, Zap } from 'lucide-react';
+import { UserProfileModal } from '../../../components/UserProfileModal';
 
 interface MatchChatTabProps {
-    matchId: string;
+    match: any;
     currentUser: any;
     participantStatus: string | null;
     onJoinUpdate: () => void;
 }
 
-export const MatchChatTab: React.FC<MatchChatTabProps> = ({ matchId, currentUser, participantStatus, onJoinUpdate }) => {
+export const MatchChatTab: React.FC<MatchChatTabProps> = ({ match, currentUser, participantStatus, onJoinUpdate }) => {
+    const matchId = match.id;
+    const templateId = match.template_id;
+    const isFull = match.current_players >= match.max_players;
+    const [waitlistStatus, setWaitlistStatus] = useState<string | null>(null);
     const [messages, setMessages] = useState<any[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(false);
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         loadMessages();
+        checkWaitlistStatus();
         const subscription = subscribeToMessages();
         return () => {
             subscription.unsubscribe();
         };
-    }, [matchId]);
+    }, [matchId, templateId]);
+
+    async function checkWaitlistStatus() {
+        if (!currentUser) return;
+        const { data } = await supabase.from('match_waitlist')
+            .select('status')
+            .eq('match_id', matchId)
+            .eq('user_id', currentUser.id)
+            .single();
+        if (data) setWaitlistStatus(data.status);
+    }
 
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
 
     async function loadMessages() {
-        const { data } = await supabase
+        let query = supabase
             .from('match_messages')
-            .select('*, profiles:profiles!match_messages_user_id_fkey(name, photo_url)')
-            .eq('match_id', matchId)
-            .order('created_at', { ascending: true });
+            .select('*, profiles:profiles!match_messages_user_id_fkey(name, photo_url)');
+            
+        if (templateId) {
+            query = query.eq('template_id', templateId);
+        } else {
+            query = query.eq('match_id', matchId);
+        }
+
+        const { data } = await query.order('created_at', { ascending: true });
         setMessages(data || []);
     }
 
     function subscribeToMessages() {
+        const filter = templateId ? `template_id=eq.${templateId}` : `match_id=eq.${matchId}`;
+        const channelId = templateId ? `template:${templateId}` : `match:${matchId}`;
+
         return supabase
-            .channel(`match:${matchId}`)
+            .channel(channelId)
             .on('postgres_changes', { 
                 event: 'INSERT', 
                 schema: 'public', 
                 table: 'match_messages', 
-                filter: `match_id=eq.${matchId}` 
+                filter: filter 
             }, (payload) => {
-                loadMessages(); // Re-fetch to get profile info
+                loadMessages();
             })
             .subscribe();
     }
@@ -62,6 +88,7 @@ export const MatchChatTab: React.FC<MatchChatTabProps> = ({ matchId, currentUser
 
         const { error } = await supabase.from('match_messages').insert({
             match_id: matchId,
+            template_id: templateId || null,
             user_id: currentUser.id,
             message: newMessage.trim(),
             message_type: 'user'
@@ -73,10 +100,22 @@ export const MatchChatTab: React.FC<MatchChatTabProps> = ({ matchId, currentUser
 
     const handleJoin = async () => {
         setLoading(true);
-        const { data, error } = await supabase.rpc('join_match_room', { p_match_id: matchId });
-        if (error) alert(error.message);
-        else {
-            onJoinUpdate();
+        if (isFull) {
+            // Join Waitlist
+            const { error } = await supabase.from('match_waitlist').insert({
+                match_id: matchId,
+                user_id: currentUser.id
+            });
+            if (error) alert("대기 명단 등록 실패: " + error.message);
+            else {
+                alert("대기 명단에 등록되었습니다. 자리가 나면 자동으로 참여됩니다.");
+                checkWaitlistStatus();
+            }
+        } else {
+            // Join Match
+            const { data, error } = await supabase.rpc('join_match_room', { p_match_id: matchId });
+            if (error) alert(error.message);
+            else onJoinUpdate();
         }
         setLoading(false);
     };
@@ -100,7 +139,7 @@ export const MatchChatTab: React.FC<MatchChatTabProps> = ({ matchId, currentUser
                     return (
                         <div key={msg.id} style={isMe ? myMsgRow : otherMsgRow}>
                             {!isMe && (
-                                <div style={avatarWrap}>
+                                <div style={avatarWrap} onClick={() => setSelectedUserId(msg.user_id)}>
                                     {msg.profiles?.photo_url ? (
                                         <img src={msg.profiles.photo_url} style={avatar} />
                                     ) : (
@@ -109,7 +148,7 @@ export const MatchChatTab: React.FC<MatchChatTabProps> = ({ matchId, currentUser
                                 </div>
                             )}
                             <div style={msgContentWrap}>
-                                {!isMe && <div style={userName}>{msg.profiles?.name}</div>}
+                                {!isMe && <div style={userName} onClick={() => setSelectedUserId(msg.user_id)}>{msg.profiles?.name}</div>}
                                 <div style={isMe ? myBubble : otherBubble}>
                                     {msg.message}
                                 </div>
@@ -136,19 +175,33 @@ export const MatchChatTab: React.FC<MatchChatTabProps> = ({ matchId, currentUser
                             <Send size={18} fill={newMessage.trim() ? "white" : "transparent"} />
                         </button>
                     </form>
+                ) : waitlistStatus === 'waiting' ? (
+                    <div style={joinPrompt}>
+                        <div style={joinInfo}>
+                            <Info size={14} />
+                            <span>현재 대기 명단에 등록되어 있습니다.</span>
+                        </div>
+                        <button disabled style={btnWaiting}>
+                            <span>대기 중...</span>
+                        </button>
+                    </div>
                 ) : (
                     <div style={joinPrompt}>
                         <div style={joinInfo}>
                             <Info size={14} />
                             <span>대화에 참여하려면 모임에 참가 신청을 해주세요.</span>
                         </div>
-                        <button onClick={handleJoin} disabled={loading} style={joinBtn}>
+                        <button onClick={handleJoin} disabled={loading} style={isFull ? joinBtnFull : joinBtn}>
                             <Zap size={18} fill="white" />
-                            <span>{loading ? '처리 중...' : '매치 참여하기'}</span>
+                            <span>{loading ? '처리 중...' : (isFull ? '대기 명단 등록하기' : '매치 참여하기')}</span>
                         </button>
                     </div>
                 )}
             </div>
+            
+            {selectedUserId && (
+                <UserProfileModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
+            )}
         </div>
     );
 };
@@ -181,3 +234,5 @@ const sendBtn: React.CSSProperties = { width: '36px', height: '36px', borderRadi
 const joinPrompt: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' };
 const joinInfo: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 };
 const joinBtn: React.CSSProperties = { width: '100%', height: '52px', borderRadius: '16px', background: 'var(--accent-primary)', color: 'white', border: 'none', fontWeight: 900, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(249, 115, 22, 0.3)' };
+const joinBtnFull: React.CSSProperties = { ...joinBtn, background: '#10b981', boxShadow: '0 10px 20px rgba(16, 185, 129, 0.3)' };
+const btnWaiting: React.CSSProperties = { ...joinBtn, background: 'rgba(255,255,255,0.1)', boxShadow: 'none', cursor: 'not-allowed', color: 'rgba(255,255,255,0.4)' };

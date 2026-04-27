@@ -92,15 +92,10 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
 
                 {/* Control Area */}
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ position: 'relative' }}>
-                        <input 
-                            type="text" 
-                            style={inputStyle} 
-                            value={value} 
-                            onChange={(e) => onChange(e.target.value)}
-                            placeholder="이미지 주소(URL)를 입력하거나 직접 업로드하세요"
-                        />
-                    </div>
+                    <input 
+                        type="hidden" 
+                        value={value} 
+                    />
                     
                     <label style={{ ...uploadBtnStyle, cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? 0.6 : 1 }}>
                         {uploading ? (
@@ -138,5 +133,4 @@ const previewBox: React.CSSProperties = { width: '80px', height: '80px', borderR
 const previewImg: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'cover' };
 const placeholder: React.CSSProperties = { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' };
 const removeBtn: React.CSSProperties = { position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', border: 'none', color: 'white', borderRadius: '4px', padding: '4px', cursor: 'pointer', display: 'flex' };
-const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '0.85rem', outline: 'none' };
 const uploadBtnStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px', borderRadius: '10px', background: 'var(--color-coach)', color: 'white', fontSize: '0.85rem', fontWeight: 800, transition: 'all 0.2s', border: 'none' };

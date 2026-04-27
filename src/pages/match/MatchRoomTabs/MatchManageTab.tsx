@@ -57,7 +57,7 @@ export const MatchManageTab: React.FC<{ match: any; onUpdate: () => void }> = ({
                         <h4 style={optTitle}>정보 수정</h4>
                         <p style={optDesc}>제목, 모집 인원, 공지사항 등을 수정합니다.</p>
                     </div>
-                    <button style={optBtn} onClick={() => alert('수정 기능 준비 중입니다.')}><Edit size={16} /> 수정</button>
+                    <button style={optBtn} onClick={() => navigate(`/match/edit/${match.id}`)}><Edit size={16} /> 수정</button>
                 </div>
 
                 {/* Cancel Occurrence */}

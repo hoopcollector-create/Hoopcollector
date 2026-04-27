@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { COUNTRIES, getCountryByCode } from '../../constants/countries';
 import { 
     Clock, Calendar, MapPin, Users, Award, 
     ArrowLeft, ChevronRight, Check, Info,
@@ -30,6 +31,8 @@ export const MatchCreate: React.FC = () => {
         fee_amount: 0,
         supplies: '',
         notice: '',
+        country_code: 'KR',
+        timezone: 'Asia/Seoul',
         // Recurring specific
         recurrence_type: 'weekly',
         recurrence_days: [] as string[],
@@ -98,8 +101,12 @@ export const MatchCreate: React.FC = () => {
                 navigate('/match');
             } else {
                 // Create Single Match Room
-                const startAt = new Date(`${formData.single_date}T${formData.start_time}:00`);
-                const endAt = new Date(`${formData.single_date}T${formData.end_time}:00`);
+                const [y, m, d] = formData.single_date.split('-').map(Number);
+                const [sh, sm] = formData.start_time.split(':').map(Number);
+                const [eh, em] = formData.end_time.split(':').map(Number);
+                
+                const startAt = new Date(y, m - 1, d, sh, sm);
+                const endAt = new Date(y, m - 1, d, eh, em);
 
                 const { data: room, error: rError } = await supabase.from('match_rooms').insert({
                     host_id: session.user.id,
@@ -120,21 +127,12 @@ export const MatchCreate: React.FC = () => {
                     fee_amount: formData.fee_amount,
                     supplies: formData.supplies,
                     notice: formData.notice,
+                    timezone: formData.timezone,
+                    country_code: formData.country_code,
                     is_recurring: false
                 }).select().single();
 
                 if (rError) throw rError;
-
-                // Automatically join the host
-                await supabase.from('match_participants').insert({
-                    match_id: room.id,
-                    user_id: session.user.id,
-                    role: 'host',
-                    status: 'joined'
-                });
-
-                // Increment player count
-                await supabase.from('match_rooms').update({ current_players: 1 }).eq('id', room.id);
 
                 alert('모임이 등록되었습니다!');
                 navigate(`/match/room/${room.id}`);
@@ -203,6 +201,22 @@ export const MatchCreate: React.FC = () => {
                                 </select>
                             </div>
                             <div style={formGroup}>
+                                <label style={labelStyle}>국가 선택 (시간대 자동 설정)</label>
+                                <select 
+                                    value={formData.country_code} 
+                                    onChange={e => {
+                                        const c = getCountryByCode(e.target.value);
+                                        updateForm('country_code', c.code);
+                                        updateForm('timezone', c.timezone);
+                                    }} 
+                                    style={inputStyle}
+                                >
+                                    {COUNTRIES.map(c => (
+                                        <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div style={formGroup}>
                                 <label style={labelStyle}>요구 등급</label>
                                 <select value={formData.required_grade} onChange={e => updateForm('required_grade', e.target.value)} style={inputStyle}>
                                     <option value="all">전체 가능</option>
@@ -264,7 +278,10 @@ export const MatchCreate: React.FC = () => {
                                 <input type="time" value={formData.end_time} onChange={e => updateForm('end_time', e.target.value)} style={inputStyle} />
                             </div>
                         </div>
-                        <button onClick={() => setStep(3)} style={nextBtn}>장소 및 상세 설정 <ChevronRight size={18}/></button>
+                        <div style={btnGroup}>
+                            <button onClick={() => setStep(1)} style={prevBtn}>이전 단계</button>
+                            <button onClick={() => setStep(3)} style={nextBtn}>장소 및 상세 설정 <ChevronRight size={18}/></button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -300,9 +317,12 @@ export const MatchCreate: React.FC = () => {
                                 style={{ ...inputStyle, minHeight: '120px', resize: 'vertical' }}
                             />
                         </div>
-                        <button onClick={handleSubmit} disabled={loading} style={submitBtn}>
-                            {loading ? '모임 등록 중...' : (isRecurring ? '정기 모임 시작하기' : '모임 개설하기')}
-                        </button>
+                        <div style={btnGroup}>
+                            <button onClick={() => setStep(2)} style={prevBtn}>이전 단계</button>
+                            <button onClick={handleSubmit} disabled={loading} style={submitBtn}>
+                                {loading ? '모임 등록 중...' : (isRecurring ? '정기 모임 시작하기' : '모임 개설하기')}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -337,4 +357,6 @@ const dayBtn: React.CSSProperties = { padding: '10px 16px', borderRadius: '10px'
 const dayBtnActive: React.CSSProperties = { ...dayBtn, background: '#8b5cf6', borderColor: '#a78bfa' };
 
 const nextBtn: React.CSSProperties = { padding: '18px', borderRadius: '18px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 900, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s' };
-const submitBtn: React.CSSProperties = { ...nextBtn, background: 'var(--accent-primary)', border: 'none', boxShadow: '0 10px 25px rgba(249, 115, 22, 0.4)' };
+const prevBtn: React.CSSProperties = { ...nextBtn, background: 'transparent', color: 'rgba(255,255,255,0.3)', border: '1px solid rgba(255,255,255,0.05)' };
+const btnGroup: React.CSSProperties = { display: 'flex', gap: '12px', marginTop: '20px' };
+const submitBtn: React.CSSProperties = { ...nextBtn, flex: 2, background: 'var(--accent-primary)', border: 'none', boxShadow: '0 10px 25px rgba(249, 115, 22, 0.4)' };

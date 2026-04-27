@@ -4,6 +4,7 @@ import { NaverMapSelector } from '../NaverMapSelector';
 import { ClassType, Region } from '../../types/dashboard';
 import { MapPin, Info, CheckCircle2 } from 'lucide-react';
 import { toISOStringFromKST } from '../../utils/dashboardHelpers';
+import { COUNTRIES, getCountryByCode } from '../../constants/countries';
 
 interface UnifiedBookingFormProps {
     targetCoachId?: string | null;
@@ -34,6 +35,8 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
     const [lat, setLat] = useState<number | null>(null);
     const [lng, setLng] = useState<number | null>(null);
     const [note, setNote] = useState("");
+    const [countryCode, setCountryCode] = useState("KR");
+    const [timezone, setTimezone] = useState("Asia/Seoul");
 
     const [internalTickets, setInternalTickets] = useState<Record<ClassType, number>>({ A: 0, B: 0, C: 0 });
     const [loading, setLoading] = useState(false);
@@ -80,8 +83,7 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
             const fullAddress = courtName.trim() ? `${courtName.trim()} / ${address.trim()}` : address.trim();
 
             // RPC call to unified request function
-            // Note: We send p_coach_id which can be null (General) or a UUID (Designated)
-            const { error } = await supabase.rpc("request_class_v2", {
+            const { error } = await supabase.rpc("request_class_v3", {
                 p_class_type: classType,
                 p_requested_start: iso,
                 p_duration_min: 60,
@@ -91,7 +93,9 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
                 p_region_id: regionId,
                 p_coach_id: targetCoachId,
                 p_lat: lat,
-                p_lng: lng
+                p_lng: lng,
+                p_country_code: countryCode,
+                p_timezone: timezone
             });
 
             if (error) {
@@ -120,20 +124,43 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
                 </div>
             )}
 
-            {/* Step 1: Class Type */}
-            <div>
-                <div style={sectionLabel}>수업 종류 선택</div>
-                <div style={tabContainer}>
-                    {(["A", "B", "C"] as ClassType[]).map(t => (
-                        <button 
-                            key={t} 
-                            onClick={() => setClassType(t)} 
-                            style={classType === t ? tabOn : tabOff}
-                        >
-                            Class {t}
-                            <span style={ticketCount}>({currentTickets[t] ?? 0}장)</span>
-                        </button>
-                    ))}
+            {/* Step 1: Country & Class Type */}
+            <div style={gridRow}>
+                <div>
+                    <div style={sectionLabel}>국가 선택 (시간대 자동 설정)</div>
+                    <select 
+                        value={countryCode} 
+                        onChange={e => {
+                            const c = getCountryByCode(e.target.value);
+                            setCountryCode(c.code);
+                            setTimezone(c.timezone);
+                        }} 
+                        style={selectStyle}
+                    >
+                        {COUNTRIES.map(c => (
+                            <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
+                        ))}
+                    </select>
+                    {countryCode !== 'KR' && (
+                        <div style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: '6px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Info size={12} /> 현지 통화 결제는 현재 준비 중입니다.
+                        </div>
+                    )}
+                </div>
+                <div>
+                    <div style={sectionLabel}>수업 종류 선택</div>
+                    <div style={tabContainer}>
+                        {(["A", "B", "C"] as ClassType[]).map(t => (
+                            <button 
+                                key={t} 
+                                onClick={() => setClassType(t)} 
+                                style={classType === t ? tabOn : tabOff}
+                            >
+                                Class {t}
+                                <span style={ticketCount}>({currentTickets[t] ?? 0}장)</span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 

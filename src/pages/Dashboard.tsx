@@ -7,12 +7,12 @@ import {
     PendingPurchase, Region, Filter,
     ShippingAddress, ShopRequestStatus, ShopPurchaseRequest
 } from '../types/dashboard';
-import { Home, Compass, MessageSquare, History, Wallet, User as UserIcon, LogOut, ChevronRight, Menu, X, ArrowLeft, Star, Edit2, Plus, ArrowRight } from 'lucide-react';
+import { Home, Compass, MessageSquare, History, Wallet, Shield, User as UserIcon, LogOut, ChevronRight, Menu, X, ArrowLeft, Star, Edit2, Plus, ArrowRight } from 'lucide-react';
 import { 
     calcAge, toISOStringFromKST, normalizePhone, clampInt 
 } from '../utils/dashboardHelpers';
 
-type MainTab = "home" | "request" | "history" | "cash";
+type MainTab = "home" | "request" | "history" | "cash" | "security";
 
 // Subcomponents
 import { StudentHome } from '../components/dashboard/StudentHome';
@@ -23,6 +23,7 @@ import { StudentHistory } from '../components/dashboard/StudentHistory';
 import { StudentCash } from '../components/dashboard/StudentCash';
 import { ShippingManager } from '../components/dashboard/ShippingManager';
 import { StudentShopHistory } from '../components/dashboard/StudentShopHistory';
+import { AccountSecurity } from '../components/dashboard/AccountSecurity';
 
 
 
@@ -99,7 +100,7 @@ export const Dashboard = () => {
             const tabParam = queryParams.get('tab') as MainTab;
             const typeParam = queryParams.get('type') as ClassType;
             
-            if (tabParam && ["home", "request", "history", "cash"].includes(tabParam)) {
+            if (tabParam && ["home", "request", "history", "cash", "security"].includes(tabParam)) {
                 setMainTab(tabParam);
             }
             
@@ -142,7 +143,11 @@ export const Dashboard = () => {
     }
     async function loadPoints(uid: string) {
         const { data } = await supabase.from("user_points_stats").select("*").eq("user_id", uid).maybeSingle();
-        setPoints((data as PointsStats | null) ?? { user_id: uid, balance: 0, earned_total: 0, spent_total: 0, completed_count: 0, review_count: 0, tier: "Rookie" });
+        setPoints((data as PointsStats | null) ?? { 
+            user_id: uid, balance: 0, earned_total: 0, spent_total: 0, 
+            completed_count: 0, review_count: 0, tier: "Rookie",
+            xp_total: 0, level: 1
+        });
     }
     async function loadMyPendingPurchases(uid: string) {
         const { data } = await supabase.from("purchases").select("*").eq("user_id", uid).eq("method", "cash").eq("status", "pending").order("created_at", { ascending: false }).limit(20);
@@ -266,6 +271,16 @@ export const Dashboard = () => {
         refreshStudentData();
     }
 
+    async function reportCoachNoShow(requestId: string) {
+        if (!window.confirm("코치가 수업에 나타나지 않았음을 신고하시겠습니까?\n신고 시 티켓이 환불되며 코치에게 패널티가 부여됩니다.")) return;
+        setLoading(true); setMsg("");
+        const { error } = await supabase.rpc("handle_coach_no_show", { p_request_id: requestId });
+        setLoading(false);
+        if (error) return setMsg(`신고 실패: ${error.message}`);
+        setMsg("코치 노쇼 신고가 완료되었습니다. 티켓이 환불되었습니다.");
+        refreshStudentData();
+    }
+
     const regionMap = useMemo(() => {
         const m = new Map<string, string>();
         regions.forEach(r => m.set(r.id, r.display_name));
@@ -344,6 +359,7 @@ export const Dashboard = () => {
                 <TabBtn id="request" icon={Compass} active={mainTab==='request'} onClick={setMainTab} label="예약" />
                 <TabBtn id="history" icon={History} active={mainTab==='history'} onClick={setMainTab} label="내역" />
                 <TabBtn id="cash" icon={Wallet} active={mainTab==='cash'} onClick={setMainTab} label="지갑" />
+                <TabBtn id="security" icon={Shield} active={mainTab==='security'} onClick={setMainTab} label="보안" />
             </div>
 
             {/* Main Section */}
@@ -358,6 +374,7 @@ export const Dashboard = () => {
                         position={position} setPosition={setPosition} exp={exp} setExp={setExp} 
                         phone={phone} setPhone={setPhone} photoUrl={photoUrl} setPhotoUrl={setPhotoUrl}
                         saveProfile={saveProfile} ageText={ageText} recentJournals={recentJournals}
+                        profile={profile}
                     />
                 )}
                 {mainTab === "home" && !editProfile && (
@@ -381,7 +398,7 @@ export const Dashboard = () => {
                         rows={rows.filter(r => r.status !== 'cancelled' && r.status !== 'rejected').filter(r => filter === 'all' ? true : r.status === filter)}
                         cancelledRows={rows.filter(r => r.status === 'cancelled' || r.status === 'rejected')}
                         filter={filter} setFilter={setFilter} showCancelled={showCancelled} setShowCancelled={setShowCancelled}
-                        cancelRequest={cancelRequest} loading={loading} regionMap={regionMap}
+                        cancelRequest={cancelRequest} reportCoachNoShow={reportCoachNoShow} loading={loading} regionMap={regionMap}
                     />
                 )}
 
@@ -396,6 +413,9 @@ export const Dashboard = () => {
                         pointsDiscountWon={pointsDiscountWon} maxUsablePoints={maxUsablePoints} finalAmount={finalAmount}
                         estimatedReward={Math.floor(finalAmount * 0.01)}
                     />
+                )}
+                {mainTab === "security" && (
+                    <AccountSecurity />
                 )}
             </section>
         </div>

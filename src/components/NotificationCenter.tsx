@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Bell, MessageSquare, Calendar, Award, Info, X } from 'lucide-react';
+import { useTranslation } from '../lib/i18n';
 
 interface AppNotification {
     id: string;
@@ -16,6 +17,7 @@ export const NotificationCenter: React.FC = () => {
     const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+    const { t } = useTranslation();
 
     useEffect(() => {
         // Safe check for supabase
@@ -140,12 +142,12 @@ export const NotificationCenter: React.FC = () => {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div style={{ padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>NOTIFICATIONS</span>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>{t('sidebar.messages').toUpperCase()}</span>
                             <button onClick={() => setIsOpen(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={16} /></button>
                         </div>
                         <div style={{ maxHeight: 300, overflowY: 'auto' }}>
                             {notifications.length === 0 ? (
-                                <div style={{ padding: 40, textAlign: 'center', color: '#666', fontSize: '0.8rem' }}>No new alerts.</div>
+                                <div style={{ padding: 40, textAlign: 'center', color: '#666', fontSize: '0.8rem' }}>알림이 없습니다.</div>
                             ) : (
                                 notifications.map(n => (
                                     <div key={n.id} onClick={() => markAsRead(n.id)} style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.03)', opacity: n.is_read ? 0.5 : 1, cursor: 'pointer' }}>

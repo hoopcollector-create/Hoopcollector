@@ -31,7 +31,8 @@ export const CoachDashboard = () => {
         experience_text: "",
         bio_text: "",
         service_regions: [] as string[],
-        photo_url: ""
+        photo_url: "",
+        auto_accept: false
     });
 
     useEffect(() => {
@@ -62,7 +63,8 @@ export const CoachDashboard = () => {
                     experience_text: cp.experience_text || "",
                     bio_text: cp.bio_text || "",
                     service_regions: cp.service_regions || [],
-                    photo_url: cp.photo_url || ""
+                    photo_url: cp.photo_url || "",
+                    auto_accept: cp.auto_accept || false
                 });
             }
 
@@ -106,7 +108,8 @@ export const CoachDashboard = () => {
                     experience_text: editData.experience_text,
                     bio_text: editData.bio_text,
                     service_regions: editData.service_regions,
-                    photo_url: editData.photo_url
+                    photo_url: editData.photo_url,
+                    auto_accept: editData.auto_accept
                 })
                 .eq('user_id', session.user.id);
 
@@ -287,6 +290,35 @@ export const CoachDashboard = () => {
                                         {(!coachProfile?.service_regions || coachProfile.service_regions.length === 0) && <div style={displayField}>등록된 지역이 없습니다.</div>}
                                     </div>
                                 )}
+                            </div>
+
+                            <div style={fieldGroup}>
+                                <label style={labelStyle}>자동 승인 설정</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontWeight: 800, fontSize: '0.95rem', marginBottom: '4px' }}>수업 자동 수락</div>
+                                        <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', lineHeight: 1.4 }}>활성화 시, 다른 수업과 겹치지 않는 모든 신청이 즉시 확정됩니다.</div>
+                                    </div>
+                                    {isEditing ? (
+                                        <button 
+                                            onClick={() => setEditData(prev => ({ ...prev, auto_accept: !prev.auto_accept }))}
+                                            style={{ 
+                                                width: '50px', height: '26px', borderRadius: '100px', border: 'none', cursor: 'pointer', position: 'relative',
+                                                background: editData.auto_accept ? 'var(--color-coach)' : 'rgba(255,255,255,0.1)',
+                                                transition: 'all 0.3s'
+                                            }}
+                                        >
+                                            <div style={{ 
+                                                width: '20px', height: '20px', background: 'white', borderRadius: '50%', position: 'absolute', top: '3px',
+                                                left: editData.auto_accept ? '27px' : '3px', transition: 'all 0.3s'
+                                            }} />
+                                        </button>
+                                    ) : (
+                                        <div style={{ color: coachProfile?.auto_accept ? 'var(--color-coach)' : 'rgba(255,255,255,0.2)', fontWeight: 900, fontSize: '0.9rem' }}>
+                                            {coachProfile?.auto_accept ? 'ON' : 'OFF'}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

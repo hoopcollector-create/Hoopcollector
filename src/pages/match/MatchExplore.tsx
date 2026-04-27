@@ -6,6 +6,7 @@ import {
     Clock, Zap, LayoutGrid, Heart 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getCountryByTimezone } from '../../constants/countries';
 import { useNaverMap } from '../../hooks/useNaverMap';
 
 // Types from SQL schema
@@ -26,8 +27,13 @@ interface MatchRoom {
     fee_amount: number;
     status: string;
     is_recurring: boolean;
+    template_id?: string | null;
+    timezone?: string;
     latitude: number;
     longitude: number;
+    likes_count: number;
+    comments_count: number;
+    host_id: string;
     host?: { name: string; photo_url: string };
 }
 
@@ -100,11 +106,21 @@ export const MatchExplore: React.FC = () => {
             }
 
             const { data, error } = await query;
-            if (error) {
-                console.error("Query Error:", error);
-                throw error;
-            }
-            setMatches(data || []);
+            if (error) throw error;
+
+            // Group recurring matches by template_id and show only the nearest one
+            const uniqueMatches: MatchRoom[] = [];
+            const templateIds = new Set();
+
+            (data || []).forEach((m: MatchRoom) => {
+                if (!m.is_recurring || !m.template_id) {
+                    uniqueMatches.push(m);
+                } else if (!templateIds.has(m.template_id)) {
+                    templateIds.add(m.template_id);
+                    uniqueMatches.push(m);
+                }
+            });
+            setMatches(uniqueMatches);
         } catch (e) {
             console.error(e);
         } finally {
@@ -219,6 +235,9 @@ const MatchCard: React.FC<{ match: MatchRoom, onClick: () => void }> = ({ match,
                             <Zap size={10} fill="currentColor" /> 정기
                         </div>
                     )}
+                    <div style={countryBadgeStyle}>
+                        {getCountryByTimezone(match.timezone || 'Asia/Seoul').flag}
+                    </div>
                     <span style={typeText}>{match.match_type}</span>
                 </div>
                 <div style={gradeBadge(match.required_grade)}>
@@ -284,12 +303,36 @@ const ExplorationMap: React.FC<{ matches: MatchRoom[], navigate: any }> = ({ mat
                     map: map,
                     icon: {
                         content: `
-                            <div style="background: ${m.is_recurring ? '#8b5cf6' : '#f97316'}; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); white-space: nowrap;">
-                                ${m.match_type}
+                            <div style="background: ${m.is_recurring ? '#8b5cf6' : '#f97316'}; color: white; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 900; border: 2px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.4); white-space: nowrap; transition: all 0.2s transform;">
+                                ${m.title}
                             </div>
                         `,
                         anchor: new window.naver.maps.Point(20, 20)
                     }
+                });
+
+                const infoWindow = new window.naver.maps.InfoWindow({
+                    content: `
+                        <div style="padding: 16px; background: #121214; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; color: white; min-width: 220px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); font-family: sans-serif;">
+                            <div style="font-size: 15px; font-weight: 950; margin-bottom: 10px; color: white;">${m.title}</div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="background: rgba(249, 115, 22, 0.15); color: #f97316; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 900;">${m.match_type}</span>
+                                <span style="font-size: 13px; font-weight: 800; color: white;">${m.fee_amount > 0 ? m.fee_amount.toLocaleString() + '원' : '무료'}</span>
+                            </div>
+                            <div style="margin-top: 12px; font-size: 11px; color: rgba(255,255,255,0.4); font-weight: 700;">${m.place_name}</div>
+                        </div>
+                    `,
+                    borderWidth: 0,
+                    backgroundColor: 'transparent',
+                    anchorSkew: true,
+                });
+
+                window.naver.maps.Event.addListener(marker, 'mouseover', () => {
+                    infoWindow.open(map, marker);
+                });
+
+                window.naver.maps.Event.addListener(marker, 'mouseout', () => {
+                    infoWindow.close();
                 });
 
                 window.naver.maps.Event.addListener(marker, 'click', () => {
@@ -349,6 +392,7 @@ const cardStyle: React.CSSProperties = { background: 'var(--bg-surface-L1)', pad
 const cardHeader: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
 const recurringBadge: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '6px', background: 'rgba(139, 92, 246, 0.15)', color: '#a78bfa', fontSize: '0.7rem', fontWeight: 900 };
 const typeText: React.CSSProperties = { fontSize: '0.85rem', fontWeight: 800, color: 'var(--accent-primary)', opacity: 0.8 };
+const countryBadgeStyle: React.CSSProperties = { fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' };
 const cardTitle: React.CSSProperties = { fontSize: '1.25rem', fontWeight: 850, lineHeight: 1.3, display: 'flex', gap: '8px', alignItems: 'center' };
 const codeText: React.CSSProperties = { fontSize: '0.9rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, letterSpacing: '0.05em' };
 const infoRow: React.CSSProperties = { display: 'flex', gap: '16px' };

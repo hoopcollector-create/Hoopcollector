@@ -24,23 +24,20 @@ function levelOrder(level: ClassType | null) {
     return 9;
 }
 
-function truncate(text: string | null | undefined, max = 80) {
-    if (!text) return "";
-    if (text.length <= max) return text;
-    return text.slice(0, max).trim() + "…";
-}
-
 export const CoachDirectory = () => {
     const [rows, setRows] = useState<PublicCoach[]>([]);
     const [loading, setLoading] = useState(true);
     const [msg, setMsg] = useState("");
-
     const [search, setSearch] = useState("");
     const [selectedRegion, setSelectedRegion] = useState("전체");
     const [selectedClass, setSelectedClass] = useState("전체");
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
     useEffect(() => {
         loadCoaches();
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     async function loadCoaches() {
@@ -109,12 +106,12 @@ export const CoachDirectory = () => {
     }, [rows, search, selectedRegion, selectedClass]);
 
     return (
-        <div style={{ color: 'white', maxWidth: '1200px', margin: '0 auto', paddingBottom: '100px' }}>
+        <div style={{ color: 'white', maxWidth: '1200px', margin: '0 auto', paddingBottom: '100px', padding: isMobile ? '0 16px' : '0' }}>
             {/* Hero Section */}
             <section style={hero}>
                 <div style={heroBadge}>HOOPCOLLECTOR ROSTER</div>
-                <h1 style={heroTitle}>FIND YOUR COACH</h1>
-                <p style={heroDesc}>경력과 실력이 검증된 훕콜렉터의 코치진을 만나보세요. 원하는 지역과 레벨에 맞춰 최적의 매칭을 제공합니다.</p>
+                <h1 style={{ ...heroTitle, fontSize: isMobile ? '2.5rem' : '3.5rem' }}>FIND YOUR COACH</h1>
+                <p style={heroDesc}>경력과 실력이 검증된 훕콜렉터의 코치진을 만나보세요.</p>
 
                 <div style={searchPanel}>
                     <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
@@ -122,7 +119,7 @@ export const CoachDirectory = () => {
                         <input
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="이름, 경력, 지역 등으로 검색하세요."
+                            placeholder="이름, 경력, 지역 검색"
                             style={searchInput}
                         />
                     </div>
@@ -137,26 +134,15 @@ export const CoachDirectory = () => {
                             ))}
                         </div>
                     </div>
-
-                    <div style={filterBlock}>
-                        <div style={filterHead}>PROGRAMS</div>
-                        <div style={chipRow}>
-                            {classOptions.map((cls) => (
-                                <button key={cls} onClick={() => setSelectedClass(cls)} style={selectedClass === cls ? chipOn : chipOff}>
-                                    {cls === "전체" ? "ALL" : `CLASS ${cls}`}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
                 </div>
             </section>
 
             {/* Coach List */}
-            <section style={{ marginTop: '5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem' }}>
+            <section style={{ marginTop: isMobile ? '3rem' : '5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
                     <div>
-                        <h2 style={{ fontSize: '2rem', fontWeight: 900, letterSpacing: '-0.02e,' }}>COACHES</h2>
-                        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '1rem', fontWeight: 700 }}>{filteredRows.length} ACTIVE COACHES</p>
+                        <h2 style={{ fontSize: isMobile ? '1.5rem' : '2rem', fontWeight: 900 }}>COACHES</h2>
+                        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.9rem', fontWeight: 700 }}>{filteredRows.length} ACTIVE COACHES</p>
                     </div>
                 </div>
 
@@ -167,10 +153,21 @@ export const CoachDirectory = () => {
                 ) : filteredRows.length === 0 ? (
                     <div style={emptyBox}>코치를 찾을 수 없습니다.</div>
                 ) : (
-                    <div className="coach-grid">
+                    <div style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))', 
+                        gap: isMobile ? '16px' : '30px' 
+                    }}>
                         {filteredRows.map((coach) => (
                             <Link key={coach.coach_id} to={`/coach-detail/${coach.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                                <article className="card-minimal hover-lift" style={{ padding: 0, height: '100%', cursor: 'pointer' }}>
+                                <article className="card-minimal hover-lift" style={{ 
+                                    padding: 0, 
+                                    height: isMobile ? '450px' : 'auto', 
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    overflow: 'hidden'
+                                }}>
                                     <div style={thumbWrap}>
                                         {coach.photo_url ? (
                                             <img src={coach.photo_url} alt={coach.display_name ?? ""} style={thumb} />
@@ -182,25 +179,35 @@ export const CoachDirectory = () => {
                                         </div>
                                     </div>
 
-                                    <div style={cardBody}>
+                                    <div style={{ ...cardBody, flex: 1, display: 'flex', flexDirection: 'column' }}>
                                         <div style={coachName}>{coach.display_name ?? "UNNAMED"}</div>
                                         
                                         <div style={regionPills}>
-                                            {(coach.service_regions ?? []).slice(0, 3).map((region) => (
+                                            {(coach.service_regions ?? []).slice(0, 2).map((region) => (
                                                 <span key={region} style={miniPill}><MapPin size={10} style={{ marginRight: 4, opacity: 0.5 }} /> {region}</span>
                                             ))}
                                         </div>
 
                                         <div style={line} />
 
-                                        <div style={infoList}>
-                                            <div style={infoRow}>
-                                                <div style={infoLabel}>경력</div>
-                                                <div style={infoValue}>{truncate(coach.experience_text, 50) || "상세 프로필 참조"}</div>
+                                        <div style={{ flex: 1, overflow: 'hidden' }}>
+                                            <div style={infoLabel}>경력 / 소개</div>
+                                            <div style={{ 
+                                                fontSize: '0.85rem', 
+                                                lineHeight: 1.5, 
+                                                color: 'rgba(255,255,255,0.6)',
+                                                display: '-webkit-box',
+                                                WebkitLineClamp: isMobile ? 2 : 3,
+                                                WebkitBoxOrient: 'vertical',
+                                                overflow: 'hidden'
+                                            }}>
+                                                {coach.experience_text || coach.bio_text || "상세 프로필 참조"}
                                             </div>
                                         </div>
 
-                                        <div style={viewMoreBtn}>VIEW PROFILE <ChevronRight size={14} style={{ marginLeft: 6, opacity: 0.5 }} /></div>
+                                        <div style={{ ...viewMoreBtn, marginTop: 'auto', paddingTop: '16px' }}>
+                                            VIEW PROFILE <ChevronRight size={14} style={{ marginLeft: 6, opacity: 0.5 }} />
+                                        </div>
                                     </div>
                                 </article>
                             </Link>
@@ -213,34 +220,31 @@ export const CoachDirectory = () => {
 };
 
 /* Styles */
-const hero: React.CSSProperties = { paddingBottom: '3rem' };
-const heroBadge: React.CSSProperties = { fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.4)', marginBottom: '1.5rem' };
-const heroTitle: React.CSSProperties = { fontSize: '3.5rem', fontWeight: 900, marginBottom: '1rem', letterSpacing: '-0.04em' };
-const heroDesc: React.CSSProperties = { color: 'rgba(255,255,255,0.4)', fontSize: '1.2rem', lineHeight: 1.6, maxWidth: '700px', marginBottom: '3rem' };
+const hero: React.CSSProperties = { paddingBottom: '2rem' };
+const heroBadge: React.CSSProperties = { fontSize: '0.65rem', fontWeight: 900, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.4)', marginBottom: '1rem' };
+const heroTitle: React.CSSProperties = { fontWeight: 900, marginBottom: '0.5rem', letterSpacing: '-0.04em' };
+const heroDesc: React.CSSProperties = { color: 'rgba(255,255,255,0.4)', fontSize: '1rem', lineHeight: 1.5, maxWidth: '700px', marginBottom: '2rem' };
 
-const searchPanel: React.CSSProperties = { padding: '2rem', borderRadius: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' };
-const searchInput: React.CSSProperties = { width: '100%', padding: '18px 20px 18px 50px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.3)', color: 'white', fontSize: '1rem', outline: 'none' };
+const searchPanel: React.CSSProperties = { padding: '1.5rem', borderRadius: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' };
+const searchInput: React.CSSProperties = { width: '100%', padding: '14px 14px 14px 44px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.3)', color: 'white', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' };
 
-const filterBlock: React.CSSProperties = { marginTop: '2rem' };
-const filterHead: React.CSSProperties = { fontSize: '0.65rem', fontWeight: 900, color: 'rgba(255,255,255,0.3)', marginBottom: '1rem', letterSpacing: '0.15em' };
-const chipRow: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '8px' };
-const chipOn: React.CSSProperties = { padding: '8px 18px', borderRadius: '100px', background: 'white', color: 'black', border: 'none', fontSize: '0.8rem', fontWeight: 900, cursor: 'pointer' };
-const chipOff: React.CSSProperties = { padding: '8px 18px', borderRadius: '100px', background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.06)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' };
+const filterBlock: React.CSSProperties = { marginTop: '1.5rem' };
+const filterHead: React.CSSProperties = { fontSize: '0.6rem', fontWeight: 900, color: 'rgba(255,255,255,0.3)', marginBottom: '0.8rem', letterSpacing: '0.1em' };
+const chipRow: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '6px' };
+const chipOn: React.CSSProperties = { padding: '6px 14px', borderRadius: '100px', background: 'white', color: 'black', border: 'none', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer' };
+const chipOff: React.CSSProperties = { padding: '6px 14px', borderRadius: '100px', background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.06)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' };
 
-const thumbWrap: React.CSSProperties = { position: 'relative', width: '100%', aspectRatio: '1 / 1', overflow: 'hidden', background: '#0a0a0b' };
+const thumbWrap: React.CSSProperties = { position: 'relative', width: '100%', aspectRatio: '1 / 1', overflow: 'hidden', background: '#0a0a0b', flexShrink: 0 };
 const thumb: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'cover' };
-const thumbFallback: React.CSSProperties = { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', fontWeight: 900, color: 'rgba(255,255,255,0.05)' };
-const topBadgeRow: React.CSSProperties = { position: 'absolute', bottom: 20, right: 20 };
-const levelBadge: React.CSSProperties = { width: '44px', height: '44px', background: 'white', color: 'black', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.2rem' };
+const thumbFallback: React.CSSProperties = { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 900, color: 'rgba(255,255,255,0.05)' };
+const topBadgeRow: React.CSSProperties = { position: 'absolute', bottom: 12, right: 12 };
+const levelBadge: React.CSSProperties = { width: '36px', height: '36px', background: 'white', color: 'black', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1rem' };
 
-const cardBody: React.CSSProperties = { padding: '2rem' };
-const coachName: React.CSSProperties = { fontSize: '1.5rem', fontWeight: 900, marginBottom: '0.6rem', letterSpacing: '-0.02em' };
-const regionPills: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '1.5rem' };
-const miniPill: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700 };
-const line: React.CSSProperties = { height: '1px', background: 'rgba(255,255,255,0.05)', margin: '1.5rem 0' };
-const infoList: React.CSSProperties = { marginBottom: '2rem' };
-const infoRow: React.CSSProperties = { fontSize: '0.9rem', lineHeight: 1.6 };
-const infoLabel: React.CSSProperties = { color: 'rgba(255,255,255,0.3)', fontWeight: 900, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' };
-const infoValue: React.CSSProperties = { color: 'rgba(255,255,255,0.6)', fontWeight: 500 };
-const viewMoreBtn: React.CSSProperties = { fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.1em', color: 'white', display: 'flex', alignItems: 'center' };
-const emptyBox: React.CSSProperties = { padding: '100px 0', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '24px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontWeight: 800, letterSpacing: '0.1em' };
+const cardBody: React.CSSProperties = { padding: '1.5rem' };
+const coachName: React.CSSProperties = { fontSize: '1.25rem', fontWeight: 900, marginBottom: '0.4rem', letterSpacing: '-0.02em' };
+const regionPills: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '1rem' };
+const miniPill: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700 };
+const line: React.CSSProperties = { height: '1px', background: 'rgba(255,255,255,0.05)', margin: '1rem 0' };
+const infoLabel: React.CSSProperties = { color: 'rgba(255,255,255,0.3)', fontWeight: 900, fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' };
+const viewMoreBtn: React.CSSProperties = { fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.1em', color: 'white', display: 'flex', alignItems: 'center' };
+const emptyBox: React.CSSProperties = { padding: '80px 0', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '24px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontWeight: 800, letterSpacing: '0.1em' };

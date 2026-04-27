@@ -15,6 +15,7 @@ const translations = {
         },
         sidebar: {
             dashboard: "대시보드",
+            collector: "JOURNAL COLLECTOR",
             match: "매치 및 모임",
             court: "코트 지도",
             coach: "코치 찾기",
@@ -46,6 +47,7 @@ const translations = {
         common: { save: "Save", cancel: "Cancel", delete: "Delete", loading: "Loading...", confirm: "Confirm", back: "Back", more: "More" },
         sidebar: {
             dashboard: "Dashboard",
+            collector: "JOURNAL COLLECTOR",
             match: "Explore Matches",
             court: "Court Map",
             coach: "Find Coach",
@@ -77,6 +79,7 @@ const translations = {
         common: { save: "保存", cancel: "キャンセル", delete: "削除", loading: "読み込み中...", confirm: "確認", back: "戻る", more: "もっと見る" },
         sidebar: {
             dashboard: "ダッシュボード",
+            collector: "JOURNAL COLLECTOR",
             match: "マッチ探す",
             court: "コート地図",
             coach: "コーチ探す",
@@ -108,6 +111,7 @@ const translations = {
         common: { save: "保存", cancel: "取消", delete: "删除", loading: "加载中...", confirm: "确认", back: "返回", more: "更多" },
         sidebar: {
             dashboard: "控制面板",
+            collector: "JOURNAL COLLECTOR",
             match: "寻找比赛",
             court: "球场地图",
             coach: "寻找教练",

@@ -18,6 +18,7 @@ import { Shop } from './pages/Shop';
 import { ShopDetail } from './pages/ShopDetail';
 import { Home } from './pages/Home';
 import { ClassJournalDetail } from './pages/ClassJournalDetail';
+import { JournalCollector } from './pages/JournalCollector';
 import { MatchExplore } from './pages/match/MatchExplore';
 import { MatchCreate } from './pages/match/MatchCreate';
 import { MatchRoom } from './pages/match/MatchRoom';
@@ -44,6 +45,7 @@ export const App = () => {
                 <Route path="/messages" element={<AppLayout><Messages /></AppLayout>} />
                 
                 <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
+                <Route path="/collector" element={<AppLayout><JournalCollector /></AppLayout>} />
                 <Route path="/journal/:id" element={<AppLayout><ClassJournalDetail /></AppLayout>} />
                 
                 <Route path="/coach/dashboard" element={<AppLayout><CoachDashboard /></AppLayout>} />

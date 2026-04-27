@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { 
     Search, Filter, Map as MapIcon, LayoutList, Plus, 
     Calendar, Users, Award, MapPin, ChevronRight, 
-    Clock, Zap, LayoutGrid, Heart 
+    Clock, Zap, LayoutGrid, Heart, Flame
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getCountryByTimezone } from '../../constants/countries';
@@ -37,6 +37,8 @@ interface MatchRoom {
     host?: { name: string; photo_url: string };
 }
 
+const REGIONS = ['전국', '서울', '경기', '인천', '강원', '충청', '전라', '경상', '제주'];
+
 const FilterBtn = ({ active, label, onClick }: any) => (
     <button 
         onClick={onClick}
@@ -55,7 +57,8 @@ export const MatchExplore: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState('all'); // all, my
-    const [matchType, setMatchType] = useState('all'); // 5대5, 3대3 등
+    const [matchType, setMatchType] = useState('all'); 
+    const [selectedRegion, setSelectedRegion] = useState('전국');
 
     useEffect(() => {
         loadMatches();
@@ -72,9 +75,6 @@ export const MatchExplore: React.FC = () => {
                 .eq('is_hidden', false)
                 .order('start_at', { ascending: true });
 
-            // Note: If you get PGRST200 error, please run the SQL to add FK constraint.
-            // ALTER TABLE match_rooms ADD CONSTRAINT match_rooms_host_id_fkey FOREIGN KEY (host_id) REFERENCES profiles(id);
-
             if (filterType === 'my') {
                 if (!session) {
                     setMatches([]);
@@ -82,7 +82,6 @@ export const MatchExplore: React.FC = () => {
                     return;
                 }
 
-                // 1. Get participation IDs
                 const { data: myParts } = await supabase
                     .from('match_participants')
                     .select('match_id')
@@ -90,7 +89,6 @@ export const MatchExplore: React.FC = () => {
                 
                 const matchIds = myParts?.map(p => p.match_id) || [];
                 
-                // 2. Build bulletproof OR condition
                 const conditions = [`host_id.eq.${session.user.id}`];
                 if (matchIds.length > 0) {
                     conditions.push(`id.in.(${matchIds.map(id => id).join(',')})`);
@@ -108,7 +106,6 @@ export const MatchExplore: React.FC = () => {
             const { data, error } = await query;
             if (error) throw error;
 
-            // Group recurring matches by template_id and show only the nearest one
             const uniqueMatches: MatchRoom[] = [];
             const templateIds = new Set();
 
@@ -127,6 +124,18 @@ export const MatchExplore: React.FC = () => {
             setLoading(false);
         }
     }
+
+    const filteredMatches = matches.filter(m => {
+        const matchesQuery = m.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           m.place_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           (m as any).match_code?.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        const matchesRegion = selectedRegion === '전국' || 
+                             (m.address && m.address.startsWith(selectedRegion)) ||
+                             (m.place_name && m.place_name.includes(selectedRegion));
+
+        return matchesQuery && matchesRegion;
+    });
 
     return (
         <div style={container}>
@@ -155,6 +164,19 @@ export const MatchExplore: React.FC = () => {
                 <div style={filterType === 'all' ? tabUnderlineLeft : tabUnderlineRight} />
             </div>
 
+            {/* Region Selection */}
+            <div style={regionBar}>
+                {REGIONS.map(region => (
+                    <button 
+                        key={region}
+                        onClick={() => setSelectedRegion(region)}
+                        style={selectedRegion === region ? activeRegion : inactiveRegion}
+                    >
+                        {region}
+                    </button>
+                ))}
+            </div>
+
             {/* Filter & View Switcher */}
             <div style={controlBar}>
                 <div style={searchBox}>
@@ -168,7 +190,7 @@ export const MatchExplore: React.FC = () => {
                 </div>
                 
                 <div style={filterBar}>
-                    <FilterBtn active={matchType === 'all'} label="전체" onClick={() => setMatchType('all')} />
+                    <FilterBtn active={matchType === 'all'} label="전체종류" onClick={() => setMatchType('all')} />
                     <FilterBtn active={matchType === '5대5'} label="5대5" onClick={() => setMatchType('5대5')} />
                     <FilterBtn active={matchType === '3대3'} label="3대3" onClick={() => setMatchType('3대3')} />
                 </div>
@@ -197,22 +219,16 @@ export const MatchExplore: React.FC = () => {
                     <div style={matchGrid}>
                         {loading ? (
                             <div style={loadingBox}>모임을 불러오는 중...</div>
-                        ) : matches.length === 0 ? (
-                            <div style={emptyBox}>현재 참여 가능한 모임이 없습니다.</div>
+                        ) : filteredMatches.length === 0 ? (
+                            <div style={emptyBox}>현재 조건에 맞는 모임이 없습니다.</div>
                         ) : (
-                            matches
-                                .filter(m => 
-                                    m.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                    m.place_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                    (m as any).match_code?.toLowerCase().includes(searchQuery.toLowerCase())
-                                )
-                                .map(match => (
-                                    <MatchCard key={match.id} match={match} onClick={() => navigate(`/match/room/${match.id}`)} />
-                                ))
+                            filteredMatches.map(match => (
+                                <MatchCard key={match.id} match={match} onClick={() => navigate(`/match/room/${match.id}`)} />
+                            ))
                         )}
                     </div>
                 ) : (
-                    <ExplorationMap matches={matches} navigate={navigate} />
+                    <ExplorationMap matches={filteredMatches} navigate={navigate} />
                 )}
             </div>
         </div>
@@ -226,13 +242,19 @@ const MatchCard: React.FC<{ match: MatchRoom, onClick: () => void }> = ({ match,
     const dateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()} (${dayNames[dateObj.getDay()]})`;
     const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 
+    const cardThemeStyle = match.is_recurring ? recurringCard : oneTimeCard;
+
     return (
-        <div style={cardStyle} onClick={onClick} className="card-premium hover-lift">
+        <div style={{ ...cardStyle, ...cardThemeStyle }} onClick={onClick} className="card-premium hover-lift">
             <div style={cardHeader}>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    {match.is_recurring && (
+                    {match.is_recurring ? (
                         <div style={recurringBadge}>
-                            <Zap size={10} fill="currentColor" /> 정기
+                            <Zap size={10} fill="currentColor" /> 정기 매치
+                        </div>
+                    ) : (
+                        <div style={oneTimeBadge}>
+                            <Flame size={10} fill="currentColor" /> 일회성
                         </div>
                     )}
                     <div style={countryBadgeStyle}>
@@ -261,7 +283,7 @@ const MatchCard: React.FC<{ match: MatchRoom, onClick: () => void }> = ({ match,
             </div>
 
             <div style={locationBox}>
-                <MapPin size={14} style={{ color: 'var(--accent-primary)' }} />
+                <MapPin size={14} style={{ color: match.is_recurring ? '#8b5cf6' : '#f97316' }} />
                 <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{match.place_name}</span>
             </div>
 
@@ -286,7 +308,6 @@ const ExplorationMap: React.FC<{ matches: MatchRoom[], navigate: any }> = ({ mat
     useEffect(() => {
         if (!isLoaded || !mapRef.current || !window.naver) return;
 
-        // Geolocation or Default Seoul
         const initMap = (lat: number, lng: number) => {
             const map = new window.naver.maps.Map(mapRef.current!, {
                 center: new window.naver.maps.LatLng(lat, lng),
@@ -316,7 +337,7 @@ const ExplorationMap: React.FC<{ matches: MatchRoom[], navigate: any }> = ({ mat
                         <div style="padding: 16px; background: #121214; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; color: white; min-width: 220px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); font-family: sans-serif;">
                             <div style="font-size: 15px; font-weight: 950; margin-bottom: 10px; color: white;">${m.title}</div>
                             <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="background: rgba(249, 115, 22, 0.15); color: #f97316; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 900;">${m.match_type}</span>
+                                <span style="background: ${m.is_recurring ? 'rgba(139, 92, 246, 0.15)' : 'rgba(249, 115, 22, 0.15)'}; color: ${m.is_recurring ? '#a78bfa' : '#f97316'}; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 900;">${m.match_type}</span>
                                 <span style="font-size: 13px; font-weight: 800; color: white;">${m.fee_amount > 0 ? m.fee_amount.toLocaleString() + '원' : '무료'}</span>
                             </div>
                             <div style="margin-top: 12px; font-size: 11px; color: rgba(255,255,255,0.4); font-weight: 700;">${m.place_name}</div>
@@ -359,25 +380,29 @@ const ExplorationMap: React.FC<{ matches: MatchRoom[], navigate: any }> = ({ mat
 };
 
 // Styles
-const container: React.CSSProperties = { padding: '24px', maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '32px' };
+const container: React.CSSProperties = { padding: '24px', maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' };
 const header: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' };
 const title: React.CSSProperties = { fontSize: '40px', fontWeight: 950, letterSpacing: '-0.04em', marginBottom: '8px' };
 const subtitle: React.CSSProperties = { color: 'rgba(255,255,255,0.5)', fontSize: '1.1rem' };
 const createBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 24px', borderRadius: '16px', background: 'var(--accent-primary)', color: 'white', border: 'none', fontWeight: 900, cursor: 'pointer', boxShadow: '0 10px 20px rgba(249, 115, 22, 0.3)' };
 
-const tabContainer: React.CSSProperties = { display: 'flex', position: 'relative', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '12px' };
+const tabContainer: React.CSSProperties = { display: 'flex', position: 'relative', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '8px' };
 const activeTab: React.CSSProperties = { flex: 1, padding: '16px', background: 'transparent', border: 'none', color: 'white', fontWeight: 900, fontSize: '1rem', cursor: 'pointer' };
 const inactiveTab: React.CSSProperties = { ...activeTab, color: 'rgba(255,255,255,0.3)', fontWeight: 700 };
 const tabUnderlineLeft: React.CSSProperties = { position: 'absolute', bottom: 0, left: 0, width: '50%', height: '2px', background: 'var(--accent-primary)', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' };
 const tabUnderlineRight: React.CSSProperties = { ...tabUnderlineLeft, left: '50%' };
 
+const regionBar: React.CSSProperties = { display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px', maskImage: 'linear-gradient(to right, black 90%, transparent 100%)' };
+const activeRegion: React.CSSProperties = { padding: '10px 20px', borderRadius: '14px', background: 'white', color: 'black', border: 'none', fontWeight: 900, fontSize: '0.9rem', cursor: 'pointer', whiteSpace: 'nowrap' };
+const inactiveRegion: React.CSSProperties = { ...activeRegion, background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.4)', fontWeight: 700, border: '1px solid rgba(255,255,255,0.08)' };
+
 const controlBar: React.CSSProperties = { display: 'flex', gap: '16px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' };
 const filterBar: React.CSSProperties = { display: 'flex', gap: '8px' };
-const activeFilter: React.CSSProperties = { padding: '8px 16px', borderRadius: '100px', background: 'var(--accent-primary)', color: 'white', border: 'none', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' };
-const inactiveFilter: React.CSSProperties = { ...activeFilter, background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', fontWeight: 600 };
+const activeFilter: React.CSSProperties = { padding: '8px 16px', borderRadius: '100px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' };
+const inactiveFilter: React.CSSProperties = { ...activeFilter, background: 'rgba(255,255,255,0.02)', color: 'rgba(255,255,255,0.3)', fontWeight: 600, border: '1px solid transparent' };
 
 const searchBox: React.CSSProperties = { flex: 1, minWidth: '280px', display: 'flex', alignItems: 'center', gap: '12px', padding: '0 20px', height: '56px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' };
-const searchInput: React.CSSProperties = { background: 'transparent', border: 'none', color: 'white', fontSize: '1rem', width: '100%' };
+const searchInput: React.CSSProperties = { background: 'transparent', border: 'none', color: 'white', fontSize: '1rem', width: '100%', outline: 'none' };
 
 const actionGroup: React.CSSProperties = { display: 'flex', gap: '12px', alignItems: 'center' };
 const viewSwitch: React.CSSProperties = { display: 'flex', padding: '4px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' };
@@ -388,19 +413,24 @@ const contentArea: React.CSSProperties = { minHeight: '600px' };
 const matchGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' };
 const mapWrap: React.CSSProperties = { width: '100%', height: '70vh', background: '#121214', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' };
 
-const cardStyle: React.CSSProperties = { background: 'var(--bg-surface-L1)', padding: '24px', borderRadius: '24px', border: '1px solid var(--border-subtle)', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '16px' };
+const cardStyle: React.CSSProperties = { background: 'var(--bg-surface-L1)', padding: '24px', borderRadius: '24px', border: '1px solid var(--border-subtle)', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '16px', transition: 'all 0.3s ease' };
+const oneTimeCard: React.CSSProperties = { borderLeft: '4px solid #f97316' };
+const recurringCard: React.CSSProperties = { borderLeft: '4px solid #8b5cf6', boxShadow: 'inset 0 0 40px rgba(139, 92, 246, 0.05)' };
+
 const cardHeader: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
-const recurringBadge: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '6px', background: 'rgba(139, 92, 246, 0.15)', color: '#a78bfa', fontSize: '0.7rem', fontWeight: 900 };
-const typeText: React.CSSProperties = { fontSize: '0.85rem', fontWeight: 800, color: 'var(--accent-primary)', opacity: 0.8 };
+const recurringBadge: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '8px', background: 'rgba(139, 92, 246, 0.15)', color: '#a78bfa', fontSize: '0.75rem', fontWeight: 900 };
+const oneTimeBadge: React.CSSProperties = { ...recurringBadge, background: 'rgba(249, 115, 22, 0.15)', color: '#fb923c' };
+
+const typeText: React.CSSProperties = { fontSize: '0.85rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)' };
 const countryBadgeStyle: React.CSSProperties = { fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' };
 const cardTitle: React.CSSProperties = { fontSize: '1.25rem', fontWeight: 850, lineHeight: 1.3, display: 'flex', gap: '8px', alignItems: 'center' };
-const codeText: React.CSSProperties = { fontSize: '0.9rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, letterSpacing: '0.05em' };
+const codeText: React.CSSProperties = { fontSize: '0.9rem', color: 'rgba(255,255,255,0.2)', fontWeight: 700, letterSpacing: '0.05em' };
 const infoRow: React.CSSProperties = { display: 'flex', gap: '16px' };
 const infoItem: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600 };
 const locationBox: React.CSSProperties = { padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' };
 const cardFooter: React.CSSProperties = { marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)' };
 const playerCount: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 700 };
-const priceText: React.CSSProperties = { fontSize: '0.9rem', fontWeight: 900, color: 'white' };
+const priceText: React.CSSProperties = { fontSize: '1rem', fontWeight: 900, color: 'white' };
 
 const gradeBadge = (grade: string): React.CSSProperties => ({
     padding: '4px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900,

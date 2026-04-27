@@ -155,6 +155,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     const studentMenuItems = [
         { name: t('sidebar.dashboard'), icon: Home, link: "/dashboard" },
+        { name: t('sidebar.collector'), icon: Award, link: "/collector" },
         { name: t('sidebar.messages'), icon: MessageCircle, link: "/messages" },
         { name: t('sidebar.coach'), icon: Users, link: "/coaches" },
         { name: t('sidebar.match'), icon: Target, link: "/match" },
@@ -219,8 +220,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className={`sidebar-container${isMobileOpen ? ' is-open' : ''}`}
             >
                 <div style={{ padding: '40px 32px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Link to="/" onClick={() => setIsMobileOpen(false)} style={{ color: 'white', fontSize: '1.4rem', fontWeight: 900, textDecoration: 'none', letterSpacing: '-0.04em' }}>
-                        HOOP<span style={{ opacity: 0.4 }}>COLLECTOR</span>
+                    <Link to="/" onClick={() => setIsMobileOpen(false)} style={{ color: 'white', fontSize: '1.4rem', fontWeight: 950, textDecoration: 'none', letterSpacing: '-0.04em', display: 'flex', alignItems: 'center' }}>
+                        HOOP<span style={{ 
+                            background: 'linear-gradient(90deg, #3b82f6, #60a5fa)', 
+                            WebkitBackgroundClip: 'text', 
+                            WebkitTextFillColor: 'transparent',
+                            marginLeft: '2px',
+                            textShadow: '0 0 20px rgba(59, 130, 246, 0.3)'
+                        }}>COLLECTOR</span>
                     </Link>
                 </div>
 

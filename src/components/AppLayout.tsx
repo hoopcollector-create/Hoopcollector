@@ -70,9 +70,10 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
             />
 
             {/* Mobile Header Bar */}
-            <header className="mobile-header mobile-only">
-                <Link to="/" className="mobile-header-logo" onClick={() => setIsMenuOpen(false)}>
-                    HOOPCOLLECTOR
+            <header className="mobile-header mobile-only" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 16px' }}>
+                <div style={{ width: '44px' }}>{/* Spacer for balance */}</div>
+                <Link to="/" className="mobile-header-logo" onClick={() => setIsMenuOpen(false)} style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                    <img src="/logo.png" alt="HOOPCOLLECTOR" style={{ height: '20px', display: 'block' }} />
                 </Link>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <button 

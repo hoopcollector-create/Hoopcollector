@@ -296,8 +296,11 @@ export const CoachDashboard = () => {
                                 <label style={labelStyle}>자동 승인 설정</label>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: 800, fontSize: '0.95rem', marginBottom: '4px' }}>수업 자동 수락</div>
-                                        <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', lineHeight: 1.4 }}>활성화 시, 다른 수업과 겹치지 않는 모든 신청이 즉시 확정됩니다.</div>
+                                        <div style={{ fontWeight: 800, fontSize: '0.95rem', marginBottom: '4px' }}>수업 자동 매치 (자동 수락)</div>
+                                        <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', lineHeight: 1.4 }}>
+                                            활성화 시, 코치님이 등록한 일정과 겹치지 않는 모든 제안이 <b>즉시 확정</b>됩니다.<br/>
+                                            <span style={{ color: 'var(--color-coach)', fontWeight: 800 }}>⚠️ 주의: 비어있는 모든 시간에 신청이 들어올 수 있으므로, 수업이 어려운 시간은 반드시 미리 일정을 등록해 주세요.</span>
+                                        </div>
                                     </div>
                                     {isEditing ? (
                                         <button 

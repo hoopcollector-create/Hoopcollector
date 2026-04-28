@@ -13,6 +13,8 @@ type Post = {
     like_count: number;
     created_at: string;
     profiles: { name: string | null; avatar_url: string | null; } | null;
+    image_url?: string | null;
+    image_urls?: string[] | null;
 };
 
 type Comment = {
@@ -165,6 +167,17 @@ export const PostDetail = () => {
                     {post.content}
                 </div>
 
+                {/* Post Images Rendering */}
+                {post.image_urls && post.image_urls.length > 0 && (
+                    <div style={postImageGrid}>
+                        {post.image_urls.map((url, i) => (
+                            <div key={i} style={postImageWrap}>
+                                <img src={url} alt={`Post img ${i}`} style={postImg} />
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 <div style={actionRow}>
                     <button style={likeBtn}><ThumbsUp size={18} style={{ marginRight: 8 }} /> 좋아요 {post.like_count}</button>
                     <div style={tokenTip}>
@@ -235,3 +248,8 @@ const commentArea: React.CSSProperties = { width: '100%', height: '100px', paddi
 const sendBtn: React.CSSProperties = { padding: '14px', borderRadius: '14px', background: 'white', color: 'black', border: 'none', fontWeight: 900, cursor: 'pointer', justifySelf: 'end', display: 'flex', alignItems: 'center' };
 const delBtn: React.CSSProperties = { padding: '8px', borderRadius: '8px', background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.6 };
 const emptyBox: React.CSSProperties = { padding: '2rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', color: 'rgba(255,255,255,0.3)' };
+
+const postImageGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px', marginTop: '2rem' };
+const postImageWrap: React.CSSProperties = { borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' };
+const postImg: React.CSSProperties = { width: '100%', height: 'auto', display: 'block' };
+

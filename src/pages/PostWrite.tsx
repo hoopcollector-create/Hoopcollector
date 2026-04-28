@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Send, AlertCircle, FileText, Bell, HelpCircle, BookOpen, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Send, AlertCircle, FileText, Bell, HelpCircle, BookOpen, MessageCircle, Image as ImageIcon, X } from 'lucide-react';
+import { ImageUploadField } from '../components/admin/ImageUploadField';
 
 type CategoryId = 'notice' | 'qna' | 'curriculum' | 'journal' | 'feedback';
 
@@ -13,6 +14,7 @@ export const PostWrite = () => {
     const [title, setTitle] = useState("");
     const [category, setCategory] = useState<CategoryId>('qna');
     const [content, setContent] = useState("");
+    const [imageUrls, setImageUrls] = useState<string[]>([]);
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [isAdmin, setIsAdmin] = useState(false);
 
@@ -55,7 +57,9 @@ export const PostWrite = () => {
                 author_id: currentUser.id,
                 category,
                 title,
-                content
+                content,
+                image_url: imageUrls[0] || null,
+                image_urls: imageUrls
             }).select().single();
 
             if (error) throw error;
@@ -119,6 +123,27 @@ export const PostWrite = () => {
                         />
                     </div>
 
+                    <div style={inputGroup}>
+                        <label style={labelStyle}>이미지 첨부 (최대 3장)</label>
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px' }}>
+                            {imageUrls.map((url, idx) => (
+                                <div key={idx} style={imagePreviewWrap}>
+                                    <img src={url} alt="Uploaded" style={imagePreview} />
+                                    <button onClick={() => setImageUrls(prev => prev.filter((_, i) => i !== idx))} style={removeImgBtn}><X size={12} /></button>
+                                </div>
+                            ))}
+                            {imageUrls.length < 3 && (
+                                <div style={{ width: '100px' }}>
+                                    <ImageUploadField 
+                                        label=""
+                                        value=""
+                                        onChange={(url) => setImageUrls(prev => [...prev, url])}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     <div style={rewardInfo}>
                         <div style={{ fontSize: '0.9rem', fontWeight: 800, marginBottom: '8px', color: '#fbbf24' }}>적립 예상 혜택</div>
                         <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.7 }}>
@@ -165,3 +190,8 @@ const catBtn: React.CSSProperties = { padding: '10px 14px', borderRadius: '10px'
 const submitBtn: React.CSSProperties = { padding: '16px', borderRadius: '16px', background: 'white', color: 'black', border: 'none', fontWeight: 900, fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' };
 const rewardInfo: React.CSSProperties = { padding: '1.25rem', borderRadius: '16px', background: 'rgba(251, 191, 36, 0.05)', border: '1px solid rgba(251, 191, 36, 0.1)' };
 const adminWarn: React.CSSProperties = { fontSize: '0.8rem', color: '#ef4444', display: 'flex', alignItems: 'center', fontWeight: 600 };
+
+const imagePreviewWrap: React.CSSProperties = { position: 'relative', width: '100px', height: '100px', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' };
+const imagePreview: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'cover' };
+const removeImgBtn: React.CSSProperties = { position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' };
+

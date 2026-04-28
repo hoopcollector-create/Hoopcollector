@@ -38,6 +38,9 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
     const [isCertification, setIsCertification] = useState(false);
     const [countryCode, setCountryCode] = useState("KR");
     const [timezone, setTimezone] = useState("Asia/Seoul");
+    const [availableSlots, setAvailableSlots] = useState<any[]>([]);
+    const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+    const [calendarDate, setCalendarDate] = useState(new Date());
 
     const [internalTickets, setInternalTickets] = useState<Record<ClassType, number>>({ A: 0, B: 0, C: 0 });
     const [loading, setLoading] = useState(false);
@@ -48,7 +51,22 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
         if (!tickets) {
             fetchInternalTickets();
         }
-    }, [tickets]);
+        if (targetCoachId) {
+            loadAvailableSlots();
+        }
+    }, [tickets, targetCoachId]);
+
+    const loadAvailableSlots = async () => {
+        const { data } = await supabase
+            .from('coach_slots')
+            .select('*')
+            .eq('coach_id', targetCoachId)
+            .eq('is_booked', false)
+            .eq('type', 'class')
+            .gte('start_at', new Date().toISOString())
+            .order('start_at', { ascending: true });
+        setAvailableSlots(data || []);
+    };
 
     const fetchInternalTickets = async () => {
         const { data: { session } } = await supabase.auth.getSession();
@@ -97,7 +115,8 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
                 p_lng: lng,
                 p_country_code: countryCode,
                 p_timezone: timezone,
-                p_is_certification: isCertification
+                p_is_certification: isCertification,
+                p_slot_id: selectedSlotId
             });
 
             if (error) {
@@ -165,17 +184,99 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
                 </div>
             </div>
 
-            {/* Step 2: Date & Time */}
-            <div style={gridRow}>
-                <div>
-                    <div style={sectionLabel}>날짜</div>
-                    <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} />
+            {/* Step 2: Date & Slot Selection with Mini Calendar */}
+            {targetCoachId ? (
+                <div style={{ display: 'grid', gap: '20px' }}>
+                    <div>
+                        <div style={sectionLabel}>날짜 선택</div>
+                        <div style={miniCalendarContainer}>
+                            <div style={calendarHeader}>
+                                <button onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1))} style={calNavBtn}>&lt;</button>
+                                <div style={{ fontWeight: 900 }}>{calendarDate.getFullYear()}년 {calendarDate.getMonth() + 1}월</div>
+                                <button onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1))} style={calNavBtn}>&gt;</button>
+                            </div>
+                            <div style={calendarGrid}>
+                                {['일','월','화','수','목','금','토'].map(d => <div key={d} style={calDayHeader}>{d}</div>)}
+                                {(() => {
+                                    const year = calendarDate.getFullYear();
+                                    const month = calendarDate.getMonth();
+                                    const firstDay = new Date(year, month, 1).getDay();
+                                    const daysInMonth = new Date(year, month + 1, 0).getDate();
+                                    const days = [];
+                                    for (let i = 0; i < firstDay; i++) days.push(<div key={`empty-${i}`} />);
+                                    for (let i = 1; i <= daysInMonth; i++) {
+                                        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                                        const hasSlot = availableSlots.some(s => s.start_at.startsWith(dateStr));
+                                        const isSelected = date === dateStr;
+                                        days.push(
+                                            <div 
+                                                key={i} 
+                                                onClick={() => { setDate(dateStr); setSelectedSlotId(null); }}
+                                                style={{
+                                                    ...calDayCell,
+                                                    background: isSelected ? 'var(--color-primary)' : 'transparent',
+                                                    color: isSelected ? 'white' : (hasSlot ? 'white' : 'rgba(255,255,255,0.2)'),
+                                                    fontWeight: isSelected || hasSlot ? 800 : 400,
+                                                    cursor: 'pointer',
+                                                    position: 'relative'
+                                                }}
+                                            >
+                                                {i}
+                                                {hasSlot && !isSelected && <div style={hasSlotDot} />}
+                                            </div>
+                                        );
+                                    }
+                                    return days;
+                                })()}
+                            </div>
+                        </div>
+                    </div>
+
+                    {date && (
+                        <div>
+                            <div style={sectionLabel}>{date} 예약 가능 시간</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                {availableSlots.filter(s => s.start_at.startsWith(date)).length > 0 ? (
+                                    availableSlots.filter(s => s.start_at.startsWith(date)).map(slot => {
+                                        const start = new Date(slot.start_at);
+                                        const isSelected = selectedSlotId === slot.id;
+                                        return (
+                                            <button
+                                                key={slot.id}
+                                                onClick={() => {
+                                                    setSelectedSlotId(slot.id);
+                                                    setTime(start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }));
+                                                }}
+                                                style={{
+                                                    ...slotBtnStyle,
+                                                    background: isSelected ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)',
+                                                    borderColor: isSelected ? 'white' : 'rgba(255,255,255,0.1)',
+                                                    color: isSelected ? 'white' : 'rgba(255,255,255,0.7)'
+                                                }}
+                                            >
+                                                {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </button>
+                                        );
+                                    })
+                                ) : (
+                                    <div style={{ fontSize: '0.8rem', opacity: 0.4, padding: '10px' }}>해당 날짜에는 예약 가능한 시간이 없습니다.</div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
-                <div>
-                    <div style={sectionLabel}>시간</div>
-                    <input type="time" value={time} onChange={e => setTime(e.target.value)} style={inputStyle} />
+            ) : (
+                <div style={gridRow}>
+                    <div>
+                        <div style={sectionLabel}>날짜</div>
+                        <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} />
+                    </div>
+                    <div>
+                        <div style={sectionLabel}>시간</div>
+                        <input type="time" value={time} onChange={e => setTime(e.target.value)} style={inputStyle} />
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Step 3: Region */}
             <div>
@@ -333,8 +434,12 @@ const infoFooter: React.CSSProperties = { display: 'flex', alignItems: 'center',
 
 const coachBadge: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--color-primary)', fontSize: '0.85rem', fontWeight: 800, width: 'fit-content' };
 
-// Modal Styles
-const modalOverlay: React.CSSProperties = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(4px)' };
-const modalContent: React.CSSProperties = { width: '100%', maxWidth: '550px', padding: '2rem', background: 'var(--bg-surface-L1)' };
-const modalHeader: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' };
-const closeIconBtn: React.CSSProperties = { background: 'transparent', border: 'none', color: 'white', fontSize: '2rem', cursor: 'pointer', lineHeight: 1 };
+// Calendar Styles
+const miniCalendarContainer: React.CSSProperties = { background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', padding: '16px' };
+const calendarHeader: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' };
+const calNavBtn: React.CSSProperties = { background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1.2rem', padding: '0 10px' };
+const calendarGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' };
+const calDayHeader: React.CSSProperties = { textAlign: 'center', fontSize: '0.7rem', fontWeight: 900, color: 'rgba(255,255,255,0.3)', marginBottom: '8px' };
+const calDayCell: React.CSSProperties = { aspectRatio: '1/1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', fontSize: '0.85rem', transition: 'all 0.2s' };
+const hasSlotDot: React.CSSProperties = { position: 'absolute', bottom: '4px', width: '4px', height: '4px', borderRadius: '50%', background: 'var(--color-primary)' };
+const slotBtnStyle: React.CSSProperties = { padding: '10px 16px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer' };

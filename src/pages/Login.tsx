@@ -122,9 +122,9 @@ export const Login = () => {
     return (
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0b', color: 'white', padding: '1rem' }}>
             <div style={{ maxWidth: '440px', width: '100%', padding: '2.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
-                <h1 style={{ fontSize: '2rem', fontWeight: 900, textAlign: 'center', marginBottom: '2.5rem', letterSpacing: '-0.03em' }}>
-                    <span style={{ color: 'var(--theme-primary)' }}>HOOP</span> AUTH
-                </h1>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '3rem' }}>
+                    <img src="/logo.png" alt="HOOPCOLLECTOR" style={{ width: '200px', display: 'block' }} />
+                </div>
 
                 {msg && (
                     <div style={{ padding: '14px', background: msg.includes('완료') ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: 'white', borderRadius: '12px', marginBottom: '1.5rem', textAlign: 'center', fontSize: '0.85rem', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -193,9 +193,13 @@ export const Login = () => {
                             <input type="text" placeholder="이름 (실명)" value={name} onChange={e => setName(e.target.value)} required style={inputStyle} />
                             <input type="text" placeholder="전화번호" value={phone} onChange={e => setPhone(e.target.value)} required style={inputStyle} />
                             
-                            <div style={{ marginBottom: '16px' }}>
+                             <div style={{ marginBottom: '16px' }}>
                                 <label style={{ display: 'block', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>생년월일</label>
-                                <input type="date" value={birthday} onChange={e => setBirthday(e.target.value)} required style={{ ...inputStyle, marginBottom: 0 }} />
+                                <input type="date" value={birthday} onChange={e => setBirthday(e.target.value)} required style={{ ...inputStyle, marginBottom: '8px' }} />
+                                <div style={birthdayNotice}>
+                                    <AlertCircle size={12} style={{ marginRight: 6, flexShrink: 0 }} />
+                                    <span>생년월일은 본인 확인 및 연령별 매칭 제한을 위해 사용되며, <strong>가입 후 직접 수정이 불가능</strong>합니다. 수정이 필요한 경우 훕콜렉터 고객센터로 문의해 주세요.</span>
+                                </div>
                             </div>
                             
                             <div style={{ marginBottom: '16px' }}>
@@ -253,3 +257,16 @@ const CheckItem = ({ label, isValid }: { label: string, isValid: boolean }) => (
         {label}
     </div>
 );
+
+const birthdayNotice: React.CSSProperties = { 
+    padding: '10px 12px', 
+    background: 'rgba(239, 68, 68, 0.05)', 
+    border: '1px solid rgba(239, 68, 68, 0.1)', 
+    borderRadius: '10px', 
+    fontSize: '0.75rem', 
+    color: 'rgba(255,255,255,0.5)', 
+    lineHeight: 1.5,
+    display: 'flex',
+    alignItems: 'flex-start'
+};
+

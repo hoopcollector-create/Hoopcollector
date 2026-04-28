@@ -23,6 +23,7 @@ export const MatchRoom: React.FC = () => {
     const [activeTab, setActiveTab] = useState('chat'); // Default to Chat
     const [match, setMatch] = useState<any>(null);
     const [currentUser, setCurrentUser] = useState<any>(null);
+    const [userProfile, setUserProfile] = useState<any>(null);
     const [participantStatus, setParticipantStatus] = useState<string | null>(null);
     const [otherDates, setOtherDates] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -72,6 +73,10 @@ export const MatchRoom: React.FC = () => {
                     .eq('user_id', session.user.id)
                     .single();
                 setParticipantStatus(part?.status || null);
+
+                // Fetch User Profile for Age Check
+                const { data: prof } = await supabase.from('profiles').select('birthday, is_certified_host').eq('id', session.user.id).single();
+                setUserProfile(prof);
             }
         } catch (e) {
             console.error(e);
@@ -140,7 +145,7 @@ export const MatchRoom: React.FC = () => {
 
             {/* Main Content View */}
             <main style={mainContent}>
-                {activeTab === 'chat' && <MatchChatTab match={match} currentUser={currentUser} participantStatus={participantStatus} onJoinUpdate={loadMatchData} />}
+                {activeTab === 'chat' && <MatchChatTab match={match} currentUser={currentUser} userProfile={userProfile} participantStatus={participantStatus} onJoinUpdate={loadMatchData} />}
                 {activeTab === 'info' && <MatchInfoTab match={match} />}
                 {activeTab === 'participants' && <MatchParticipantsTab matchId={match.id} hostId={match.host_id} isHost={isHost} />}
                 {activeTab === 'map' && <MatchMapTab match={match} />}

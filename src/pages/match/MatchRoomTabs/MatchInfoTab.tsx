@@ -148,6 +148,16 @@ export const MatchInfoTab: React.FC<MatchInfoTabProps> = ({ match }) => {
                     <InfoItem icon={MapPin} label="장소" value={match.place_name} subValue={`${match.address} (${matchTimezone})`} />
                 </div>
                 <InfoItem icon={Award} label="참여 조건" value={match.required_grade === 'all' ? '전체 등급 가능' : `${match.required_grade} 이상 전용`} />
+                <InfoItem 
+                    icon={Users} 
+                    label="연령대" 
+                    value={
+                        match.age_group === 'youth' ? '유소년 전용 (만 19세 미만)' :
+                        match.age_group === '20s' ? '20대 전용 (20~29세)' :
+                        match.age_group === '30s' ? '30대 전용 (30~39세)' :
+                        match.age_group === '40s' ? '40대 이상 전용' : '연령 무관'
+                    } 
+                />
                 <InfoItem icon={Users} label="모집 인원" value={`최대 ${match.max_players}명`} />
                 <InfoItem icon={DollarSign} label="참가비" value={match.fee_amount > 0 ? `${match.fee_amount.toLocaleString()}원` : '무료'} />
                 <InfoItem icon={Package} label="준비물" value={match.supplies || '농구화, 유니폼'} />

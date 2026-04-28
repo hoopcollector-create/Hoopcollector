@@ -30,6 +30,10 @@ export const Shop = () => {
                 const minPrice = variants.length > 0 ? Math.min(...variants.map((v: any) => v.point_price)) : 0;
                 const totalStock = variants.reduce((sum: number, v: any) => sum + v.stock_qty, 0);
                 return { ...p, min_price: minPrice, total_stock: totalStock };
+            }).sort((a, b) => {
+                if (a.total_stock > 0 && b.total_stock === 0) return -1;
+                if (a.total_stock === 0 && b.total_stock > 0) return 1;
+                return 0;
             });
             setProducts(processed);
         }

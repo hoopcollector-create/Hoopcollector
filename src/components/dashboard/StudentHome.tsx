@@ -126,7 +126,13 @@ export const StudentHome = ({
                         <div style={{ display: 'grid', gap: 12 }}>
                         <div><div style={sectionLabel}>Name</div><input value={name} onChange={e=>setName(e.target.value)} style={input}/></div>
                         <div><div style={sectionLabel}>Phone</div><input value={phone} onChange={e=>setPhone(e.target.value)} style={input}/></div>
-                        <div><div style={sectionLabel}>Birthday</div><input type="date" value={birthday} onChange={e=>setBirthday(e.target.value)} style={input}/></div>
+                        <div>
+                            <div style={sectionLabel}>Birthday</div>
+                            <input type="date" value={birthday} readOnly style={{ ...input, opacity: 0.5, cursor: 'not-allowed' }} />
+                            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>
+                                ※ 생년월일 수정은 훕콜렉터 고객센터로 문의해 주세요.
+                            </div>
+                        </div>
                         <div><div style={sectionLabel}>Position</div>
                             <select value={position} onChange={e=>setPosition(e.target.value as any)} style={input}>
                                 <option value="G">G (Guard)</option><option value="F">F (Forward)</option><option value="C">C (Center)</option>

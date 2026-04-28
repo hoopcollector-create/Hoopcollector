@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalIcon, Clock, User, Check, X, Trash2, Zap } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalIcon, Clock, User, Check, X, Trash2, Zap, ArrowLeft } from 'lucide-react';
 import { useTranslation } from '../lib/i18n';
 
 interface Event {
@@ -267,6 +267,14 @@ export const ScheduleCalendar = () => {
         setViewDate(next);
     };
 
+    const handleDayClick = (d: { day: number, month: number, year: number }) => {
+        if (viewMode === 'month') {
+            const selectedDate = new Date(d.year, d.month, d.day);
+            setViewDate(selectedDate);
+            setViewMode('day');
+        }
+    };
+
     const fmtTitle = () => {
         if (viewMode === 'month') return `${viewDate.getFullYear()}년 ${viewDate.getMonth() + 1}월`;
         if (viewMode === 'day') return `${viewDate.getFullYear()}년 ${viewDate.getMonth() + 1}월 ${viewDate.getDate()}일`;
@@ -281,8 +289,22 @@ export const ScheduleCalendar = () => {
             {/* Header */}
             <div style={{ ...header, flexWrap: 'wrap', gap: '1rem' }} className="page-header">
                 <div>
-                    <h2 style={{ ...title, fontSize: 'clamp(1.5rem, 5vw, 1.75rem)' }}>{fmtTitle()}</h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                        {viewMode !== 'month' && (
+                            <button 
+                                onClick={() => setViewMode('month')} 
+                                style={backBtnStyle}
+                            >
+                                <ArrowLeft size={16} /> 월간 보기
+                            </button>
+                        )}
+                        <h2 style={{ ...title, fontSize: 'clamp(1.2rem, 5vw, 1.75rem)', margin: 0 }}>{fmtTitle()}</h2>
+                    </div>
                     <p style={subtitle}>코치님의 전체 스케줄을 확인하고 관리하세요.</p>
+                    <p style={{ ...subtitle, color: 'var(--color-coach)', fontWeight: 800, marginTop: '6px', fontSize: '0.82rem', lineHeight: 1.6 }}>
+                        💡 <b>매칭 방식 안내:</b> 학생이 시간을 제안하면 코치님이 수락하는 방식입니다. <br/>
+                        <b>수업이 불가능한 시간</b>을 미리 '일정 추가'로 등록해두면, 들어오는 요청과 겹치는지 쉽게 판단할 수 있습니다.
+                    </p>
                 </div>
                 <div style={{ ...headerActions, flexWrap: 'wrap' }}>
                     <div style={viewTabs}>
@@ -394,7 +416,17 @@ export const ScheduleCalendar = () => {
                         );
 
                         return (
-                            <div key={i} style={{ ...dayCell, opacity: d.current ? 1 : 0.3, background: viewMode !== 'month' ? 'rgba(255,255,255,0.01)' : 'transparent' }}>
+                            <div 
+                                key={i} 
+                                onClick={() => handleDayClick(d)}
+                                style={{ 
+                                    ...dayCell, 
+                                    opacity: d.current ? 1 : 0.3, 
+                                    background: viewMode !== 'month' ? 'rgba(255,255,255,0.01)' : 'transparent',
+                                    cursor: viewMode === 'month' ? 'pointer' : 'default'
+                                }}
+                                className={viewMode === 'month' ? "hover-bright" : ""}
+                            >
                                 <div style={dayNumber}>{d.day}</div>
                                 <div style={eventsList}>
                                     {dayEvents.map(ev => (
@@ -504,3 +536,4 @@ const modalBody: React.CSSProperties = { width: '90%', maxWidth: '500px', backgr
 const label: React.CSSProperties = { display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: '8px' };
 const input: React.CSSProperties = { width: '100%', padding: '14px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', boxSizing: 'border-box' };
 const saveBtn: React.CSSProperties = { width: '100%', padding: '16px', borderRadius: '16px', background: 'white', color: 'black', border: 'none', fontWeight: 950, fontSize: '1rem', cursor: 'pointer', marginTop: '1rem' };
+const backBtnStyle: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '6px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' };

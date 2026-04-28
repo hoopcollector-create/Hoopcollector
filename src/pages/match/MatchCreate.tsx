@@ -41,7 +41,8 @@ export const MatchCreate: React.FC = () => {
         start_time: '19:00',
         end_time: '21:00',
         // One-time specific
-        single_date: new Date().toISOString().split('T')[0]
+        single_date: new Date().toISOString().split('T')[0],
+        age_group: 'all' // 'adult', 'youth', 'all'
     });
 
     const updateForm = (key: string, value: any) => {
@@ -64,6 +65,14 @@ export const MatchCreate: React.FC = () => {
         try {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) throw new Error('로그인이 필요합니다.');
+
+            // Check certification for youth matches
+            if (formData.age_group === 'youth') {
+                const { data: prof } = await supabase.from('profiles').select('is_certified_host').eq('id', session.user.id).single();
+                if (!prof?.is_certified_host) {
+                    throw new Error('유소년 전용 매치는 훕콜렉터의 인증을 받은 호스트만 개설할 수 있습니다. 고객센터로 인증 요청을 해주세요.');
+                }
+            }
 
             if (isRecurring) {
                 // Create Template & Generate Occurrences (via internal logic or direct insert for now)
@@ -88,7 +97,8 @@ export const MatchCreate: React.FC = () => {
                     start_date: formData.start_date,
                     end_date: formData.end_date || null,
                     start_time: formData.start_time,
-                    end_time: formData.end_time
+                    end_time: formData.end_time,
+                    age_group: formData.age_group
                 }).select().single();
 
                 if (tError) throw tError;
@@ -129,7 +139,8 @@ export const MatchCreate: React.FC = () => {
                     notice: formData.notice,
                     timezone: formData.timezone,
                     country_code: formData.country_code,
-                    is_recurring: false
+                    is_recurring: false,
+                    age_group: formData.age_group
                 }).select().single();
 
                 if (rError) throw rError;
@@ -223,6 +234,16 @@ export const MatchCreate: React.FC = () => {
                                     <option value="C">C 이상</option>
                                     <option value="B">B 이상</option>
                                     <option value="A">A 이상</option>
+                                </select>
+                            </div>
+                            <div style={formGroup}>
+                                <label style={labelStyle}>연령대</label>
+                                <select value={formData.age_group} onChange={e => updateForm('age_group', e.target.value)} style={inputStyle}>
+                                    <option value="all">연령 무관 (전체)</option>
+                                    <option value="youth">유소년 전용 (만 19세 미만)</option>
+                                    <option value="20s">20대 전용 (20~29세)</option>
+                                    <option value="30s">30대 전용 (30~39세)</option>
+                                    <option value="40s">40대 이상 (40세~)</option>
                                 </select>
                             </div>
                         </div>

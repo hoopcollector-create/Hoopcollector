@@ -358,9 +358,16 @@ body.theme-student {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
-/* Coach Specific Grid */
 .coach-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
+}
+
+.hover-bright {
+  transition: all 0.2s ease;
+}
+.hover-bright:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  filter: brightness(1.2);
 }

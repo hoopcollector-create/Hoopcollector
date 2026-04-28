@@ -12,7 +12,7 @@ interface ImageUploadFieldProps {
 
 export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({ 
     label, 
-    value, 
+    value = '', 
     onChange, 
     helperText,
     bucket = 'hoop-assets' 

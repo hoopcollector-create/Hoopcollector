@@ -2,15 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Send, User, Shield, Info, Zap } from 'lucide-react';
 import { UserProfileModal } from '../../../components/UserProfileModal';
+import { calcAge } from '../../../utils/dashboardHelpers';
 
 interface MatchChatTabProps {
     match: any;
     currentUser: any;
+    userProfile: any;
     participantStatus: string | null;
     onJoinUpdate: () => void;
 }
 
-export const MatchChatTab: React.FC<MatchChatTabProps> = ({ match, currentUser, participantStatus, onJoinUpdate }) => {
+export const MatchChatTab: React.FC<MatchChatTabProps> = ({ match, currentUser, userProfile, participantStatus, onJoinUpdate }) => {
     const matchId = match.id;
     const templateId = match.template_id;
     const isFull = match.current_players >= match.max_players;
@@ -99,6 +101,38 @@ export const MatchChatTab: React.FC<MatchChatTabProps> = ({ match, currentUser, 
     };
 
     const handleJoin = async () => {
+        if (!currentUser) return alert('로그인이 필요합니다.');
+        if (!userProfile?.birthday) return alert('프로필에서 생년월일을 먼저 설정해주세요.');
+
+        const age = calcAge(userProfile.birthday);
+        const isHost = match.host_id === currentUser.id;
+
+        // Strict Age Range & Separation Logic
+        if (age < 19) {
+            // Youth: Only 'youth' matches
+            if (match.age_group !== 'youth') {
+                return alert('유소년 회원은 유소년 전용 매치에만 참여할 수 있습니다.');
+            }
+        } else if (age >= 20 && age < 30) {
+            // 20s
+            if (match.age_group !== '20s' && match.age_group !== 'all') {
+                const msg = match.age_group === 'youth' ? '이 매치는 유소년 전용입니다.' : `이 매치는 ${match.age_group} 전용입니다. 20대 회원님은 참여하실 수 없습니다.`;
+                if (!isHost) return alert(msg);
+            }
+        } else if (age >= 30 && age < 40) {
+            // 30s
+            if (match.age_group !== '30s' && match.age_group !== 'all') {
+                const msg = match.age_group === 'youth' ? '이 매치는 유소년 전용입니다.' : `이 매치는 ${match.age_group} 전용입니다. 30대 회원님은 참여하실 수 없습니다.`;
+                if (!isHost) return alert(msg);
+            }
+        } else if (age >= 40) {
+            // 40s+
+            if (match.age_group !== '40s' && match.age_group !== 'all') {
+                const msg = match.age_group === 'youth' ? '이 매치는 유소년 전용입니다.' : `이 매치는 ${match.age_group} 전용입니다. 40대 이상 회원님만 참여하실 수 있습니다.`;
+                if (!isHost) return alert(msg);
+            }
+        }
+
         setLoading(true);
         if (isFull) {
             // Join Waitlist

@@ -219,15 +219,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }}
                 className={`sidebar-container${isMobileOpen ? ' is-open' : ''}`}
             >
-                <div style={{ padding: '40px 32px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Link to="/" onClick={() => setIsMobileOpen(false)} style={{ color: 'white', fontSize: '1.4rem', fontWeight: 950, textDecoration: 'none', letterSpacing: '-0.04em', display: 'flex', alignItems: 'center' }}>
-                        HOOP<span style={{ 
-                            background: 'linear-gradient(90deg, #3b82f6, #60a5fa)', 
-                            WebkitBackgroundClip: 'text', 
-                            WebkitTextFillColor: 'transparent',
-                            marginLeft: '2px',
-                            textShadow: '0 0 20px rgba(59, 130, 246, 0.3)'
-                        }}>COLLECTOR</span>
+                <div style={{ padding: '40px 0 24px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <Link to="/" onClick={() => setIsMobileOpen(false)} style={{ textDecoration: 'none', display: 'flex', justifyContent: 'center' }}>
+                        <img src="/logo.png" alt="HOOPCOLLECTOR" style={{ width: '125px', display: 'block' }} />
                     </Link>
                 </div>
 

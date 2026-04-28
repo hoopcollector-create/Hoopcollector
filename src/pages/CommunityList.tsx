@@ -15,6 +15,7 @@ type Post = {
     like_count: number;
     created_at: string;
     profiles: { name: string | null; avatar_url: string | null; } | null;
+    image_url?: string | null;
 };
 
 const CATEGORIES: { id: CategoryId; name: string; icon: any; color: string }[] = [
@@ -141,8 +142,17 @@ export const CommunityList = () => {
                                     </div>
                                     <div style={timeText}><Clock size={12} style={{ marginRight: 4 }} /> {new Date(post.created_at).toLocaleDateString()}</div>
                                 </div>
-                                <h3 style={postTitle}>{post.title}</h3>
-                                <p style={postSnippet}>{post.content.slice(0, 120)}{post.content.length > 120 ? '...' : ''}</p>
+                                <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <h3 style={postTitle}>{post.title}</h3>
+                                        <p style={postSnippet}>{post.content.slice(0, 120)}{post.content.length > 120 ? '...' : ''}</p>
+                                    </div>
+                                    {post.image_url && (
+                                        <div style={listThumbnailWrap}>
+                                            <img src={post.image_url} alt="Thumbnail" style={listThumbnail} />
+                                        </div>
+                                    )}
+                                </div>
                                 
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.25rem' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -177,3 +187,7 @@ const avatarSmall: React.CSSProperties = { width: '24px', height: '24px', border
 const authorName: React.CSSProperties = { fontSize: '0.85rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)' };
 const timeText: React.CSSProperties = { fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center' };
 const emptyBox: React.CSSProperties = { padding: '4rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1px dashed rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' };
+
+const listThumbnailWrap: React.CSSProperties = { width: '80px', height: '80px', borderRadius: '12px', overflow: 'hidden', flexShrink: 0, border: '1px solid rgba(255,255,255,0.05)' };
+const listThumbnail: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'cover' };
+

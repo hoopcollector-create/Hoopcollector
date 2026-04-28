@@ -58,11 +58,13 @@ export const MatchExplore: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [filterType, setFilterType] = useState('all'); // all, my
     const [matchType, setMatchType] = useState('all'); 
+    const [ageGroup, setAgeGroup] = useState('all'); 
+    const [statusFilter, setStatusFilter] = useState('all'); // all, open
     const [selectedRegion, setSelectedRegion] = useState('전국');
 
     useEffect(() => {
         loadMatches();
-    }, [filterType, matchType]);
+    }, [filterType, matchType, ageGroup, statusFilter]);
 
     async function loadMatches() {
         setLoading(true);
@@ -103,13 +105,24 @@ export const MatchExplore: React.FC = () => {
                 query = query.eq('match_type', matchType);
             }
 
+            if (ageGroup !== 'all') {
+                query = query.eq('age_group', ageGroup);
+            }
+
             const { data, error } = await query;
             if (error) throw error;
+
+            let filteredData = data || [];
+
+            // Client side status filtering (since current_players is a calculated or dynamic value)
+            if (statusFilter === 'open') {
+                filteredData = filteredData.filter((m: any) => m.current_players < m.max_players);
+            }
 
             const uniqueMatches: MatchRoom[] = [];
             const templateIds = new Set();
 
-            (data || []).forEach((m: MatchRoom) => {
+            (filteredData || []).forEach((m: MatchRoom) => {
                 if (!m.is_recurring || !m.template_id) {
                     uniqueMatches.push(m);
                 } else if (!templateIds.has(m.template_id)) {
@@ -189,10 +202,25 @@ export const MatchExplore: React.FC = () => {
                     />
                 </div>
                 
-                <div style={filterBar}>
+                <div style={{ ...filterBar, width: '100%', overflowX: 'auto', paddingBottom: '4px' }}>
                     <FilterBtn active={matchType === 'all'} label="전체종류" onClick={() => setMatchType('all')} />
                     <FilterBtn active={matchType === '5대5'} label="5대5" onClick={() => setMatchType('5대5')} />
                     <FilterBtn active={matchType === '3대3'} label="3대3" onClick={() => setMatchType('3대3')} />
+                    <FilterBtn active={matchType === '자유게임'} label="자유게임" onClick={() => setMatchType('자유게임')} />
+                    <FilterBtn active={matchType === '개인연습'} label="개인연습" onClick={() => setMatchType('개인연습')} />
+                </div>
+
+                <div style={{ ...filterBar, marginTop: '8px', width: '100%', overflowX: 'auto', paddingBottom: '4px' }}>
+                    <FilterBtn active={ageGroup === 'all'} label="전체연령" onClick={() => setAgeGroup('all')} />
+                    <FilterBtn active={ageGroup === 'youth'} label="유소년" onClick={() => setAgeGroup('youth')} />
+                    <FilterBtn active={ageGroup === '20s'} label="20대" onClick={() => setAgeGroup('20s')} />
+                    <FilterBtn active={ageGroup === '30s'} label="30대" onClick={() => setAgeGroup('30s')} />
+                    <FilterBtn active={ageGroup === '40s'} label="40대+" onClick={() => setAgeGroup('40s')} />
+                </div>
+
+                <div style={{ ...filterBar, marginTop: '8px', width: '100%', overflowX: 'auto', paddingBottom: '4px' }}>
+                    <FilterBtn active={statusFilter === 'all'} label="모든 상태" onClick={() => setStatusFilter('all')} />
+                    <FilterBtn active={statusFilter === 'open'} label="🔥 모집 중만 보기" onClick={() => setStatusFilter('open')} />
                 </div>
 
                 <div style={actionGroup}>

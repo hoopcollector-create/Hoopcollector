@@ -430,6 +430,7 @@ export const Dashboard = () => {
                         requestCash={requestCash} cancelPending={cancelPending} selectedProduct={selectedProduct}
                         pointsDiscountWon={pointsDiscountWon} maxUsablePoints={maxUsablePoints} finalAmount={finalAmount}
                         estimatedReward={Math.floor(finalAmount * 0.01)}
+                        tickets={tickets}
                     />
                 )}
                 {mainTab === "security" && (

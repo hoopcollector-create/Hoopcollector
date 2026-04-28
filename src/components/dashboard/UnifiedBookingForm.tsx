@@ -443,3 +443,8 @@ const calDayHeader: React.CSSProperties = { textAlign: 'center', fontSize: '0.7r
 const calDayCell: React.CSSProperties = { aspectRatio: '1/1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', fontSize: '0.85rem', transition: 'all 0.2s' };
 const hasSlotDot: React.CSSProperties = { position: 'absolute', bottom: '4px', width: '4px', height: '4px', borderRadius: '50%', background: 'var(--color-primary)' };
 const slotBtnStyle: React.CSSProperties = { padding: '10px 16px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer' };
+
+const modalOverlay: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '20px' };
+const modalContent: React.CSSProperties = { width: '100%', maxWidth: '600px', maxHeight: '90vh', background: '#111112', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '32px', padding: '32px', position: 'relative', display: 'flex', flexDirection: 'column' };
+const modalHeader: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' };
+const closeIconBtn: React.CSSProperties = { background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: '2rem', cursor: 'pointer', lineHeight: 1, padding: '0 8px' };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { X, BookOpen, Target, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { X, BookOpen, Target, ChevronRight, CheckCircle2, Award } from 'lucide-react';
 import { HoopSketchPad } from './HoopSketchPad';
 import { BasketballLevel, CURRICULUM_DATA, SCORE_MEANING, LEVEL_ORDER } from '../../constants/curriculum';
 
@@ -22,6 +22,7 @@ export const ClassJournalModal: React.FC<ClassJournalModalProps> = ({ request, o
     const [evaluations, setEvaluations] = useState<Record<string, number>>({});
     const [formData, setFormData] = useState({ feedback: "", homework: "" });
     const [visualLogUrl, setVisualLogUrl] = useState("");
+    const [certifiedLevel, setCertifiedLevel] = useState<number | null>(null);
 
     useEffect(() => {
         loadStudentData();
@@ -79,7 +80,7 @@ export const ClassJournalModal: React.FC<ClassJournalModalProps> = ({ request, o
             }
 
             // 1. Create Journal
-            const { error: journalError } = await supabase.from('class_journals').insert({
+            const { data: journalData, error: journalError } = await supabase.from('class_journals').insert({
                 request_id: request.id,
                 coach_id: request.coach_id,
                 student_id: request.student_id,
@@ -89,16 +90,24 @@ export const ClassJournalModal: React.FC<ClassJournalModalProps> = ({ request, o
                 session_number: sessionCount,
                 curriculum_level: currentLevelId,
                 evaluation_data: evaluations
-            });
+            }).select().single();
             if (journalError) throw journalError;
+
+            // 1.5 Handle Level Certification if requested/selected
+            if (certifiedLevel && journalData) {
+                await supabase.rpc('certify_student_level', {
+                    p_journal_id: journalData.id,
+                    p_target_level: certifiedLevel
+                });
+            }
 
             // 2. Update status
             await supabase.from('class_requests')
                 .update({ status: 'completed', completed_at: new Date().toISOString() })
                 .eq('id', request.id);
 
-            // 3. Upgrade if needed
-            if (upgradedLevel) {
+            // 3. Upgrade if needed (Natural progression)
+            if (upgradedLevel && !certifiedLevel) {
                 await supabase.from('profiles').update({ basketball_level: upgradedLevel }).eq('id', request.student_id);
                 await supabase.from('notifications').insert({ 
                     user_id: request.student_id, 
@@ -107,6 +116,10 @@ export const ClassJournalModal: React.FC<ClassJournalModalProps> = ({ request, o
                     content: `축하합니다! 코치님의 평가 결과 평균 3.5점 이상을 기록하여 ${upgradedLevel} 레벨로 승급하셨습니다!` 
                 });
                 alert(`학생이 ${upgradedLevel} 레벨로 승급되었습니다! (평균: ${avg.toFixed(1)}점)`);
+            }
+
+            if (certifiedLevel) {
+                alert(`학생의 레벨이 LEVEL ${certifiedLevel}로 수동 인증되었습니다.`);
             }
 
             onSuccess();
@@ -142,6 +155,34 @@ export const ClassJournalModal: React.FC<ClassJournalModalProps> = ({ request, o
                                 <p style={{ fontSize: '0.8rem', color: '#999', marginTop: 4 }}>{currentCurriculum.subtitle}</p>
                             </div>
                             
+                            {/* Certification Option */}
+                            {(request.is_certification || sessionCount === 1) && (
+                                <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--color-primary)', fontWeight: 900, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <Award size={16} /> 레벨 인증 및 판정 (패스트트랙)
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        {[2, 3, 4].map(lv => (
+                                            <button 
+                                                key={lv}
+                                                onClick={() => setCertifiedLevel(certifiedLevel === lv ? null : lv)}
+                                                style={{ 
+                                                    flex: 1, padding: '12px 0', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 900, cursor: 'pointer', transition: '0.2s',
+                                                    background: certifiedLevel === lv ? 'white' : 'rgba(255,255,255,0.05)',
+                                                    color: certifiedLevel === lv ? 'black' : 'white',
+                                                    border: 'none'
+                                                }}
+                                            >
+                                                LV.{lv}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <p style={{ fontSize: '0.75rem', opacity: 0.5, marginTop: '10px', lineHeight: 1.4 }}>
+                                        학생의 실력이 현재 레벨보다 높다고 판단될 경우 선택해주세요. <br/>제출 시 학생의 XP가 해당 레벨의 시작점으로 즉시 상향됩니다.
+                                    </p>
+                                </div>
+                            )}
+
                             <div style={{ fontSize: '0.85rem', color: '#aaa', lineHeight: 1.5 }}>
                                 오늘 수업에서 진행한 항목의 완성도를 평가해주세요. (선택 사항)
                                 <br/>* 평가된 항목의 평균 점수가 3.5점 이상일 경우 학생은 다음 레벨로 자동 승급됩니다.

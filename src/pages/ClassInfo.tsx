@@ -9,25 +9,25 @@ export const ClassInfo = () => {
     const classData = [
         {
             type: 'C',
-            name: 'Basic',
+            name: 'Standard Coach',
             price: 45000,
-            desc: '기초와 기본기를 탄탄히 다지고 싶은 분들을 위한 입문 과정',
-            features: ['기본 드리블 기술', '정확한 슛 폼 교정', '기초 풋워크']
+            desc: '검증된 기본기와 체계적인 교육 커리큘럼을 보유한 정규 코치진 과정',
+            features: ['기본 드리블/슛 메커니즘', '기초 풋워크 및 밸런스', '개인별 맞춤형 피드백']
         },
         {
             type: 'B',
-            name: 'Advanced',
+            name: 'Senior Coach',
             price: 50000,
-            desc: '실전 기술과 응용 동작을 통해 게임 지배력을 높이는 과정',
-            features: ['응용 드리블 기술', '상황별 슈팅 기술', '1:1 전술 이해'],
+            desc: '풍부한 지도 경험과 실전 전술 노하우를 겸비한 시니어 코치진 과정',
+            features: ['상황별 응용 기술 전수', '1:1 및 팀 전술 이해', '실전 경기 지배력 강화'],
             popular: true
         },
         {
             type: 'A',
-            name: 'Elite',
+            name: 'Master Coach',
             price: 55000,
-            desc: '선수급 디테일과 고강도 트레이닝을 원하는 엘리트 과정',
-            features: ['전문 전술 실행', '포지션 특화 교육', '고강도 피지컬 트레이닝']
+            desc: '선수 경력 및 최상위 수준의 디테일을 전수하는 마스터 코치진의 엘리트 과정',
+            features: ['프로급 스킬 디테일', '포지션 특화 심화 교육', '고강도 전문 트레이닝']
         }
     ];
 
@@ -99,7 +99,7 @@ export const ClassInfo = () => {
                     {classData.map((cls) => (
                         <div key={cls.type} className="card-minimal" style={{ position: 'relative', overflow: 'hidden', padding: '40px', borderColor: cls.popular ? 'var(--color-student)' : 'rgba(255,255,255,0.05)' }}>
                             {cls.popular && <div style={popularBadgeStyle}>POPULAR</div>}
-                            <div style={{ fontWeight: 900, fontSize: '0.8rem', color: 'var(--color-student)', letterSpacing: '0.1em', marginBottom: '1rem' }}>CLASS {cls.type}</div>
+                            <div style={{ fontWeight: 900, fontSize: '0.8rem', color: 'var(--color-student)', letterSpacing: '0.1em', marginBottom: '1rem' }}>{cls.type} GRADE COACH</div>
                             <h3 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '1.5rem' }}>{cls.name}</h3>
                             <div style={{ marginBottom: '2.5rem' }}>
                                 <span style={{ fontSize: '2.5rem', fontWeight: 900 }}>{formatPrice(cls.price)}</span>

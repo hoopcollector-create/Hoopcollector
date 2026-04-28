@@ -35,6 +35,7 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
     const [lat, setLat] = useState<number | null>(null);
     const [lng, setLng] = useState<number | null>(null);
     const [note, setNote] = useState("");
+    const [isCertification, setIsCertification] = useState(false);
     const [countryCode, setCountryCode] = useState("KR");
     const [timezone, setTimezone] = useState("Asia/Seoul");
 
@@ -82,8 +83,8 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
             const iso = toISOStringFromKST(date, time);
             const fullAddress = courtName.trim() ? `${courtName.trim()} / ${address.trim()}` : address.trim();
 
-            // RPC call to unified request function
-            const { error } = await supabase.rpc("request_class_v3", {
+            // RPC call to unified request function v4
+            const { error } = await supabase.rpc("request_class_v4", {
                 p_class_type: classType,
                 p_requested_start: iso,
                 p_duration_min: 60,
@@ -95,18 +96,18 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
                 p_lat: lat,
                 p_lng: lng,
                 p_country_code: countryCode,
-                p_timezone: timezone
+                p_timezone: timezone,
+                p_is_certification: isCertification
             });
 
             if (error) {
-                // If RPC v2 doesn't exist yet, fallback to manual logic or report error
                 if (error.code === 'P0001' || error.message.includes('function')) {
-                    throw new Error("서버 함수 업데이트가 필요합니다. 관리자에게 문의하세요.");
+                    throw new Error("서버 함수 업데이트(v4)가 필요합니다. 관리자에게 문의하세요.");
                 }
                 throw error;
             }
 
-            setMsg("수업 신청이 완료되었습니다!");
+            setMsg("매칭 요청이 완료되었습니다!");
             setTimeout(() => onSuccess(), 1500);
         } catch (e: any) {
             setErrorMsg(e.message || "신청 중 오류가 발생했습니다.");
@@ -120,7 +121,7 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
             {targetCoachName && (
                 <div style={coachBadge}>
                     <CheckCircle2 size={16} />
-                    <span>{targetCoachName} 코치님 지목 예약 중</span>
+                    <span>{targetCoachName} 코치님 매칭 요청 중</span>
                 </div>
             )}
 
@@ -148,7 +149,7 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
                     )}
                 </div>
                 <div>
-                    <div style={sectionLabel}>수업 종류 선택</div>
+                    <div style={sectionLabel}>코칭 등급 선택 (COACH GRADE)</div>
                     <div style={tabContainer}>
                         {(["A", "B", "C"] as ClassType[]).map(t => (
                             <button 
@@ -156,7 +157,7 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
                                 onClick={() => setClassType(t)} 
                                 style={classType === t ? tabOn : tabOff}
                             >
-                                Class {t}
+                                {t} GRADE
                                 <span style={ticketCount}>({currentTickets[t] ?? 0}장)</span>
                             </button>
                         ))}
@@ -189,7 +190,7 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
 
             {/* Step 4: Map Location */}
             <div>
-                <div style={sectionLabel}>수업 장소 선택 (지도 클릭)</div>
+                <div style={sectionLabel}>매칭 장소 선택 (지도 클릭)</div>
                 <div style={{ marginTop: 8 }}>
                     <NaverMapSelector onLocationSelected={handleLocationSelect} />
                 </div>
@@ -210,6 +211,24 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
                     onChange={e => setCourtName(e.target.value)} 
                     style={inputStyle} 
                 />
+            </div>
+
+            {/* Step 6: Certification Option */}
+            <div style={{ padding: '16px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.1)', marginTop: '10px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '12px' }}>
+                    <input 
+                        type="checkbox" 
+                        checked={isCertification} 
+                        onChange={e => setIsCertification(e.target.checked)}
+                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                    />
+                    <div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--color-primary)' }}>레벨 테스트 / 인증 신청</div>
+                        <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>
+                            코칭 요청 시 코치가 실력을 판단하여 즉시 레벨 조정을 진행합니다.
+                        </div>
+                    </div>
+                </label>
             </div>
 
             <div>
@@ -234,13 +253,13 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
                     disabled={loading || !canRequest} 
                     style={(!canRequest || loading) ? btnDisabled : btnPrimary}
                 >
-                    {loading ? "처리 중..." : (canRequest ? "수업 신청하기" : "티켓 부족")}
+                    {loading ? "처리 중..." : (canRequest ? "매칭 요청하기" : "요청권 부족")}
                 </button>
             </div>
 
             <div style={infoFooter}>
                 <Info size={14} />
-                <span>수업 신청 시 티켓 1장이 즉시 차감됩니다.</span>
+                <span>매칭 요청 시 요청권 1장이 즉시 사용됩니다. 본 요청은 독립 코치에게 전달되는 매칭 신청이며, 코칭의 일차적 책임은 코치에게 있습니다.</span>
             </div>
         </div>
     );

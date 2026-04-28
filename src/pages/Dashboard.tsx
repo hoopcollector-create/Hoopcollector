@@ -281,6 +281,22 @@ export const Dashboard = () => {
         refreshStudentData();
     }
 
+    async function confirmMutualCancel(requestId: string, action: 'approve' | 'reject') {
+        const actionKo = action === 'approve' ? "승인" : "거절";
+        if (!window.confirm(`코치님의 취소 요청을 ${actionKo}하시겠습니까?`)) return;
+        
+        setLoading(true); setMsg("");
+        const { error } = await supabase.rpc("confirm_mutual_cancel", { 
+            p_request_id: requestId,
+            p_action: action
+        });
+        setLoading(false);
+        
+        if (error) return setMsg(`처리 실패: ${error.message}`);
+        setMsg(action === 'approve' ? "취소가 승인되어 티켓이 환불되었습니다." : "취소 요청을 거절하였습니다.");
+        refreshStudentData();
+    }
+
     const regionMap = useMemo(() => {
         const m = new Map<string, string>();
         regions.forEach(r => m.set(r.id, r.display_name));
@@ -398,7 +414,9 @@ export const Dashboard = () => {
                         rows={rows.filter(r => r.status !== 'cancelled' && r.status !== 'rejected').filter(r => filter === 'all' ? true : r.status === filter)}
                         cancelledRows={rows.filter(r => r.status === 'cancelled' || r.status === 'rejected')}
                         filter={filter} setFilter={setFilter} showCancelled={showCancelled} setShowCancelled={setShowCancelled}
-                        cancelRequest={cancelRequest} reportCoachNoShow={reportCoachNoShow} loading={loading} regionMap={regionMap}
+                        cancelRequest={cancelRequest} reportCoachNoShow={reportCoachNoShow} 
+                        confirmMutualCancel={confirmMutualCancel}
+                        loading={loading} regionMap={regionMap}
                     />
                 )}
 

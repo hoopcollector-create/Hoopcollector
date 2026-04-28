@@ -55,6 +55,7 @@ export function statusKo(s: string) {
     if (v === "completed") return "완료";
     if (v === "cancelled") return "취소";
     if (v === "rejected") return "반려";
+    if (v === "cancel_requested") return "취소 요청됨";
     return s;
 }
 

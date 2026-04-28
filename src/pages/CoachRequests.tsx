@@ -5,7 +5,7 @@ import { ClassJournalModal } from '../components/journal/ClassJournalModal';
 import { AttendanceQR } from '../components/AttendanceQR';
 import { Link } from 'react-router-dom';
 
-type RequestStatus = "requested" | "accepted" | "completed" | "cancelled" | "rejected";
+type RequestStatus = "requested" | "accepted" | "completed" | "cancelled" | "rejected" | "cancel_requested";
 
 type ClassRequest = {
     id: string;
@@ -149,44 +149,58 @@ export const CoachRequests = () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
-            const updates: any = { status: newStatus };
-            if (newStatus === 'rejected' && reason) {
-                updates.reject_reason = reason;
+            if (newStatus === 'cancelled') {
+                const reasonStr = window.prompt("취소 사유를 입력해 주세요. (예: 폭우로 인한 코트 사용 불가)");
+                if (!reasonStr) {
+                    setLoading(false);
+                    return;
+                }
+                const { error } = await supabase.rpc('request_mutual_cancel', { 
+                    p_request_id: id,
+                    p_reason: reasonStr
+                });
+                if (error) throw error;
+                setMsg("학생에게 취소 승인 요청을 보냈습니다. 학생이 승인하면 취소가 확정됩니다.");
+            } else {
+                const updates: any = { status: newStatus };
+                if (newStatus === 'rejected' && reason) {
+                    updates.reject_reason = reason;
+                }
+
+                if (viewMode === 'general' && newStatus === 'accepted') {
+                    updates.coach_id = session.user.id;
+                }
+
+                let updateQuery = supabase.from('class_requests').update(updates).eq('id', id);
+                
+                if (viewMode === 'general' && newStatus === 'accepted') {
+                    // Add a check to ensure no one else has taken it yet
+                    updateQuery = updateQuery.is('coach_id', null);
+                }
+
+                const { error, data } = await updateQuery.select();
+
+                if (error) throw error;
+                if (viewMode === 'general' && newStatus === 'accepted' && (!data || data.length === 0)) {
+                    throw new Error("이미 다른 코치님이 선점한 수업입니다.");
+                }
+
+                if (newStatus === 'accepted' && selectedRequest) {
+                    // Auto reject overlapping requests for this coach
+                    const targetCoachId = selectedRequest.coach_id || session.user.id;
+                    await supabase
+                        .from('class_requests')
+                        .update({ status: 'rejected', reject_reason: '코치님이 해당 시간대에 다른 예약 일정을 확정했습니다.' })
+                        .eq('coach_id', targetCoachId)
+                        .eq('requested_start', selectedRequest.requested_start)
+                        .neq('id', id)
+                        .eq('status', 'requested');
+                }
+
+                setMsg(viewMode === 'general' && newStatus === 'accepted' 
+                    ? "해당 수업의 담당 코치로 배정되었습니다!" 
+                    : `요청이 ${newStatus === 'accepted' ? '승인' : '거절'}되었습니다.`);
             }
-
-            if (viewMode === 'general' && newStatus === 'accepted') {
-                updates.coach_id = session.user.id;
-            }
-
-            let updateQuery = supabase.from('class_requests').update(updates).eq('id', id);
-            
-            if (viewMode === 'general' && newStatus === 'accepted') {
-                // Add a check to ensure no one else has taken it yet
-                updateQuery = updateQuery.is('coach_id', null);
-            }
-
-            const { error, data } = await updateQuery.select();
-
-            if (error) throw error;
-            if (viewMode === 'general' && newStatus === 'accepted' && (!data || data.length === 0)) {
-                throw new Error("이미 다른 코치님이 선점한 수업입니다.");
-            }
-
-            if (newStatus === 'accepted' && selectedRequest) {
-                // Auto reject overlapping requests for this coach
-                const targetCoachId = selectedRequest.coach_id || session.user.id;
-                await supabase
-                    .from('class_requests')
-                    .update({ status: 'rejected', reject_reason: '코치님이 해당 시간대에 다른 예약 일정을 확정했습니다.' })
-                    .eq('coach_id', targetCoachId)
-                    .eq('requested_start', selectedRequest.requested_start)
-                    .neq('id', id)
-                    .eq('status', 'requested');
-            }
-
-            setMsg(viewMode === 'general' && newStatus === 'accepted' 
-                ? "해당 수업의 담당 코치로 배정되었습니다!" 
-                : `요청이 ${newStatus === 'accepted' ? '승인' : '거절'}되었습니다.`);
             
             setSelectedRequest(null);
             setRejectingId(null);
@@ -386,6 +400,18 @@ export const CoachRequests = () => {
                                         <BookOpen size={18} style={{ marginRight: 8 }} /> 수업 완료 및 일지 작성
                                     </button>
                                     <AttendanceQR classRequestId={selectedRequest.id} isCoach={true} />
+                                    
+                                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '8px 0' }} />
+                                    
+                                    <button 
+                                        onClick={() => {
+                                            setSelectedRequest(null);
+                                            handleAction(selectedRequest.id, 'cancelled');
+                                        }} 
+                                        style={{ ...actionBtn, background: 'transparent', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.8rem' }}
+                                    >
+                                        <X size={14} style={{ marginRight: 8 }} /> 부득이한 사정으로 수업 취소 요청
+                                    </button>
                                 </div>
                             )}
                         </div>

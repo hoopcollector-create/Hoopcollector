@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { Link } from 'react-router-dom';
-import { Search, MapPin, Target, Sparkles, ChevronRight } from 'lucide-react';
+import { Search, MapPin, Target, Sparkles, ChevronRight, Star } from 'lucide-react';
 
-type ClassType = "A" | "B" | "C";
+type CoachGrade = "A" | "B" | "C";
 
 type PublicCoach = {
     coach_id: string;
     slug: string;
     display_name: string | null;
-    coach_level: ClassType | null;
+    coach_grade: CoachGrade | null; // Changed from coach_level
     photo_url: string | null;
     experience_text: string | null;
     bio_text: string | null;
@@ -17,15 +17,16 @@ type PublicCoach = {
     available_classes: string[] | null;
 };
 
-function levelOrder(level: ClassType | null) {
-    if (level === "A") return 0;
-    if (level === "B") return 1;
-    if (level === "C") return 2;
+function gradeOrder(grade: CoachGrade | null) {
+    if (grade === "A") return 0;
+    if (grade === "B") return 1;
+    if (grade === "C") return 2;
     return 9;
 }
 
 export const CoachDirectory = () => {
     const [rows, setRows] = useState<PublicCoach[]>([]);
+    const [ratings, setRatings] = useState<Record<string, { avg: number, count: number }>>({});
     const [loading, setLoading] = useState(true);
     const [msg, setMsg] = useState("");
     const [search, setSearch] = useState("");
@@ -44,16 +45,39 @@ export const CoachDirectory = () => {
         setLoading(true);
         setMsg("");
         try {
+            // 1. Fetch Coaches
             const { data, error } = await supabase
                 .from("public_coach_profiles")
-                .select("coach_id,slug,display_name,coach_level,photo_url,experience_text,bio_text,service_regions,available_classes");
+                .select("coach_id,slug,display_name,coach_grade,photo_url,experience_text,bio_text,service_regions,available_classes");
 
             if (error) throw error;
 
+            // 2. Fetch Ratings from class_journals
+            const { data: journals } = await supabase
+                .from('class_journals')
+                .select('coach_id, student_score')
+                .not('student_score', 'is', null);
+
+            const coachRatings: Record<string, { total: number, count: number }> = {};
+            journals?.forEach(j => {
+                if (!coachRatings[j.coach_id]) coachRatings[j.coach_id] = { total: 0, count: 0 };
+                coachRatings[j.coach_id].total += j.student_score;
+                coachRatings[j.coach_id].count += 1;
+            });
+
+            const finalRatings: Record<string, { avg: number, count: number }> = {};
+            Object.keys(coachRatings).forEach(cid => {
+                finalRatings[cid] = {
+                    avg: coachRatings[cid].total / coachRatings[cid].count,
+                    count: coachRatings[cid].count
+                };
+            });
+            setRatings(finalRatings);
+
             const list = ((data ?? []) as PublicCoach[]).sort((a, b) => {
-                const lv = levelOrder(a.coach_level) - levelOrder(b.coach_level);
+                const lv = gradeOrder(a.coach_grade) - gradeOrder(b.coach_grade);
                 if (lv !== 0) return lv;
-                return (a.display_name ?? "").localeCompare(a.display_name ?? "", "ko");
+                return (a.display_name ?? "").localeCompare(b.display_name ?? "", "ko");
             });
 
             setRows(list);
@@ -175,12 +199,18 @@ export const CoachDirectory = () => {
                                             <div style={thumbFallback}>HC</div>
                                         )}
                                         <div style={topBadgeRow}>
-                                            <span style={levelBadge}>{coach.coach_level ?? "-"}</span>
+                                            <span style={gradeBadge}>{coach.coach_grade ?? "-"}</span>
                                         </div>
                                     </div>
 
                                     <div style={{ ...cardBody, flex: 1, display: 'flex', flexDirection: 'column' }}>
                                         <div style={coachName}>{coach.display_name ?? "UNNAMED"}</div>
+                                        
+                                        <div style={ratingRow}>
+                                            <Star size={14} fill={ratings[coach.coach_id] ? "#f59e0b" : "transparent"} color={ratings[coach.coach_id] ? "#f59e0b" : "rgba(255,255,255,0.2)"} />
+                                            <span style={ratingVal}>{ratings[coach.coach_id]?.avg.toFixed(1) || "0.0"}</span>
+                                            <span style={reviewCount}>({ratings[coach.coach_id]?.count || 0})</span>
+                                        </div>
                                         
                                         <div style={regionPills}>
                                             {(coach.service_regions ?? []).slice(0, 2).map((region) => (
@@ -238,10 +268,13 @@ const thumbWrap: React.CSSProperties = { position: 'relative', width: '100%', as
 const thumb: React.CSSProperties = { width: '100%', height: '100%', objectFit: 'cover' };
 const thumbFallback: React.CSSProperties = { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 900, color: 'rgba(255,255,255,0.05)' };
 const topBadgeRow: React.CSSProperties = { position: 'absolute', bottom: 12, right: 12 };
-const levelBadge: React.CSSProperties = { width: '36px', height: '36px', background: 'white', color: 'black', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1rem' };
+const gradeBadge: React.CSSProperties = { width: '36px', height: '36px', background: 'white', color: 'black', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1rem' };
 
 const cardBody: React.CSSProperties = { padding: '1.5rem' };
 const coachName: React.CSSProperties = { fontSize: '1.25rem', fontWeight: 900, marginBottom: '0.4rem', letterSpacing: '-0.02em' };
+const ratingRow: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '1rem' };
+const ratingVal: React.CSSProperties = { fontSize: '0.95rem', fontWeight: 900, color: '#f59e0b' };
+const reviewCount: React.CSSProperties = { fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700 };
 const regionPills: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '1rem' };
 const miniPill: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700 };
 const line: React.CSSProperties = { height: '1px', background: 'rgba(255,255,255,0.05)', margin: '1rem 0' };

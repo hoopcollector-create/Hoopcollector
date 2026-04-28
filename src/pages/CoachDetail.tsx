@@ -11,7 +11,7 @@ type PublicCoach = {
     coach_id: string;
     slug: string;
     display_name: string | null;
-    coach_level: "A" | "B" | "C" | null;
+    coach_grade: "A" | "B" | "C" | null; // Changed from coach_level
     photo_url: string | null;
     experience_text: string | null;
     bio_text: string | null;
@@ -26,6 +26,7 @@ export const CoachDetail = () => {
     const { slug } = useParams<{ slug: string }>();
     const navigate = useNavigate();
     const [coach, setCoach] = useState<PublicCoach | null>(null);
+    const [rating, setRating] = useState<{ avg: number, count: number }>({ avg: 0, count: 0 });
     const [loading, setLoading] = useState(true);
     const [msg, setMsg] = useState("");
     
@@ -68,7 +69,7 @@ export const CoachDetail = () => {
             const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetSlug);
             let query = supabase
                 .from("public_coach_profiles")
-                .select("coach_id,slug,display_name,coach_level,photo_url,experience_text,bio_text,service_regions,available_classes");
+                .select("coach_id,slug,display_name,coach_grade,photo_url,experience_text,bio_text,service_regions,available_classes");
 
             if (isUUID) {
                 query = query.or(`slug.eq."${targetSlug}",coach_id.eq."${targetSlug}"`);
@@ -83,6 +84,22 @@ export const CoachDetail = () => {
                 setMsg("해당 코치를 찾을 수 없습니다.");
             } else {
                 setCoach(data as PublicCoach);
+                
+                // Fetch Rating
+                const { data: journals } = await supabase
+                    .from('class_journals')
+                    .select('student_score')
+                    .eq('coach_id', data.coach_id)
+                    .not('student_score', 'is', null);
+                
+                if (journals && journals.length > 0) {
+                    const total = journals.reduce((acc, curr) => acc + curr.student_score, 0);
+                    setRating({
+                        avg: total / journals.length,
+                        count: journals.length
+                    });
+                }
+
                 setEditData({
                     experience_text: data.experience_text || "",
                     bio_text: data.bio_text || "",
@@ -230,7 +247,7 @@ export const CoachDetail = () => {
                         
                         <div style={nameRow}>
                             <h1 style={name}>{coach.display_name?.toUpperCase() ?? "UNNAMED"}</h1>
-                            <div style={levelBadge}>{coach.coach_level ?? "-"}</div>
+                            <div style={gradeBadge}>{coach.coach_grade ?? "-"}</div>
                         </div>
 
                         <div style={locationRow}>
@@ -245,6 +262,13 @@ export const CoachDetail = () => {
                                 <div style={infoLabel}>PROGRAMS</div>
                                 <div style={infoValue}>{(coach.available_classes ?? []).map(v => `CLASS ${v}`).join(" , ") || "-"}</div>
                             </div>
+                            <div style={infoItem}>
+                                <div style={infoLabel}>RATING</div>
+                                <div style={{ ...infoValue, display: 'flex', alignItems: 'center', gap: '8px', color: '#f59e0b' }}>
+                                    <Star size={20} fill={rating.count > 0 ? "#f59e0b" : "transparent"} />
+                                    {rating.avg.toFixed(1)} <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.3)' }}>({rating.count} reviews)</span>
+                                </div>
+                            </div>
                         </div>
 
                         {!isEditing && (
@@ -257,6 +281,10 @@ export const CoachDetail = () => {
                                 </button>
                             </div>
                         )}
+                        <div style={{ marginTop: '20px', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
+                            <p style={{ margin: 0 }}>⚠️ <strong>독립 코치 서비스 고지</strong></p>
+                            <p style={{ margin: '4px 0 0 0' }}>본 코치는 훕콜렉터 플랫폼에 등록된 독립 코치입니다. 수업의 세부 진행, 지도 방식 및 현장 안전관리는 코치의 책임 하에 진행됩니다.</p>
+                        </div>
                     </div>
                 </div>
 
@@ -359,7 +387,7 @@ const heroContent: React.CSSProperties = { display: 'flex', flexDirection: 'colu
 const topBadge: React.CSSProperties = { fontSize: '0.7rem', fontWeight: 900, letterSpacing: '0.2em', color: 'rgba(255,255,255,0.4)', marginBottom: '1.5rem' };
 const nameRow: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' };
 const name: React.CSSProperties = { fontSize: '4.5rem', fontWeight: 900, margin: 0, letterSpacing: '-0.04em', lineHeight: 1 };
-const levelBadge: React.CSSProperties = { width: '70px', height: '70px', background: 'white', color: 'black', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '2rem' };
+const gradeBadge: React.CSSProperties = { width: '70px', height: '70px', background: 'white', color: 'black', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '2rem' };
 
 const locationRow: React.CSSProperties = { display: 'flex', alignItems: 'center', marginBottom: '3rem' };
 const infoGrid: React.CSSProperties = { display: 'grid', gap: '2rem', marginBottom: '4rem' };

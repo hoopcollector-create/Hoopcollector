@@ -32,26 +32,39 @@ export const StudentCash = ({
     classTypes, qtyList, selectedClass, setSelectedClass, selectedQty, setSelectedQty,
     depositorName, setDepositorName, receiptType, setReceiptType, receiptValue, setReceiptValue,
     usePointsInput, setUsePointsInput, points, finalAmount, requestCash, selectedProduct,
-    pointsDiscountWon, maxUsablePoints, pending, loading, cancelPending, estimatedReward
+    pointsDiscountWon, maxUsablePoints, pending, loading, cancelPending, estimatedReward, tickets
 }: StudentCashProps) => {
     return (
         <div style={{ display: 'grid', gap: 24 }}>
+            <div style={{ marginBottom: '2rem' }}>
+                <h1 style={{ fontSize: '1.75rem', fontWeight: 900, marginBottom: '0.5rem' }}>코칭 요청권 충전</h1>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>독립 코치에게 매칭을 요청하기 위한 요청권을 충전합니다.</p>
+            </div>
             <div>
-                <div style={sectionLabel}>수업 클래스 및 횟수 선택</div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                    {classTypes.map(t => <button key={t} onClick={() => setSelectedClass(t)} style={selectedClass === t ? tabOn : tabOff}>Class {t}</button>)}
+                <div style={sectionLabel}>수업 코치 등급 및 횟수 선택</div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                    {classTypes.map(t => (
+                        <button 
+                            key={t} 
+                            onClick={() => setSelectedClass(t)} 
+                            style={selectedClass === t ? tabOn : tabOff}
+                        >
+                            {t} GRADE 코치 요청권
+                            <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '2px' }}>(보유: {tickets[t] ?? 0}장)</div>
+                        </button>
+                    ))}
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                     {qtyList.map(q => <button key={q} onClick={() => setSelectedQty(q)} style={selectedQty === q ? tabOn : tabOff}>{q}회</button>)}
                 </div>
                 <div style={{ padding: '12px', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: '12px', fontSize: '0.8rem', color: '#f59e0b', marginTop: '12px', lineHeight: 1.5 }}>
-                    * 자산 보호 및 남용 방지를 위해 지갑당 최대 30개의 티켓만 보유 가능합니다. (현재 소진 후 추가 구매 가능)
+                    * 자산 보호 및 남용 방지를 위해 지갑당 최대 30개의 코칭 요청권만 보유 가능합니다. (현재 소진 후 추가 구매 가능)
                 </div>
             </div>
 
             <div style={priceSummaryCard}>
                 <div style={priceLine}>
-                    <span>티켓 원가</span><span>{selectedProduct?.price?.toLocaleString() || 0}원</span>
+                    <span>요청권 원가</span><span>{selectedProduct?.price?.toLocaleString() || 0}원</span>
                 </div>
                 <div style={priceLine}>
                     <span>포인트 사용 (-{usePointsInput || 0})</span><span style={{ color: '#3b82f6' }}>-{pointsDiscountWon.toLocaleString()}원</span>
@@ -98,7 +111,7 @@ export const StudentCash = ({
                     <div style={{ fontWeight: 800, marginBottom: 16 }}>진행 중인 결제 대기 건</div>
                     {pending.map((p: any) => (
                         <div key={p.id} style={pendingCard}>
-                            <div>Class {p.class_type} {p.ticket_qty}회 ({p.amount.toLocaleString()}원)</div>
+                            <div>{p.class_type} GRADE {p.ticket_qty}회 ({p.amount.toLocaleString()}원)</div>
                             <button onClick={() => cancelPending(p.id)} style={cancelMiniBtn}>취소</button>
                         </div>
                     ))}

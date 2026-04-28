@@ -2,19 +2,30 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { HomeSlider } from '../components/HomeSlider';
 import { InstagramSection } from '../components/InstagramSection';
-import { Compass, Users, Award, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Compass, Users, Award, ShieldCheck, ArrowRight, BookOpen, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Home = () => {
     const [settings, setSettings] = useState<any>(null);
+    const [userCount, setUserCount] = useState<number>(0);
+    const [coachCount, setCoachCount] = useState<number>(0);
 
     useEffect(() => {
         loadSettings();
     }, []);
 
     async function loadSettings() {
+        // 1. Load site settings
         const { data } = await supabase.from('site_settings').select('*').eq('id', 'main').maybeSingle();
         if (data) setSettings(data);
+
+        // 2. Load real user count
+        const { count: users } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+        setUserCount(users || 0);
+
+        // 3. Load real coach count
+        const { count: coaches } = await supabase.from('public_coach_profiles').select('*', { count: 'exact', head: true });
+        setCoachCount(coaches || 0);
     }
 
     // Default values
@@ -68,10 +79,10 @@ export const Home = () => {
                         desc="농구인을 위한 프리미엄 기어와 포인트를 확인하세요."
                     />
                     <FeatureCard 
-                        to="/admin" 
-                        icon={<ShieldCheck size={32} />} 
-                        title="관리자 포털" 
-                        desc="사이트 설정을 변경하고 운영 현황을 관리하세요."
+                        to="/match" 
+                        icon={<Target size={32} />} 
+                        title="매칭 및 모임" 
+                        desc="내 주변의 픽업 게임을 찾고 새로운 팀원과 함께 경기하세요."
                     />
                 </div>
             </section>
@@ -80,13 +91,18 @@ export const Home = () => {
             <section style={trustSection}>
                 <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '40px', textAlign: 'center' }}>
                     <div style={trustItem}>
-                        <div style={trustIcon}><ShieldCheck size={40} /></div>
-                        <div style={trustValue}>100% 검증</div>
-                        <div style={trustLabel}>등록 코치 자격 확인</div>
+                        <div style={trustIcon}><BookOpen size={40} /></div>
+                        <div style={trustValue}>일관된 교육</div>
+                        <div style={trustLabel}>체계적인 수업 커리큘럼</div>
                     </div>
                     <div style={trustItem}>
                         <div style={trustIcon}><Users size={40} /></div>
-                        <div style={trustValue}>5,000+</div>
+                        <div style={trustValue}>{coachCount.toLocaleString()}+</div>
+                        <div style={trustLabel}>활성 전문 코치</div>
+                    </div>
+                    <div style={trustItem}>
+                        <div style={trustIcon}><Users size={40} /></div>
+                        <div style={trustValue}>{userCount.toLocaleString()}+</div>
                         <div style={trustLabel}>활성 학생 회원</div>
                     </div>
                 </div>

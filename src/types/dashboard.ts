@@ -2,7 +2,7 @@ export type MainTab = "home" | "request" | "history" | "cash";
 export type ClassType = "A" | "B" | "C";
 export type PositionType = "G" | "F" | "C";
 export type ReceiptType = "none" | "income" | "expense";
-export type RequestStatus = "requested" | "accepted" | "completed" | "cancelled" | "rejected";
+export type RequestStatus = "requested" | "accepted" | "completed" | "cancelled" | "rejected" | "cancel_requested";
 export type Filter = "all" | "requested" | "accepted" | "completed";
 
 export interface Profile {
@@ -48,6 +48,8 @@ export interface MyRequest {
     created_at: string;
     coach_id: string | null;
     region_id?: string | null;
+    cancel_requested_by?: string | null;
+    cancel_reason?: string | null;
 }
 
 export interface Product {

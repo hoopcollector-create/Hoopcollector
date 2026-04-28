@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, FileText, Scale, Info, ChevronRight, ArrowLeft, CreditCard, Zap, Star } from 'lucide-react';
+import { ShieldCheck, FileText, Scale, Info, ChevronRight, ArrowLeft, CreditCard, Zap, Star, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -50,12 +50,26 @@ export const Terms = () => {
                 <section style={card}>
                     <div style={cardHeader}>
                         <div style={iconBox}><Scale size={20} color="var(--color-primary)" /></div>
-                        <h2 style={cardTitle}>수업권(티켓) 이용 정책</h2>
+                        <h2 style={cardTitle}>코칭 매칭 및 요청권 정책</h2>
                     </div>
                     <ul style={list}>
-                        <li>티켓은 지갑당 <strong>최대 30개</strong>까지 보유할 수 있습니다.</li>
-                        <li>자산 보호 및 남용 방지를 위해 한도 도달 시 소진 후 추가 구매가 가능합니다.</li>
-                        <li>수업 취소 시 환불 규정은 시작 24시간 전까지 100% 환급됩니다.</li>
+                        <li>요청권(티켓)은 독립 코치에게 매칭을 요청하기 위한 도구이며, 지갑당 <strong>최대 30개</strong>까지 보유할 수 있습니다.</li>
+                        <li>자산 보호 및 남용 방지를 위해 한도 도달 시 소진 후 추가 충전이 가능합니다.</li>
+                        <li><strong>요청권은 매칭 서비스 이용권이며 현금처럼 양도·환급·출금되지 않습니다.</strong></li>
+                        <li>매칭 요청 취소 시 환불 규정은 시작 24시간 전까지 100% 환급됩니다.</li>
+                    </ul>
+                </section>
+
+                {/* New Section: Service Nature */}
+                <section style={{ ...card, borderColor: 'rgba(255,255,255,0.1)' }}>
+                    <div style={cardHeader}>
+                        <div style={iconBox}><MapPin size={20} color="var(--color-primary)" /></div>
+                        <h2 style={cardTitle}>서비스 성격 및 장소 안내</h2>
+                    </div>
+                    <ul style={list}>
+                        <li>훕콜렉터는 고정 학원시설이 아닌 <strong>대관 체육시설 또는 야외 코트</strong>를 활용한 농구 코칭 서비스입니다.</li>
+                        <li>수업 장소는 코치와 학생의 조율 및 예약 상황에 따라 <strong>수업별로 달라질 수 있습니다.</strong></li>
+                        <li>야외 수업의 경우 기상 상황에 따라 코치와 협의 후 '상호 합의 취소' 절차를 진행할 수 있습니다.</li>
                     </ul>
                 </section>
 
@@ -136,14 +150,30 @@ export const Terms = () => {
             </div>
 
             <footer style={footer}>
-                <p>© 2026 HOOPCOLLECTOR. All rights reserved.</p>
-                <div style={{ display: 'flex', gap: 20, marginTop: 10 }}>
+                <div style={platformNotice}>
+                    <p><strong>Hoopcollector 플랫폼 운영 고지</strong></p>
+                    <p>Hoopcollector는 농구 코치와 학생을 연결하는 매칭 플랫폼입니다. 직접 수업을 제공하는 학원이나 체육시설 운영자가 아니며, 수업의 진행, 지도 방식, 안전관리 및 수업 품질에 대한 책임은 플랫폼에 등록된 독립 코치에게 있습니다.</p>
+                </div>
+                <p style={{ marginTop: '20px' }}>© 2026 HOOPCOLLECTOR. All rights reserved.</p>
+                <div style={{ display: 'flex', gap: 20, marginTop: 10, justifyContent: 'center' }}>
                     <span style={{ opacity: 0.4, fontSize: '0.8rem' }}>개인정보처리방침</span>
                     <span style={{ opacity: 0.4, fontSize: '0.8rem' }}>이용약관</span>
                 </div>
             </footer>
         </div>
     );
+};
+
+const platformNotice: React.CSSProperties = { 
+    marginTop: '40px', 
+    padding: '24px', 
+    borderRadius: '16px', 
+    background: 'rgba(255,255,255,0.02)', 
+    border: '1px solid rgba(255,255,255,0.05)', 
+    fontSize: '0.85rem', 
+    lineHeight: 1.6, 
+    color: 'rgba(255,255,255,0.5)',
+    textAlign: 'left'
 };
 
 const container: React.CSSProperties = { maxWidth: '1000px', margin: '0 auto', padding: '60px 24px', color: 'white' };

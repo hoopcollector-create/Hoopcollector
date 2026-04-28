@@ -13,12 +13,13 @@ interface StudentHistoryProps {
     setShowCancelled: (v: boolean) => void;
     cancelRequest: (id: string) => Promise<void>;
     reportCoachNoShow: (id: string) => Promise<void>;
+    confirmMutualCancel: (id: string, action: 'approve' | 'reject') => Promise<void>;
     loading: boolean;
     regionMap: Map<string, string>;
 }
 
 export const StudentHistory = ({
-    rows, filter, setFilter, cancelRequest, reportCoachNoShow, loading, regionMap
+    rows, filter, setFilter, cancelRequest, reportCoachNoShow, confirmMutualCancel, loading, regionMap
 }: StudentHistoryProps) => {
     return (
         <div>
@@ -58,6 +59,30 @@ export const StudentHistory = ({
                                 )}
                             </div>
                         )}
+                        {r.status === 'cancel_requested' && (
+                            <div style={cancelRequestBox}>
+                                <div style={{ fontSize: 13, fontWeight: 800, color: '#f59e0b', marginBottom: 8 }}>⚠️ 코치님의 취소 요청이 있습니다</div>
+                                <div style={{ fontSize: 14, background: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 8, marginBottom: 12, border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                                    <span style={{ opacity: 0.6, fontSize: 12 }}>사유:</span> {r.cancel_reason || "사유 미입력"}
+                                </div>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    <button 
+                                        style={{ ...actionBtn, background: '#f59e0b' }} 
+                                        onClick={() => confirmMutualCancel(r.id, 'approve')}
+                                        disabled={loading}
+                                    >
+                                        취소 동의 (환불받기)
+                                    </button>
+                                    <button 
+                                        style={{ ...actionBtn, background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }} 
+                                        onClick={() => confirmMutualCancel(r.id, 'reject')}
+                                        disabled={loading}
+                                    >
+                                        거절
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         {r.status === 'completed' && (
                             <Link to={`/journal/${r.id}`} style={{ textDecoration: 'none' }}>
                                 <button style={journalBtn}>
@@ -79,3 +104,5 @@ const cancelBtn: React.CSSProperties = { width: '100%', background: 'transparent
 const journalBtn: React.CSSProperties = { width: '100%', background: 'var(--color-primary)', color: 'white', border: 'none', marginTop: 16, padding: 10, borderRadius: 12, fontWeight: 800, cursor: 'pointer' };
 const tabOn: React.CSSProperties = { padding: "12px 10px", borderRadius: 14, border: "none", background: "#ffffff", color: "#000000", cursor: "pointer", fontWeight: 800, fontSize: 14 };
 const tabOff: React.CSSProperties = { padding: "12px 10px", borderRadius: 14, border: "1px solid rgba(255,255,255,.10)", background: "rgba(255,255,255,.04)", color: "rgba(255,255,255,.5)", cursor: "pointer", fontWeight: 700, fontSize: 14 };
+const cancelRequestBox: React.CSSProperties = { marginTop: 16, padding: 16, borderRadius: 14, background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)' };
+const actionBtn: React.CSSProperties = { flex: 1, padding: '10px', borderRadius: 10, border: 'none', color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer' };

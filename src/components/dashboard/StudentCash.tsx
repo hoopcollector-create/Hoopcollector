@@ -26,6 +26,7 @@ interface StudentCashProps {
     loading: boolean;
     cancelPending: (id: string) => Promise<void>;
     estimatedReward: number;
+    tickets: Record<ClassType, number>;
 }
 
 export const StudentCash = ({

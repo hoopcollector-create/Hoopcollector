@@ -26,6 +26,7 @@ export const ScheduleCalendar = () => {
 
     // Recurring rules state
     const [rules, setRules] = useState<any[]>([]);
+    const [ruleType, setRuleType] = useState<'slot' | 'personal'>('slot');
     const [ruleDay, setRuleDay] = useState(1); // Mon defaults
     const [ruleStart, setRuleStart] = useState("18:00");
     const [ruleEnd, setRuleEnd] = useState("19:00");
@@ -43,10 +44,24 @@ export const ScheduleCalendar = () => {
     }, [viewDate, showRulesModal]);
 
     async function loadRules() {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-        const { data } = await supabase.from('coach_slot_rules').select('*').eq('coach_id', session.user.id);
-        setRules(data || []);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+            const { data, error } = await supabase
+                .from('coach_slot_rules')
+                .select('*')
+                .eq('coach_id', session.user.id)
+                .order('day_of_week', { ascending: true })
+                .order('start_time', { ascending: true });
+            
+            if (error) {
+                console.error("Rules Fetch Error:", error);
+                return;
+            }
+            setRules(data || []);
+        } catch (e) {
+            console.error("Rules Exception:", e);
+        }
     }
 
     async function handleAddRule() {
@@ -58,13 +73,18 @@ export const ScheduleCalendar = () => {
                 coach_id: session.user.id,
                 day_of_week: ruleDay,
                 start_time: ruleStart,
-                end_time: ruleEnd
+                end_time: ruleEnd,
+                type: ruleType
             });
 
-            if (error) throw error;
+            if (error) {
+                console.error("Rules Insert Error Detail:", error);
+                throw new Error(`${error.message} (상세: ${JSON.stringify(error)})`);
+            }
             setMsg("반복 규칙이 추가되었습니다.");
             loadRules();
         } catch (e: any) {
+            console.error("Full catch error:", e);
             setErrorMsg(e.message);
         }
     }
@@ -74,15 +94,35 @@ export const ScheduleCalendar = () => {
         if (!error) loadRules();
     }
 
+    // Timezone-safe ISO string formatter
+    const toLocalISOString = (date: Date) => {
+        const offset = date.getTimezoneOffset();
+        const offsetAbs = Math.abs(offset);
+        const iso = new Date(date.getTime() - (offset * 60 * 1000)).toISOString().slice(0, -1);
+        return `${iso}${offset <= 0 ? '+' : '-'}${String(Math.floor(offsetAbs / 60)).padStart(2, '0')}:${String(offsetAbs % 60).padStart(2, '0')}`;
+    };
+
     async function generateSlotsFromRules() {
         setLoading(true);
         try {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
-            // Generate for next 4 weeks
-            const newSlots: any[] = [];
+            // 1. Delete ONLY recurring slots (auto-generated) for the next 28 days
             const now = new Date();
+            const endDate = new Date();
+            endDate.setDate(now.getDate() + 28);
+
+            await supabase
+                .from('coach_slots')
+                .delete()
+                .eq('coach_id', session.user.id)
+                .eq('is_recurring', true) // Protect manual events
+                .gte('start_at', now.toISOString())
+                .lte('start_at', endDate.toISOString());
+
+            // 2. Generate new slots based on rules
+            const newSlots: any[] = [];
             
             for (let i = 0; i < 28; i++) {
                 const targetDate = new Date();
@@ -91,32 +131,38 @@ export const ScheduleCalendar = () => {
 
                 const matchedRules = rules.filter(r => r.day_of_week === dayOfWeek);
                 matchedRules.forEach(r => {
-                    const startAt = new Date(targetDate.toISOString().split('T')[0] + 'T' + r.start_time);
-                    const endAt = new Date(targetDate.toISOString().split('T')[0] + 'T' + r.end_time);
+                    const datePart = targetDate.toLocaleDateString('sv-SE'); 
+                    const startAt = new Date(`${datePart}T${r.start_time}`);
+                    const endAt = new Date(`${datePart}T${r.end_time}`);
 
                     newSlots.push({
                         coach_id: session.user.id,
-                        title: "반복 일정 (레슨 가능)",
-                        start_at: startAt.toISOString(),
-                        end_at: endAt.toISOString(),
-                        type: 'slot',
+                        title: r.type === 'personal' ? "개인 일정 (반복)" : "반복 일정 (레슨 가능)",
+                        start_at: toLocalISOString(startAt),
+                        end_at: toLocalISOString(endAt),
+                        type: r.type || 'slot',
                         is_booked: false,
-                        status: 'open'
+                        status: 'open',
+                        is_recurring: true // Mark as generated
                     });
                 });
             }
 
             if (newSlots.length > 0) {
                 const { error } = await supabase.from('coach_slots').insert(newSlots);
-                if (error) throw error;
-                setMsg(`${newSlots.length}개의 슬롯이 자동 생성되었습니다.`);
+                if (error) {
+                    console.error("Batch Insert Error:", error);
+                    throw error;
+                }
+                setMsg(`${newSlots.length}개의 일정이 규칙에 따라 갱신되었습니다. (수동 일정은 유지됨)`);
                 loadEvents();
                 setShowRulesModal(false);
             } else {
                 setMsg("생성할 규칙이 없습니다.");
             }
         } catch (e: any) {
-            setErrorMsg(e.message);
+            console.error("Generation Failed:", e);
+            setErrorMsg(`생성 실패: ${e.message}`);
         } finally {
             setLoading(false);
         }
@@ -129,17 +175,24 @@ export const ScheduleCalendar = () => {
             if (!session) return;
 
             // 1. Fetch Slots (Coach's own schedule)
-            // Explicitly selecting columns to avoid issues with missing 'role' column
-            const { data: slots } = await supabase
+            const { data: slots, error: slotErr } = await supabase
                 .from('coach_slots')
                 .select('id, coach_id, title, start_at, end_at, type, is_booked')
                 .eq('coach_id', session.user.id);
             
+            if (slotErr) {
+                console.error("Slots Fetch Error:", slotErr);
+            }
+
             // 2. Fetch Accepted Requests (Classes)
-            const { data: reqs } = await supabase.from('class_requests')
+            const { data: reqs, error: reqErr } = await supabase.from('class_requests')
                 .select('*')
                 .eq('coach_id', session.user.id)
                 .eq('status', 'accepted');
+
+            if (reqErr) {
+                console.error("Requests Fetch Error:", reqErr);
+            }
 
             // 3. Profiles Sync
             const studentIds = Array.from(new Set((reqs || []).map(r => r.student_id)));
@@ -200,17 +253,15 @@ export const ScheduleCalendar = () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
-            const payload: any = {
+            const { error } = await supabase.from('coach_slots').insert({
                 coach_id: session.user.id,
                 title: newTitle,
-                start_at: startAt.toISOString(),
-                end_at: endAt.toISOString(),
+                start_at: toLocalISOString(startAt),
+                end_at: toLocalISOString(endAt),
                 type: newType,
                 is_booked: false,
                 status: 'open'
-            };
-
-            const { error } = await supabase.from('coach_slots').insert(payload);
+            });
 
             if (error) {
                 console.error("Supabase Error:", error);
@@ -328,44 +379,69 @@ export const ScheduleCalendar = () => {
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
                             <div>
                                 <h3 style={{ fontSize: '1.5rem', fontWeight: 900 }}>매주 반복 일정 관리</h3>
-                                <p style={{ fontSize: '0.85rem', opacity: 0.5, marginTop: '4px' }}>요일별로 반복되는 고정 수업 가능 시간을 설정하세요.</p>
+                                <p style={{ fontSize: '0.85rem', opacity: 0.5, marginTop: '4px' }}>요일별로 반복되는 고정 수업 가능 또는 불가 시간을 설정하세요.</p>
                             </div>
                             <button onClick={() => setShowRulesModal(false)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}><X/></button>
                         </div>
 
                         {/* Add New Rule Form */}
-                        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '16px', marginBottom: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 80px', gap: '12px', alignItems: 'flex-end' }}>
-                                <div>
-                                    <label style={label}>요일</label>
-                                    <select value={ruleDay} onChange={e => setRuleDay(parseInt(e.target.value))} style={input}>
-                                        {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => <option key={i} value={i}>{d}요일</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style={label}>시작</label>
-                                    <input type="time" value={ruleStart} onChange={e => setRuleStart(e.target.value)} style={input} />
-                                </div>
-                                <div>
-                                    <label style={label}>종료</label>
-                                    <input type="time" value={ruleEnd} onChange={e => setRuleEnd(e.target.value)} style={input} />
-                                </div>
-                                <button onClick={handleAddRule} style={{ ...saveBtn, marginTop: 0, padding: '12px' }}>추가</button>
+                        <div style={{ display: 'grid', gap: '15px', background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '24px' }}>
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
+                                <button 
+                                    onClick={() => setRuleType('slot')}
+                                    style={{ 
+                                        flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 900,
+                                        background: ruleType === 'slot' ? 'var(--color-coach)' : 'rgba(255,255,255,0.05)',
+                                        color: ruleType === 'slot' ? 'white' : 'rgba(255,255,255,0.3)'
+                                    }}
+                                >수업 가능</button>
+                                <button 
+                                    onClick={() => setRuleType('personal')}
+                                    style={{ 
+                                        flex: 1, padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 900,
+                                        background: ruleType === 'personal' ? '#8b5cf6' : 'rgba(255,255,255,0.05)',
+                                        color: ruleType === 'personal' ? 'white' : 'rgba(255,255,255,0.3)'
+                                    }}
+                                >개인 일정</button>
                             </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: '10px' }}>
+                                <select value={ruleDay} onChange={e => setRuleDay(parseInt(e.target.value))} style={input}>
+                                    {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => <option key={i} value={i}>{d}요일</option>)}
+                                </select>
+                                <input type="time" value={ruleStart} onChange={e => setRuleStart(e.target.value)} style={input} />
+                                <input type="time" value={ruleEnd} onChange={e => setRuleEnd(e.target.value)} style={input} />
+                            </div>
+                            <button onClick={handleAddRule} style={{ ...saveBtn, marginTop: 0, background: ruleType === 'slot' ? 'var(--color-coach)' : '#8b5cf6', color: 'white' }}>
+                                규칙 추가하기
+                            </button>
                         </div>
 
                         {/* Rules List */}
-                        <div style={{ maxHeight: '30vh', overflowY: 'auto', marginBottom: '24px' }}>
+                        <div style={{ maxHeight: '25vh', overflowY: 'auto', marginBottom: '24px' }}>
                             <label style={{ ...label, marginBottom: '12px' }}>현재 설정된 규칙</label>
                             {rules.length === 0 ? (
                                 <div style={{ textAlign: 'center', padding: '30px', opacity: 0.3, fontSize: '0.9rem' }}>등록된 반복 규칙이 없습니다.</div>
                             ) : (
-                                <div style={{ display: 'grid', gap: '8px' }}>
+                                <div style={{ display: 'grid', gap: '10px' }}>
                                     {rules.map(r => (
-                                        <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}>
-                                            <div style={{ fontWeight: 700 }}>
-                                                <span style={{ color: 'var(--color-primary)', marginRight: '8px' }}>{['일', '월', '화', '수', '목', '금', '토'][r.day_of_week]}요일</span>
-                                                {r.start_time} ~ {r.end_time}
+                                        <div key={r.id} style={{ 
+                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                                            padding: '12px 18px', background: 'rgba(255,255,255,0.03)', borderRadius: '14px',
+                                            borderLeft: `4px solid ${r.type === 'personal' ? '#8b5cf6' : 'var(--color-coach)'}`
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <div style={{ color: r.type === 'personal' ? '#8b5cf6' : 'var(--color-coach)', background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '8px' }}>
+                                                    {r.type === 'personal' ? <X size={14} /> : <Check size={14} />}
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontWeight: 900, fontSize: '1rem' }}>
+                                                        {['일', '월', '화', '수', '목', '금', '토'][r.day_of_week]}요일 {r.start_time} ~ {r.end_time}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.7rem', opacity: 0.3, marginTop: '2px', fontWeight: 700 }}>
+                                                        {r.type === 'personal' ? '개인 일정 (수업 불가)' : '수업 가능 시간'}
+                                                    </div>
+                                                </div>
                                             </div>
                                             <button onClick={() => handleDeleteRule(r.id)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}><Trash2 size={16} /></button>
                                         </div>
@@ -375,10 +451,10 @@ export const ScheduleCalendar = () => {
                         </div>
 
                         <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '24px', textAlign: 'center' }}>
-                            <button onClick={generateSlotsFromRules} disabled={loading} style={{ ...saveBtn, background: 'var(--color-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                                {loading ? '생성 중...' : <><Zap size={18} /> 설정된 규칙으로 4주치 슬롯 자동 생성</>}
+                            <button onClick={generateSlotsFromRules} disabled={loading} style={{ ...saveBtn, background: 'white', color: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                                {loading ? '생성 중...' : <><Zap size={18} /> 설정된 규칙으로 4주치 일정 일괄 생성</>}
                             </button>
-                            <p style={{ fontSize: '0.75rem', opacity: 0.4, marginTop: '12px' }}>기존 슬롯과 겹치는 경우 중복 생성될 수 있습니다.</p>
+                            <p style={{ fontSize: '0.75rem', opacity: 0.4, marginTop: '12px' }}>일괄 생성 시 기존 일정과 겹치지 않게 주의해 주세요.</p>
                         </div>
                     </div>
                 </div>
@@ -415,6 +491,73 @@ export const ScheduleCalendar = () => {
                             e.start.getFullYear() === d.year
                         );
 
+                        if (viewMode === 'day') {
+                            // Render 24-hour timeline for Day View
+                            const hours = Array.from({ length: 24 }, (_, i) => i);
+                            return (
+                                <div key={i} style={{ ...dayTimelineContainer, minHeight: '1200px' }}>
+                                    {hours.map(h => (
+                                        <div key={h} style={timelineRow}>
+                                            <div style={timeLabel}>{h === 12 ? '정오' : (h < 12 ? `오전 ${h}시` : `오후 ${h - 12}시`)}</div>
+                                            <div style={timeGridLine} />
+                                        </div>
+                                    ))}
+                                    
+                                    {/* Availability Slots (Background Layer) */}
+                                    {dayEvents.filter(ev => ev.type === 'slot').map(ev => {
+                                        const startMin = ev.start.getHours() * 60 + ev.start.getMinutes();
+                                        const duration = (ev.end.getTime() - ev.start.getTime()) / (1000 * 60);
+                                        return (
+                                            <div key={ev.id} style={{
+                                                position: 'absolute',
+                                                left: '80px',
+                                                right: '10px',
+                                                top: `${startMin * (60/60)}px`,
+                                                height: `${duration * (60/60)}px`,
+                                                background: 'rgba(59, 130, 246, 0.15)',
+                                                borderLeft: '4px solid var(--color-coach)',
+                                                borderRadius: '4px',
+                                                zIndex: 1,
+                                                padding: '8px',
+                                                fontSize: '0.75rem',
+                                                color: 'var(--color-coach)',
+                                                fontWeight: 800
+                                            }}>
+                                                수업 가능 시간
+                                            </div>
+                                        );
+                                    })}
+
+                                    {/* Real Events (Top Layer) */}
+                                    {dayEvents.filter(ev => ev.type !== 'slot').map(ev => {
+                                        const startMin = ev.start.getHours() * 60 + ev.start.getMinutes();
+                                        const duration = (ev.end.getTime() - ev.start.getTime()) / (1000 * 60);
+                                        return (
+                                            <div key={ev.id} style={{
+                                                position: 'absolute',
+                                                left: '100px',
+                                                right: '20px',
+                                                top: `${startMin * (60/60)}px`,
+                                                height: `${Math.max(40, duration * (60/60))}px`,
+                                                background: ev.type === 'class' ? 'rgba(59, 130, 246, 0.95)' : 'rgba(139, 92, 246, 0.95)',
+                                                borderRadius: '12px',
+                                                zIndex: 5,
+                                                padding: '12px',
+                                                boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                                                color: 'white',
+                                                border: '1px solid rgba(255,255,255,0.2)'
+                                            }}>
+                                                <div style={{ fontWeight: 900, fontSize: '0.9rem', marginBottom: '4px' }}>{ev.title}</div>
+                                                <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>
+                                                    {ev.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ~ {ev.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            );
+                        }
+
                         return (
                             <div 
                                 key={i} 
@@ -423,30 +566,53 @@ export const ScheduleCalendar = () => {
                                     ...dayCell, 
                                     opacity: d.current ? 1 : 0.3, 
                                     background: viewMode !== 'month' ? 'rgba(255,255,255,0.01)' : 'transparent',
-                                    cursor: viewMode === 'month' ? 'pointer' : 'default'
+                                    cursor: viewMode === 'month' ? 'pointer' : 'default',
+                                    minHeight: viewMode === 'month' ? '100px' : '400px'
                                 }}
                                 className={viewMode === 'month' ? "hover-bright" : ""}
                             >
                                 <div style={dayNumber}>{d.day}</div>
                                 <div style={eventsList}>
-                                    {dayEvents.map(ev => (
-                                        <div key={ev.id} style={{ 
-                                            ...eventChip, 
-                                            padding: viewMode === 'month' ? '4px 8px' : '10px 12px',
-                                            fontSize: viewMode === 'month' ? '0.75rem' : '0.85rem',
-                                            background: ev.type === 'class' ? 'rgba(59, 130, 246, 0.2)' : ev.type === 'personal' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255,255,255,0.05)',
-                                            color: ev.type === 'class' ? '#60a5fa' : ev.type === 'personal' ? '#a78bfa' : 'white',
-                                            borderLeft: `4px solid ${ev.type === 'class' ? '#3b82f6' : ev.type === 'personal' ? '#8b5cf6' : 'rgba(255,255,255,0.2)'}`,
-                                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                                        }}>
-                                            <div style={{ fontWeight: 800 }}>{ev.title}</div>
-                                            {viewMode !== 'month' && (
-                                                <div style={{ fontSize: '0.7rem', opacity: 0.7, marginTop: '4px' }}>
-                                                    {ev.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ~ {ev.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    {dayEvents
+                                        .sort((a, b) => {
+                                            const priority: Record<string, number> = { class: 1, personal: 2, slot: 3 };
+                                            return (priority[a.type] || 99) - (priority[b.type] || 99);
+                                        })
+                                        .map(ev => {
+                                            const isSlot = ev.type === 'slot';
+                                            const slotStyle: React.CSSProperties = {
+                                                background: 'rgba(59, 130, 246, 0.05)',
+                                                border: '1px dashed rgba(59, 130, 246, 0.3)',
+                                                color: 'rgba(96, 165, 250, 0.6)',
+                                                fontSize: '0.7rem',
+                                                padding: '2px 6px',
+                                                borderRadius: '4px'
+                                            };
+                                            const solidStyle: React.CSSProperties = {
+                                                padding: viewMode === 'month' ? '4px 8px' : '10px 12px',
+                                                fontSize: viewMode === 'month' ? '0.75rem' : '0.85rem',
+                                                background: ev.type === 'class' ? 'rgba(59, 130, 246, 0.9)' : 'rgba(139, 92, 246, 0.85)',
+                                                color: 'white',
+                                                boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                                                borderLeft: `4px solid ${ev.type === 'class' ? '#ffffff' : '#fbcfe8'}`,
+                                            };
+
+                                            return (
+                                                <div key={ev.id} style={{ 
+                                                    ...eventChip, 
+                                                    ...(isSlot ? slotStyle : solidStyle)
+                                                }}>
+                                                    <div style={{ fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                        {isSlot ? `🕒 ${ev.start.getHours()}:${String(ev.start.getMinutes()).padStart(2, '0')} 가능` : ev.title}
+                                                    </div>
+                                                    {viewMode !== 'month' && (
+                                                        <div style={{ fontSize: '0.7rem', opacity: isSlot ? 0.5 : 0.8, marginTop: '2px', fontWeight: 700 }}>
+                                                            {ev.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ~ {ev.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </div>
-                                    ))}
+                                            );
+                                        })}
                                 </div>
                             </div>
                         );
@@ -534,6 +700,27 @@ const eventChip: React.CSSProperties = { borderRadius: '6px', fontWeight: 800, w
 const modalOverlay: React.CSSProperties = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 };
 const modalBody: React.CSSProperties = { width: '90%', maxWidth: '500px', background: '#111827', padding: '2.5rem', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.1)' };
 const label: React.CSSProperties = { display: 'block', fontSize: '0.75rem', fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: '8px' };
-const input: React.CSSProperties = { width: '100%', padding: '14px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', boxSizing: 'border-box' };
+const input: React.CSSProperties = { 
+    width: '100%', 
+    padding: '14px', 
+    borderRadius: '12px', 
+    background: '#1f2937', // Solid dark background to override browser defaults
+    border: '1px solid rgba(255,255,255,0.1)', 
+    color: 'white', 
+    boxSizing: 'border-box',
+    outline: 'none',
+    appearance: 'none', // Remove default arrow for custom look if needed, but keeping for now for usability
+    WebkitAppearance: 'none',
+    backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")',
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 14px top 50%',
+    backgroundSize: '12px auto'
+};
 const saveBtn: React.CSSProperties = { width: '100%', padding: '16px', borderRadius: '16px', background: 'white', color: 'black', border: 'none', fontWeight: 950, fontSize: '1rem', cursor: 'pointer', marginTop: '1rem' };
 const backBtnStyle: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '6px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' };
+
+// Timeline Styles
+const dayTimelineContainer: React.CSSProperties = { position: 'relative', width: '100%', background: 'rgba(255,255,255,0.01)', borderRadius: '24px', overflow: 'hidden' };
+const timelineRow: React.CSSProperties = { display: 'flex', alignItems: 'flex-start', height: '60px', borderBottom: '1px solid rgba(255,255,255,0.03)' };
+const timeLabel: React.CSSProperties = { width: '80px', fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', textAlign: 'center', fontWeight: 800, paddingTop: '4px' };
+const timeGridLine: React.CSSProperties = { flex: 1, height: '1px' };

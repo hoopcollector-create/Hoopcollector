@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Home, Compass, UserCircle, Search, Gift, Heart, Menu, X, ArrowLeft, LogOut, CheckCircle2, ShoppingBag, PlusCircle, PenTool, LayoutDashboard, Target, Users, MessageSquare, Calendar, Award, Instagram, MessageCircle, ShieldCheck, History as HistoryIcon, BookOpen, CreditCard } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
@@ -25,6 +25,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const [isCoachRole, setIsCoachRole] = useState(false);
     const [unreadChatCount, setUnreadChatCount] = useState(0);
     const [activeRequestsCount, setActiveRequestsCount] = useState(0);
+    const chatSubChannelRef = useRef<any>(null);
 
     
     // Internal state fallback if not provided
@@ -62,10 +63,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            subscription.unsubscribe();
+            if (chatSubChannelRef.current) {
+                supabase.removeChannel(chatSubChannelRef.current);
+                chatSubChannelRef.current = null;
+            }
+        };
     }, [appMode]);
 
-    let chatSubChannel: any = null;
+
     async function fetchUnreadChats(uid: string) {
         const { data: rooms } = await supabase
             .from('chat_rooms')
@@ -113,8 +120,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
 
     function setupChatSubscription(uid: string) {
-        if (chatSubChannel) return;
-        chatSubChannel = supabase.channel('sidebar-unreads')
+        if (chatSubChannelRef.current) return;
+        chatSubChannelRef.current = supabase.channel('sidebar-unreads')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload: any) => {
                 if (payload.new && payload.new.sender_id !== uid) {
                     setUnreadChatCount(prev => prev + 1);

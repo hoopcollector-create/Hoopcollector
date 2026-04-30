@@ -46,7 +46,8 @@ export const AdminShopOrders = () => {
                 setOrders((data || []).map(o => ({ 
                     ...o, 
                     type: 'shop', 
-                    user_name: (o.profiles as any)?.name 
+                    user_name: (o.profiles as any)?.name,
+                    user_phone: (o.profiles as any)?.phone
                 })));
             } else {
                 const { data, error } = await supabase.from('purchases')
@@ -60,7 +61,8 @@ export const AdminShopOrders = () => {
                     product_title: o.product_title || `티켓 구매 (${o.amount.toLocaleString()}원)`,
                     cash_amount: o.amount,
                     quantity: 1,
-                    user_name: (o.profiles as any)?.name
+                    user_name: (o.profiles as any)?.name,
+                    user_phone: (o.profiles as any)?.phone
                 })));
             }
         } catch (e: any) {
@@ -175,6 +177,7 @@ export const AdminShopOrders = () => {
 
                         <div style={infoGrid}>
                             <InfoBox icon={<User size={14} />} label="입금자 / 계정명" value={`${order.payer_name || '정보없음'} (${(order as any).user_name || '프로필정보없음'})`} />
+                            <InfoBox icon={<Smartphone size={14} />} label="연락처" value={(order as any).user_phone || '정보없음'} />
                             <InfoBox icon={<CreditCard size={14} />} label="결제금액" value={`${(order.cash_amount || 0).toLocaleString()}원`} />
                             {order.type === 'shop' ? (
                                 <InfoBox icon={<MapPin size={14} />} label="배송지" value={`${order.shipping_address_road || '-'} ${order.shipping_detail_address || ''}`} span2 />

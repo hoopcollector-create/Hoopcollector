@@ -61,7 +61,7 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
             .from('coach_slots')
             .select('*')
             .eq('coach_id', targetCoachId)
-            .eq('is_booked', false)
+            // 예약된 슬롯도 모두 가져오도록 eq('is_booked', false) 필터 제거
             .eq('type', 'slot')
             .gte('start_at', new Date().toISOString())
             .order('start_at', { ascending: true });
@@ -206,8 +206,11 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
                                     for (let i = 0; i < firstDay; i++) days.push(<div key={`empty-${i}`} />);
                                     for (let i = 1; i <= daysInMonth; i++) {
                                         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-                                        const hasSlot = availableSlots.some(s => s.start_at.startsWith(dateStr));
+                                        const hasAvailableSlot = availableSlots.some(s => s.start_at.startsWith(dateStr) && !s.is_booked);
+                                        const hasBookedSlot = availableSlots.some(s => s.start_at.startsWith(dateStr) && s.is_booked);
+                                        const hasSlot = hasAvailableSlot || hasBookedSlot;
                                         const isSelected = date === dateStr;
+                                        
                                         days.push(
                                             <div 
                                                 key={i} 
@@ -215,14 +218,15 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
                                                 style={{
                                                     ...calDayCell,
                                                     background: isSelected ? 'var(--color-primary)' : 'transparent',
-                                                    color: isSelected ? 'white' : (hasSlot ? 'white' : 'rgba(255,255,255,0.2)'),
+                                                    color: isSelected ? 'white' : (hasAvailableSlot ? 'white' : (hasBookedSlot ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.1)')),
                                                     fontWeight: isSelected || hasSlot ? 800 : 400,
                                                     cursor: 'pointer',
                                                     position: 'relative'
                                                 }}
                                             >
                                                 {i}
-                                                {hasSlot && !isSelected && <div style={hasSlotDot} />}
+                                                {hasAvailableSlot && !isSelected && <div style={{...hasSlotDot, background: 'var(--color-primary)'}} />}
+                                                {!hasAvailableSlot && hasBookedSlot && !isSelected && <div style={{...hasSlotDot, background: '#ef4444'}} />}
                                             </div>
                                         );
                                     }
@@ -234,32 +238,38 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
 
                     {date && (
                         <div>
-                            <div style={sectionLabel}>{date} 예약 가능 시간</div>
+                            <div style={sectionLabel}>{date} 코치 일정</div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                 {availableSlots.filter(s => s.start_at.startsWith(date)).length > 0 ? (
                                     availableSlots.filter(s => s.start_at.startsWith(date)).map(slot => {
                                         const start = new Date(slot.start_at);
                                         const isSelected = selectedSlotId === slot.id;
+                                        const isBooked = slot.is_booked;
+                                        
                                         return (
                                             <button
                                                 key={slot.id}
                                                 onClick={() => {
+                                                    if (isBooked) return;
                                                     setSelectedSlotId(slot.id);
                                                     setTime(start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }));
                                                 }}
+                                                disabled={isBooked}
                                                 style={{
                                                     ...slotBtnStyle,
-                                                    background: isSelected ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)',
-                                                    borderColor: isSelected ? 'white' : 'rgba(255,255,255,0.1)',
-                                                    color: isSelected ? 'white' : 'rgba(255,255,255,0.7)'
+                                                    background: isBooked ? 'rgba(239, 68, 68, 0.05)' : (isSelected ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)'),
+                                                    borderColor: isBooked ? 'rgba(239, 68, 68, 0.2)' : (isSelected ? 'white' : 'rgba(255,255,255,0.1)'),
+                                                    color: isBooked ? '#ef4444' : (isSelected ? 'white' : 'rgba(255,255,255,0.7)'),
+                                                    cursor: isBooked ? 'not-allowed' : 'pointer'
                                                 }}
                                             >
                                                 {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                {isBooked ? ' (예약 마감)' : ''}
                                             </button>
                                         );
                                     })
                                 ) : (
-                                    <div style={{ fontSize: '0.8rem', opacity: 0.4, padding: '10px' }}>해당 날짜에는 예약 가능한 시간이 없습니다.</div>
+                                    <div style={{ fontSize: '0.8rem', opacity: 0.4, padding: '10px' }}>해당 날짜에는 일정이 없습니다.</div>
                                 )}
                             </div>
                         </div>

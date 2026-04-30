@@ -38,11 +38,16 @@ export const AdminShopOrders = () => {
     async function loadOrders() {
         setLoading(true);
         try {
+            if (activeTab === 'shop') {
                 const { data, error } = await supabase.from('shop_purchase_requests')
                     .select('*, profiles:profiles!shop_purchase_requests_user_id_fkey(name, phone)')
                     .order('created_at', { ascending: false });
                 if (error) throw error;
-                setOrders((data || []).map(o => ({ ...o, type: 'shop', user_email: (o.profiles as any)?.email })));
+                setOrders((data || []).map(o => ({ 
+                    ...o, 
+                    type: 'shop', 
+                    user_name: (o.profiles as any)?.name 
+                })));
             } else {
                 const { data, error } = await supabase.from('purchases')
                     .select('*, profiles:profiles!purchases_user_id_fkey(name, phone)')

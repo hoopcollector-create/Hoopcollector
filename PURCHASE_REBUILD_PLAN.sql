@@ -99,6 +99,10 @@ BEGIN
         SET balance = balance + v_reward_points,
             earned_total = earned_total + v_reward_points
         WHERE user_id = v_user_id;
+
+        -- 포인트 적립 내역 장부 기록
+        INSERT INTO student_point_ledger (user_id, delta, reason, ref_table, ref_id)
+        VALUES (v_user_id, v_reward_points, 'purchase_reward', 'purchases', p_purchase_id);
     END IF;
 
     -- 3. 티켓 지급 (NULL 방지 처리 완벽 적용)
@@ -106,8 +110,13 @@ BEGIN
     VALUES (v_user_id, v_grade, v_ticket_qty)
     ON CONFLICT (user_id, class_type) DO UPDATE SET balance = COALESCE(ticket_balances.balance, 0) + v_ticket_qty;
 
+    -- 티켓 충전 내역 장부 기록
+    INSERT INTO ticket_ledger (user_id, class_type, delta, reason, ref_table, ref_id)
+    VALUES (v_user_id, v_grade, v_ticket_qty, 'ticket_purchase', 'purchases', p_purchase_id);
+
     -- 4. 상태 변경
     UPDATE purchases SET status = 'completed', updated_at = NOW() WHERE id = p_purchase_id;
+
 
     -- 5. Notification (알림 발송 - 포인트 적립 안내 포함)
     INSERT INTO notifications (user_id, type, title, content)

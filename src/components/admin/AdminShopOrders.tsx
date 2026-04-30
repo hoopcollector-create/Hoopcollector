@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { statusShopKo, fmtKST } from '../../utils/dashboardHelpers';
-import { Search, CheckCircle, XCircle, Package, User, MapPin, CreditCard, Ticket } from 'lucide-react';
+import { Search, CheckCircle, XCircle, Package, User, MapPin, CreditCard, Ticket, Smartphone } from 'lucide-react';
 
 interface AdminOrder {
     id: string;

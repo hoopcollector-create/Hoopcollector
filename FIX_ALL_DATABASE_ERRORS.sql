@@ -166,11 +166,19 @@ BEGIN
     INTO v_user_id, v_product_title, v_amount, v_points_used
     FROM purchases WHERE id = p_purchase_id;
 
-    -- 2. 티켓 등급 파악
+    -- 2. 티켓 등급 및 개수 파악
+    -- 등급 파악
     IF v_product_title LIKE '%A GRADE%' THEN v_grade := 'A';
     ELSIF v_product_title LIKE '%B GRADE%' THEN v_grade := 'B';
     ELSIF v_product_title LIKE '%C GRADE%' THEN v_grade := 'C';
     ELSE v_grade := 'C';
+    END IF;
+
+    -- 개수 파악 (상품명에 '10', '20' 등 숫자가 있으면 그만큼 지급, 없으면 1개)
+    IF v_product_title ~ '[0-9]+' THEN
+        v_ticket_qty := (substring(v_product_title from '[0-9]+'))::INTEGER;
+    ELSE
+        v_ticket_qty := 1;
     END IF;
 
     -- 3. 티켓 지급

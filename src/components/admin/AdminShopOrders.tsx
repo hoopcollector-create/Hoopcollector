@@ -38,13 +38,14 @@ export const AdminShopOrders = () => {
     async function loadOrders() {
         setLoading(true);
         try {
-            if (activeTab === 'shop') {
-                const { data, error } = await supabase.from('shop_purchase_requests').select('*').order('created_at', { ascending: false });
+                const { data, error } = await supabase.from('shop_purchase_requests')
+                    .select('*, profiles:profiles!shop_purchase_requests_user_id_fkey(name, phone)')
+                    .order('created_at', { ascending: false });
                 if (error) throw error;
-                setOrders((data || []).map(o => ({ ...o, type: 'shop' })));
+                setOrders((data || []).map(o => ({ ...o, type: 'shop', user_email: (o.profiles as any)?.email })));
             } else {
                 const { data, error } = await supabase.from('purchases')
-                    .select('*')
+                    .select('*, profiles:profiles!purchases_user_id_fkey(name, phone)')
                     .eq('method', 'cash')
                     .order('created_at', { ascending: false });
                 if (error) throw error;
@@ -53,7 +54,8 @@ export const AdminShopOrders = () => {
                     type: 'ticket',
                     product_title: o.product_title || `티켓 구매 (${o.amount.toLocaleString()}원)`,
                     cash_amount: o.amount,
-                    quantity: 1 // Ticket purchases are usually per unit
+                    quantity: 1,
+                    user_name: (o.profiles as any)?.name
                 })));
             }
         } catch (e: any) {
@@ -167,7 +169,7 @@ export const AdminShopOrders = () => {
                         <div style={divider} />
 
                         <div style={infoGrid}>
-                            <InfoBox icon={<User size={14} />} label="입금자명" value={order.payer_name || '정보없음'} />
+                            <InfoBox icon={<User size={14} />} label="입금자 / 계정명" value={`${order.payer_name || '정보없음'} (${(order as any).user_name || '프로필정보없음'})`} />
                             <InfoBox icon={<CreditCard size={14} />} label="결제금액" value={`${(order.cash_amount || 0).toLocaleString()}원`} />
                             {order.type === 'shop' ? (
                                 <InfoBox icon={<MapPin size={14} />} label="배송지" value={`${order.shipping_address_road || '-'} ${order.shipping_detail_address || ''}`} span2 />

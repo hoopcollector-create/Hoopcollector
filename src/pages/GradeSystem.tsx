@@ -53,7 +53,7 @@ export const GradeSystem = () => {
     return (
         <div style={{ color: 'white' }}>
             <div style={{ marginBottom: '2.5rem' }}>
-                <h1 style={{ fontSize: '1.75rem', fontWeight: 900, marginBottom: '0.5rem' }}>등급 및 승급 시스템</h1>
+                <h1 style={{ fontSize: '1.75rem', fontWeight: 900, marginBottom: '0.5rem' }}>GRADE & PROMOTION SYSTEM</h1>
                 <p style={{ color: 'rgba(255,255,255,0.6)' }}>커뮤니티 활동 성과에 따라 등급이 결정되며, 등급이 높을수록 더 많은 권한이 부여됩니다.</p>
             </div>
 

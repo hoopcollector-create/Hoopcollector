@@ -200,9 +200,9 @@ BEGIN
     -- 4. 상태 변경
     UPDATE purchases SET status = 'completed', updated_at = NOW() WHERE id = p_purchase_id;
 
-    -- 5. 알림 발송
+    -- 3. 알림 발송
     INSERT INTO notifications (user_id, type, title, content)
-    VALUES (v_user_id, 'payment', '티켓 충전 완료', '현금 입금이 확인되어 ' || v_grade || ' GRADE 티켓이 충전되었습니다.');
+    VALUES (v_user_id, 'payment', 'A/B/C GRADE 티켓 지급 완료', v_grade || ' GRADE 티켓 ' || v_ticket_qty || '회가 지급되었습니다. 지금 수업을 예약해보세요!');
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -226,7 +226,7 @@ BEGIN
 
     -- 3. 알림 발송
     INSERT INTO notifications (user_id, type, title, content)
-    VALUES (v_user_id, 'payment', '구매 요청 반려', '티켓 구매 요청이 반려되었습니다. 사용된 포인트는 환불되었습니다.');
+    VALUES (v_user_id, 'payment', '구매 요청 반려 안내', '티켓 구매 요청이 반려되었습니다. (사유: 입금 정보 불일치 등) 사용된 포인트는 즉시 환불되었습니다.');
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

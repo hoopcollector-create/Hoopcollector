@@ -291,7 +291,7 @@ const MatchCard: React.FC<{ match: MatchRoom, onClick: () => void }> = ({ match,
                     <span style={typeText}>{match.match_type}</span>
                 </div>
                 <div style={gradeBadge(match.required_grade)}>
-                    {match.required_grade === 'all' ? '전체등급' : `${match.required_grade} 이상`}
+                    {match.required_grade === 'all' ? 'ALL GRADES' : `${match.required_grade} GRADE+`}
                 </div>
             </div>
 

@@ -147,7 +147,7 @@ export const MatchInfoTab: React.FC<MatchInfoTabProps> = ({ match }) => {
                 <div style={fullRow}>
                     <InfoItem icon={MapPin} label="장소" value={match.place_name} subValue={`${match.address} (${matchTimezone})`} />
                 </div>
-                <InfoItem icon={Award} label="참여 조건" value={match.required_grade === 'all' ? '전체 등급 가능' : `${match.required_grade} 이상 전용`} />
+                <InfoItem icon={Award} label="참여 조건" value={match.required_grade === 'all' ? 'ALL GRADES' : `${match.required_grade} GRADE+`} />
                 <InfoItem 
                     icon={Users} 
                     label="연령대" 

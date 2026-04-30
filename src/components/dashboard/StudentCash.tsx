@@ -42,7 +42,7 @@ export const StudentCash = ({
                 <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>독립 코치에게 매칭을 요청하기 위한 요청권을 충전합니다.</p>
             </div>
             <div>
-                <div style={sectionLabel}>수업 코치 등급 및 횟수 선택</div>
+                <div style={sectionLabel}>SELECT COACH GRADE & SESSIONS</div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
                     {classTypes.map(t => (
                         <button 

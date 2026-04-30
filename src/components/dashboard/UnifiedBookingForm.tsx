@@ -168,7 +168,7 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
                     )}
                 </div>
                 <div>
-                    <div style={sectionLabel}>코칭 등급 선택 (COACH GRADE)</div>
+                    <div style={sectionLabel}>SELECT COACH GRADE</div>
                     <div style={tabContainer}>
                         {(["A", "B", "C"] as ClassType[]).map(t => (
                             <button 

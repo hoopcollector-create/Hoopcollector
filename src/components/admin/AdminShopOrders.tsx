@@ -115,10 +115,14 @@ export const AdminShopOrders = () => {
                               (filter === 'paid' && (o.status === 'paid' || o.status === 'completed')) ||
                               (filter === 'cancelled' && o.status === 'cancelled');
             
-            const searchMatch = String(o.payer_name + o.product_title).toLowerCase().includes(search.toLowerCase());
+            const searchStr = `${o.payer_name || ''} ${o.product_title || ''} ${(o as any).user_name || ''}`.toLowerCase();
+            const searchMatch = searchStr.includes(search.toLowerCase());
+            
             return statusMatch && searchMatch;
         });
     }, [orders, filter, search]);
+
+    console.log("Current Orders State:", orders);
 
     return (
         <div style={{ padding: '0 0 40px 0' }}>

@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { statusShopKo, fmtKST } from '../../utils/dashboardHelpers';
-import { Search, CheckCircle, XCircle, Package, User, MapPin, CreditCard } from 'lucide-react';
+import { Search, CheckCircle, XCircle, Package, User, MapPin, CreditCard, Ticket } from 'lucide-react';
 
 interface AdminOrder {
     id: string;
     product_title: string;
-    size_label: string;
+    size_label?: string;
     quantity: number;
     points_used: number;
     cash_amount: number;
     payer_name: string;
-    status: 'pending' | 'paid' | 'cancelled' | 'refunded';
+    status: 'pending' | 'paid' | 'cancelled' | 'refunded' | 'completed';
     created_at: string;
     shipping_recipient_name?: string;
     shipping_phone?: string;
@@ -19,38 +19,60 @@ interface AdminOrder {
     shipping_detail_address?: string;
     shipping_postcode?: string;
     note?: string;
-    // ... potentially more from the RPC
+    type: 'shop' | 'ticket';
 }
 
 export const AdminShopOrders = () => {
     const [orders, setOrders] = useState<AdminOrder[]>([]);
     const [loading, setLoading] = useState(true);
     const [submittingId, setSubmittingId] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'shop' | 'ticket'>('shop');
     const [filter, setFilter] = useState<'all' | 'pending' | 'paid' | 'cancelled'>('pending');
     const [search, setSearch] = useState('');
     const [msg, setMsg] = useState('');
 
     useEffect(() => {
         loadOrders();
-    }, []);
+    }, [activeTab]);
 
     async function loadOrders() {
         setLoading(true);
-        // Using RPC if exists, otherwise direct table select for now
-        // In the reference code, it was 'admin_shop_purchase_requests_with_user'
-        const { data, error } = await supabase.from('shop_purchase_requests').select('*').order('created_at', { ascending: false });
-        if (!error && data) setOrders(data);
-        setLoading(false);
+        try {
+            if (activeTab === 'shop') {
+                const { data, error } = await supabase.from('shop_purchase_requests').select('*').order('created_at', { ascending: false });
+                if (error) throw error;
+                setOrders((data || []).map(o => ({ ...o, type: 'shop' })));
+            } else {
+                const { data, error } = await supabase.from('purchases')
+                    .select('*')
+                    .eq('method', 'cash')
+                    .order('created_at', { ascending: false });
+                if (error) throw error;
+                setOrders((data || []).map(o => ({ 
+                    ...o, 
+                    type: 'ticket',
+                    product_title: o.product_title || `티켓 구매 (${o.amount.toLocaleString()}원)`,
+                    cash_amount: o.amount,
+                    quantity: 1 // Ticket purchases are usually per unit
+                })));
+            }
+        } catch (e: any) {
+            setMsg(e.message);
+        } finally {
+            setLoading(false);
+        }
     }
 
-    async function approveOrder(id: string) {
+    async function approveOrder(id: string, type: 'shop' | 'ticket') {
         if (!confirm('입금 확인 및 주문을 승인하시겠습니까?')) return;
         setSubmittingId(id);
         try {
-            // Using RPC for transaction safety
-            const { error } = await supabase.rpc('approve_shop_purchase_request', { p_request_id: id });
+            const rpcName = type === 'shop' ? 'approve_shop_purchase_request' : 'approve_cash_purchase';
+            const { error } = await supabase.rpc(rpcName, { 
+                [type === 'shop' ? 'p_request_id' : 'p_purchase_id']: id 
+            });
             if (error) throw error;
-            setMsg('주문 승인 완료');
+            setMsg('승인 완료');
             loadOrders();
         } catch (e: any) {
             setMsg(e.message);
@@ -59,13 +81,16 @@ export const AdminShopOrders = () => {
         }
     }
 
-    async function rejectOrder(id: string) {
-        if (!confirm('주문을 반려하시겠습니까? (포인트/재고 복구)')) return;
+    async function rejectOrder(id: string, type: 'shop' | 'ticket') {
+        if (!confirm('요청을 반려하시겠습니까? (포인트 환불 포함)')) return;
         setSubmittingId(id);
         try {
-            const { error } = await supabase.rpc('reject_shop_purchase_request', { p_request_id: id });
+            const rpcName = type === 'shop' ? 'reject_shop_purchase_request' : 'cancel_cash_purchase';
+            const { error } = await supabase.rpc(rpcName, { 
+                [type === 'shop' ? 'p_request_id' : 'p_purchase_id']: id 
+            });
             if (error) throw error;
-            setMsg('주문 반려 완료');
+            setMsg('반려 완료');
             loadOrders();
         } catch (e: any) {
             setMsg(e.message);
@@ -76,17 +101,28 @@ export const AdminShopOrders = () => {
 
     const filteredOrders = useMemo(() => {
         return orders.filter(o => {
-            const matchFilter = filter === 'all' || o.status === filter;
-            const matchSearch = String(o.payer_name + o.product_title).toLowerCase().includes(search.toLowerCase());
-            return matchFilter && matchSearch;
+            const statusMatch = (filter === 'all') || 
+                              (filter === 'pending' && o.status === 'pending') ||
+                              (filter === 'paid' && (o.status === 'paid' || o.status === 'completed')) ||
+                              (filter === 'cancelled' && o.status === 'cancelled');
+            
+            const searchMatch = String(o.payer_name + o.product_title).toLowerCase().includes(search.toLowerCase());
+            return statusMatch && searchMatch;
         });
     }, [orders, filter, search]);
 
     return (
         <div style={{ padding: '0 0 40px 0' }}>
             <header style={{ marginBottom: 30 }}>
-                <h2 style={{ fontSize: 28, fontWeight: 900, marginBottom: 8 }}>SHOP ORDERS</h2>
-                <p style={{ opacity: 0.5, fontSize: 14 }}>숍 결제 요청 내역을 관리하고 승인하세요.</p>
+                <h2 style={{ fontSize: 28, fontWeight: 900, marginBottom: 8 }}>ORDERS & PAYMENTS</h2>
+                <div style={tabContainer}>
+                    <button onClick={() => setActiveTab('shop')} style={activeTab === 'shop' ? tabOn : tabOff}>
+                        <Package size={16} /> 스토어 상품 주문
+                    </button>
+                    <button onClick={() => setActiveTab('ticket')} style={activeTab === 'ticket' ? tabOn : tabOff}>
+                        <Ticket size={16} /> 티켓(수업권) 구매 요청
+                    </button>
+                </div>
             </header>
 
             {msg && <div style={msgBox}>{msg}</div>}
@@ -120,7 +156,10 @@ export const AdminShopOrders = () => {
                         <div style={orderHeader}>
                             <div>
                                 <div style={prodTitle}>{order.product_title}</div>
-                                <div style={prodSub}>{order.size_label} · {order.quantity}개 ({order.points_used.toLocaleString()}P 사용)</div>
+                                <div style={prodSub}>
+                                    {order.type === 'shop' ? `${order.size_label || '-'} · ${order.quantity}개` : '수업 티켓 충전'} 
+                                    {order.points_used > 0 && ` (${order.points_used.toLocaleString()}P 사용)`}
+                                </div>
                             </div>
                             <div style={statusPill(order.status)}>{statusShopKo(order.status)}</div>
                         </div>
@@ -128,23 +167,27 @@ export const AdminShopOrders = () => {
                         <div style={divider} />
 
                         <div style={infoGrid}>
-                            <InfoBox icon={<User size={14} />} label="입금자명" value={order.payer_name} />
-                            <InfoBox icon={<CreditCard size={14} />} label="결제금액" value={`${(order.cash_amount).toLocaleString()}원`} />
-                            <InfoBox icon={<MapPin size={14} />} label="배송지" value={`${order.shipping_address_road || '-'} ${order.shipping_detail_address || ''}`} span2 />
-                            <InfoBox icon={<Package size={14} />} label="주문시간" value={fmtKST(order.created_at)} />
+                            <InfoBox icon={<User size={14} />} label="입금자명" value={order.payer_name || '정보없음'} />
+                            <InfoBox icon={<CreditCard size={14} />} label="결제금액" value={`${(order.cash_amount || 0).toLocaleString()}원`} />
+                            {order.type === 'shop' ? (
+                                <InfoBox icon={<MapPin size={14} />} label="배송지" value={`${order.shipping_address_road || '-'} ${order.shipping_detail_address || ''}`} span2 />
+                            ) : (
+                                <InfoBox icon={<Ticket size={14} />} label="상품유형" value="무통장입금 티켓 충전" span2 />
+                            )}
+                            <InfoBox icon={<Package size={14} />} label="요청시간" value={fmtKST(order.created_at)} />
                         </div>
 
                         {order.status === 'pending' && (
                             <div style={btnRow}>
                                 <button 
-                                    onClick={() => approveOrder(order.id)} 
+                                    onClick={() => approveOrder(order.id, order.type)} 
                                     disabled={!!submittingId} 
                                     style={btnApprove}
                                 >
                                     {submittingId === order.id ? '...' : '입금 확인 / 승인'}
                                 </button>
                                 <button 
-                                    onClick={() => rejectOrder(order.id)} 
+                                    onClick={() => rejectOrder(order.id, order.type)} 
                                     disabled={!!submittingId} 
                                     style={btnReject}
                                 >
@@ -156,7 +199,7 @@ export const AdminShopOrders = () => {
                 ))}
 
                 {filteredOrders.length === 0 && !loading && (
-                    <div style={emptyState}>검색된 주문 내역이 없습니다.</div>
+                    <div style={emptyState}>요청 내역이 없습니다.</div>
                 )}
             </div>
         </div>
@@ -169,6 +212,12 @@ const InfoBox = ({ icon, label, value, span2 = false }: { icon: any, label: stri
         <div style={infoValue}>{value}</div>
     </div>
 );
+
+// Styles
+const tabContainer: React.CSSProperties = { display: 'flex', gap: '12px', marginTop: '16px' };
+const tabBase: React.CSSProperties = { padding: '10px 20px', borderRadius: '12px', cursor: 'pointer', fontWeight: 800, fontSize: '14px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '8px', transition: '0.2s' };
+const tabOn: React.CSSProperties = { ...tabBase, background: 'var(--color-primary)', color: 'white', borderColor: 'transparent' };
+const tabOff: React.CSSProperties = { ...tabBase, background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.4)' };
 
 const msgBox: React.CSSProperties = { padding: '14px 20px', borderRadius: 12, background: 'rgba(59,130,246,0.1)', color: 'white', marginBottom: 24, fontSize: 13, fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)' };
 const controlsRow: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30, flexWrap: 'wrap', gap: 20 };
@@ -197,7 +246,7 @@ function statusPill(status: string): React.CSSProperties {
     let bg = 'rgba(255,255,255,0.05)';
     let color = 'rgba(255,255,255,0.3)';
     if (s === 'pending') { bg = 'rgba(234, 179, 8, 0.1)'; color = '#eab308'; }
-    if (s === 'paid') { bg = 'rgba(34, 197, 94, 0.1)'; color = '#22c55e'; }
+    if (s === 'paid' || s === 'completed') { bg = 'rgba(34, 197, 94, 0.1)'; color = '#22c55e'; }
     if (s === 'cancelled') { bg = 'rgba(239, 68, 68, 0.1)'; color = '#ef4444'; }
     return { padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 900, background: bg, color };
 }

@@ -36,7 +36,8 @@ export const ScheduleCalendar = () => {
     const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
     const [newStartTime, setNewStartTime] = useState("09:00");
     const [newEndTime, setNewEndTime] = useState("10:00");
-    const [newType, setNewType] = useState<'class' | 'personal'>('personal');
+    const [newType, setNewType] = useState<'slot' | 'personal'>('personal');
+    const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
     useEffect(() => {
         loadEvents();
@@ -108,17 +109,19 @@ export const ScheduleCalendar = () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
-            // 1. Delete ONLY recurring slots (auto-generated) for the next 28 days
-            const now = new Date();
+            // 1. Delete ALL existing unbooked slots/personal events for the next 28 days to prevent duplicates
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+            
             const endDate = new Date();
-            endDate.setDate(now.getDate() + 28);
+            endDate.setDate(todayStart.getDate() + 28);
 
             await supabase
                 .from('coach_slots')
                 .delete()
                 .eq('coach_id', session.user.id)
-                .eq('is_recurring', true) // Protect manual events
-                .gte('start_at', now.toISOString())
+                .eq('is_booked', false) // Protect booked classes
+                .gte('start_at', todayStart.toISOString())
                 .lte('start_at', endDate.toISOString());
 
             // 2. Generate new slots based on rules
@@ -126,7 +129,7 @@ export const ScheduleCalendar = () => {
             
             for (let i = 0; i < 28; i++) {
                 const targetDate = new Date();
-                targetDate.setDate(now.getDate() + i);
+                targetDate.setDate(todayStart.getDate() + i);
                 const dayOfWeek = targetDate.getDay();
 
                 const matchedRules = rules.filter(r => r.day_of_week === dayOfWeek);
@@ -237,6 +240,34 @@ export const ScheduleCalendar = () => {
         }
     }
 
+    async function handleDeleteEvent(eventId: string, type: 'class' | 'personal' | 'slot') {
+        if (!window.confirm("정말 이 일정을 삭제하시겠습니까?")) return;
+        
+        try {
+            setLoading(true);
+            if (type === 'class') {
+                // Class deletion might need more complex logic (notifying student, etc.)
+                // For now, let's assume we can't delete accepted classes directly from here
+                // or use a different endpoint. Let's restrict it to coach_slots.
+                alert("예약된 수업은 '내 수업 관리' 메뉴에서 취소/변경해주세요.");
+            } else {
+                const { error } = await supabase
+                    .from('coach_slots')
+                    .delete()
+                    .eq('id', eventId);
+                
+                if (error) throw error;
+                setMsg("일정이 삭제되었습니다.");
+                setSelectedEvent(null);
+                loadEvents();
+            }
+        } catch (e: any) {
+            setErrorMsg("삭제 실패: " + e.message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
     async function handleAddEvent() {
         if (!newTitle) return setErrorMsg("일정 제목을 입력해주세요.");
         
@@ -247,12 +278,33 @@ export const ScheduleCalendar = () => {
             return setErrorMsg("종료 시간은 시작 시간보다 늦어야 합니다.");
         }
 
+        // Refined overlap logic: 
+        // 1. 'slot' (Available) never blocks anything.
+        // 2. 'personal' or 'class' should not overlap with each other.
+        const isBusyType = (t: string) => t === 'personal' || t === 'class';
+        
+        const overlap = (newType === 'personal') ? events.find(ev => {
+            if (!isBusyType(ev.type)) return false; // Ignore 'slot' types
+
+            const evStart = ev.start.getTime();
+            const evEnd = ev.end.getTime();
+            const newStart = startAt.getTime();
+            const newEnd = endAt.getTime();
+
+            return (newStart < evEnd) && (newEnd > evStart);
+        }) : null;
+
+        if (overlap) {
+            return setErrorMsg(`⚠️ 해당 시간에 이미 고정된 일정('${overlap.title}')이 존재합니다. 확인 후 다시 시도해 주세요.`);
+        }
+
         setLoading(true);
-        setErrorMsg(""); // Clear previous errors
+        setErrorMsg(""); 
         try {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
+            // 2. Insert new event
             const { error } = await supabase.from('coach_slots').insert({
                 coach_id: session.user.id,
                 title: newTitle,
@@ -263,11 +315,7 @@ export const ScheduleCalendar = () => {
                 status: 'open'
             });
 
-            if (error) {
-                console.error("Supabase Error:", error);
-                // If it fails again, let's show the full error for precise debugging
-                throw new Error(`${error.message} (코드: ${error.code})`);
-            }
+            if (error) throw new Error(`${error.message} (코드: ${error.code})`);
 
             setMsg("성공적으로 일정이 등록되었습니다.");
             setShowModal(false);
@@ -324,6 +372,11 @@ export const ScheduleCalendar = () => {
             setViewDate(selectedDate);
             setViewMode('day');
         }
+    };
+
+    const handleEventClick = (e: React.MouseEvent, ev: Event) => {
+        e.stopPropagation();
+        setSelectedEvent(ev);
     };
 
     const fmtTitle = () => {
@@ -533,20 +586,23 @@ export const ScheduleCalendar = () => {
                                         const startMin = ev.start.getHours() * 60 + ev.start.getMinutes();
                                         const duration = (ev.end.getTime() - ev.start.getTime()) / (1000 * 60);
                                         return (
-                                            <div key={ev.id} style={{
-                                                position: 'absolute',
-                                                left: '100px',
-                                                right: '20px',
-                                                top: `${startMin * (60/60)}px`,
-                                                height: `${Math.max(40, duration * (60/60))}px`,
-                                                background: ev.type === 'class' ? 'rgba(59, 130, 246, 0.95)' : 'rgba(139, 92, 246, 0.95)',
-                                                borderRadius: '12px',
-                                                zIndex: 5,
-                                                padding: '12px',
-                                                boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-                                                color: 'white',
-                                                border: '1px solid rgba(255,255,255,0.2)'
-                                            }}>
+                                            <div key={ev.id} 
+                                                onClick={(e) => handleEventClick(e, ev)}
+                                                style={{
+                                                    position: 'absolute',
+                                                    left: '100px',
+                                                    right: '20px',
+                                                    top: `${startMin * (60/60)}px`,
+                                                    height: `${Math.max(40, duration * (60/60))}px`,
+                                                    background: ev.type === 'class' ? 'rgba(59, 130, 246, 0.95)' : 'rgba(139, 92, 246, 0.95)',
+                                                    borderRadius: '12px',
+                                                    zIndex: 5,
+                                                    padding: '12px',
+                                                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                                                    color: 'white',
+                                                    border: '1px solid rgba(255,255,255,0.2)',
+                                                    cursor: 'pointer'
+                                                }}>
                                                 <div style={{ fontWeight: 900, fontSize: '0.9rem', marginBottom: '4px' }}>{ev.title}</div>
                                                 <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>
                                                     {ev.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ~ {ev.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -598,10 +654,15 @@ export const ScheduleCalendar = () => {
                                             };
 
                                             return (
-                                                <div key={ev.id} style={{ 
-                                                    ...eventChip, 
-                                                    ...(isSlot ? slotStyle : solidStyle)
-                                                }}>
+                                                <div 
+                                                    key={ev.id} 
+                                                    onClick={(e) => handleEventClick(e, ev)}
+                                                    style={{ 
+                                                        ...eventChip, 
+                                                        ...(isSlot ? slotStyle : solidStyle),
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
                                                     <div style={{ fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                                         {isSlot ? `🕒 ${ev.start.getHours()}:${String(ev.start.getMinutes()).padStart(2, '0')} 가능` : ev.title}
                                                     </div>
@@ -620,7 +681,53 @@ export const ScheduleCalendar = () => {
                 </div>
             </div>
 
-            {/* Modal */}
+            {/* Event Detail / Delete Modal */}
+            {selectedEvent && (
+                <div style={modalOverlay}>
+                    <div style={{ ...modalBody, maxWidth: '400px' }} className="card-premium glass-morphism">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 900 }}>일정 상세 정보</h3>
+                            <button onClick={() => setSelectedEvent(null)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}><X/></button>
+                        </div>
+
+                        <div style={{ display: 'grid', gap: '20px' }}>
+                            <div style={{ padding: '20px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontWeight: 800, marginBottom: '6px', textTransform: 'uppercase' }}>일정명</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'white' }}>{selectedEvent.title}</div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                <div style={{ padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)' }}>
+                                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 800, marginBottom: '4px' }}>시작</div>
+                                    <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>{selectedEvent.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                </div>
+                                <div style={{ padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)' }}>
+                                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 800, marginBottom: '4px' }}>종료</div>
+                                    <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>{selectedEvent.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                </div>
+                            </div>
+
+                            {selectedEvent.type !== 'class' && (
+                                <button 
+                                    onClick={() => handleDeleteEvent(selectedEvent.id, selectedEvent.type)} 
+                                    disabled={loading}
+                                    style={{ ...saveBtn, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', marginTop: '10px' }}
+                                >
+                                    {loading ? '삭제 중...' : <><Trash2 size={18} style={{ marginRight: 8 }} /> 일정 삭제하기</>}
+                                </button>
+                            )}
+
+                            {selectedEvent.type === 'class' && (
+                                <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', fontSize: '0.8rem', fontWeight: 700, textAlign: 'center', lineHeight: 1.5 }}>
+                                    예약된 수업은 학생과 협의 후 <br/> 수업 관리 메뉴에서 처리해 주세요.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Event Modal */}
             {showModal && (
                 <div style={modalOverlay}>
                     <div style={modalBody} className="card-premium glass-morphism">
@@ -640,7 +747,7 @@ export const ScheduleCalendar = () => {
                                 <label style={label}>일정 제목</label>
                                 <input value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="예: 개인 훈련, 센터 미팅..." style={input} />
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1rem' }} className="mobile-only-grid">
+                            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1rem' }} className="mobile-stack">
                                 <div>
                                     <label style={label}>날짜</label>
                                     <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} style={input} />
@@ -648,12 +755,12 @@ export const ScheduleCalendar = () => {
                                 <div>
                                     <label style={label}>유형</label>
                                     <select value={newType} onChange={e => setNewType(e.target.value as any)} style={input}>
-                                        <option value="personal">개인 일정</option>
-                                        <option value="class">레슨 가능 슬롯</option>
+                                        <option value="personal">🔒 개인 일정 (수업 불가)</option>
+                                        <option value="slot">🟢 레슨 가능 슬롯</option>
                                     </select>
                                 </div>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }} className="mobile-only-grid">
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }} className="mobile-stack">
                                 <div>
                                     <label style={label}>시작 시간</label>
                                     <input type="time" value={newStartTime} onChange={e => setNewStartTime(e.target.value)} style={input} />

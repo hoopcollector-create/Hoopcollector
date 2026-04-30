@@ -437,7 +437,17 @@ const displayField: React.CSSProperties = { fontSize: '1rem', color: 'rgba(255,2
 const editModeBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', padding: '10px 20px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 800, cursor: 'pointer', fontSize: '0.8rem', letterSpacing: '0.02em' };
 const cancelBtn: React.CSSProperties = { ...editModeBtn, color: 'rgba(255,255,255,0.4)' };
 
-const inputStyle: React.CSSProperties = { width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', color: 'white', fontSize: '0.9rem', outline: 'none' };
+const inputStyle: React.CSSProperties = { 
+    width: '100%', 
+    padding: '14px 16px', 
+    borderRadius: '12px', 
+    background: '#1a1a1c', 
+    border: '1px solid rgba(255,255,255,0.1)', 
+    color: 'white', 
+    fontSize: '0.95rem', 
+    outline: 'none',
+    boxSizing: 'border-box'
+};
 const textareaStyle: React.CSSProperties = { ...inputStyle, minHeight: '100px', resize: 'vertical', lineHeight: 1.6 };
 
 const regionSelectorWrap: React.CSSProperties = { display: 'grid', gap: '12px' };

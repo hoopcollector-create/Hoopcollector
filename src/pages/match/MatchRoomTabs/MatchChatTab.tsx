@@ -145,8 +145,20 @@ export const MatchChatTab: React.FC<MatchChatTabProps> = ({ match, currentUser, 
                 alert("대기 명단에 등록되었습니다. 자리가 나면 자동으로 참여됩니다.");
                 checkWaitlistStatus();
             }
+        } else if (match.approval_required) {
+            // Request Join (Pending)
+            const { error } = await supabase.from('match_participants').insert({
+                match_id: matchId,
+                user_id: currentUser.id,
+                status: 'pending'
+            });
+            if (error) alert("참가 신청 실패: " + error.message);
+            else {
+                alert("참가 신청이 완료되었습니다! 방장이 승인하면 알림이 갑니다.");
+                onJoinUpdate();
+            }
         } else {
-            // Join Match
+            // Join Match (RPC handles transaction and joined status)
             const { data, error } = await supabase.rpc('join_match_room', { p_match_id: matchId });
             if (error) alert(error.message);
             else onJoinUpdate();
@@ -217,6 +229,16 @@ export const MatchChatTab: React.FC<MatchChatTabProps> = ({ match, currentUser, 
                         </div>
                         <button disabled style={btnWaiting}>
                             <span>대기 중...</span>
+                        </button>
+                    </div>
+                ) : participantStatus === 'pending' ? (
+                    <div style={joinPrompt}>
+                        <div style={joinInfo}>
+                            <Info size={14} />
+                            <span>방장의 승인을 기다리고 있습니다.</span>
+                        </div>
+                        <button disabled style={btnWaiting}>
+                            <span>승인 대기 중...</span>
                         </button>
                     </div>
                 ) : (

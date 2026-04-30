@@ -62,7 +62,7 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
             .select('*')
             .eq('coach_id', targetCoachId)
             .eq('is_booked', false)
-            .eq('type', 'class')
+            .eq('type', 'slot')
             .gte('start_at', new Date().toISOString())
             .order('start_at', { ascending: true });
         setAvailableSlots(data || []);
@@ -394,9 +394,9 @@ const inputBase: React.CSSProperties = {
     padding: '14px',
     borderRadius: '12px',
     border: '1px solid rgba(255,255,255,0.1)',
-    background: 'rgba(255,255,255,0.05)',
+    background: '#1a1a1c',
     color: 'white',
-    fontSize: '14px',
+    fontSize: '15px',
     outline: 'none',
     boxSizing: 'border-box',
     colorScheme: 'dark'

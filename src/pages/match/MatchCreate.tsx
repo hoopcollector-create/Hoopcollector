@@ -33,6 +33,7 @@ export const MatchCreate: React.FC = () => {
         notice: '',
         country_code: 'KR',
         timezone: 'Asia/Seoul',
+        approval_required: false,
         // Recurring specific
         recurrence_type: 'weekly',
         recurrence_days: [] as string[],
@@ -98,7 +99,8 @@ export const MatchCreate: React.FC = () => {
                     end_date: formData.end_date || null,
                     start_time: formData.start_time,
                     end_time: formData.end_time,
-                    age_group: formData.age_group
+                    age_group: formData.age_group,
+                    approval_required: formData.approval_required
                 }).select().single();
 
                 if (tError) throw tError;
@@ -140,7 +142,8 @@ export const MatchCreate: React.FC = () => {
                     timezone: formData.timezone,
                     country_code: formData.country_code,
                     is_recurring: false,
-                    age_group: formData.age_group
+                    age_group: formData.age_group,
+                    approval_required: formData.approval_required
                 }).select().single();
 
                 if (rError) throw rError;
@@ -212,6 +215,37 @@ export const MatchCreate: React.FC = () => {
                                 </select>
                             </div>
                             <div style={formGroup}>
+                                <label style={labelStyle}>참가 방식</label>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                    <button 
+                                        onClick={() => updateForm('approval_required', false)}
+                                        style={{
+                                            ...choiceBtn,
+                                            borderColor: !formData.approval_required ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)',
+                                            background: !formData.approval_required ? 'rgba(249, 115, 22, 0.1)' : 'transparent',
+                                            padding: '10px'
+                                        }}
+                                    >
+                                        <Zap size={14} color={!formData.approval_required ? 'var(--accent-primary)' : 'rgba(255,255,255,0.3)'} />
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 800 }}>자유</span>
+                                    </button>
+                                    <button 
+                                        onClick={() => updateForm('approval_required', true)}
+                                        style={{
+                                            ...choiceBtn,
+                                            borderColor: formData.approval_required ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)',
+                                            background: formData.approval_required ? 'rgba(249, 115, 22, 0.1)' : 'transparent',
+                                            padding: '10px'
+                                        }}
+                                    >
+                                        <Check size={14} color={formData.approval_required ? 'var(--accent-primary)' : 'rgba(255,255,255,0.3)'} />
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 800 }}>승인</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div style={formRow}>
+                            <div style={formGroup}>
                                 <label style={labelStyle}>국가 선택 (시간대 자동 설정)</label>
                                 <select 
                                     value={formData.country_code} 
@@ -236,16 +270,16 @@ export const MatchCreate: React.FC = () => {
                                     <option value="A">A 이상</option>
                                 </select>
                             </div>
-                            <div style={formGroup}>
-                                <label style={labelStyle}>연령대</label>
-                                <select value={formData.age_group} onChange={e => updateForm('age_group', e.target.value)} style={inputStyle}>
-                                    <option value="all">연령 무관 (전체)</option>
-                                    <option value="youth">유소년 전용 (만 19세 미만)</option>
-                                    <option value="20s">20대 전용 (20~29세)</option>
-                                    <option value="30s">30대 전용 (30~39세)</option>
-                                    <option value="40s">40대 이상 (40세~)</option>
-                                </select>
-                            </div>
+                        </div>
+                        <div style={formGroup}>
+                            <label style={labelStyle}>연령대</label>
+                            <select value={formData.age_group} onChange={e => updateForm('age_group', e.target.value)} style={inputStyle}>
+                                <option value="all">연령 무관 (전체)</option>
+                                <option value="youth">유소년 전용 (만 19세 미만)</option>
+                                <option value="20s">20대 전용 (20~29세)</option>
+                                <option value="30s">30대 전용 (30~39세)</option>
+                                <option value="40s">40대 이상 (40세~)</option>
+                            </select>
                         </div>
                         <div style={formRow}>
                             <div style={formGroup}>
@@ -381,3 +415,4 @@ const nextBtn: React.CSSProperties = { padding: '18px', borderRadius: '18px', ba
 const prevBtn: React.CSSProperties = { ...nextBtn, background: 'transparent', color: 'rgba(255,255,255,0.3)', border: '1px solid rgba(255,255,255,0.05)' };
 const btnGroup: React.CSSProperties = { display: 'flex', gap: '12px', marginTop: '20px' };
 const submitBtn: React.CSSProperties = { ...nextBtn, flex: 2, background: 'var(--accent-primary)', border: 'none', boxShadow: '0 10px 25px rgba(249, 115, 22, 0.4)' };
+const choiceBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'white', cursor: 'pointer', transition: 'all 0.2s' };

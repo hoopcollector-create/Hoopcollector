@@ -27,23 +27,60 @@ export const MatchParticipantsTab: React.FC<MatchParticipantsTabProps> = ({ matc
         setLoading(false);
     }
 
-    const handleKick = async (userId: string) => {
-        if (!window.confirm('정말 이 참여자를 강퇴하시겠습니까?')) return;
+    const handleApprove = async (userId: string) => {
+        const { error } = await supabase
+            .from('match_participants')
+            .update({ status: 'joined', joined_at: new Date().toISOString() })
+            .eq('match_id', matchId)
+            .eq('user_id', userId);
         
-        const { error } = await supabase.rpc('kick_match_participant', { 
-            p_match_id: matchId, 
-            p_user_id: userId 
-        });
+        if (error) alert(error.message);
+        else loadParticipants();
+    };
 
+    const handleReject = async (userId: string) => {
+        if (!window.confirm('참가 신청을 거절하시겠습니까?')) return;
+        const { error } = await supabase
+            .from('match_participants')
+            .delete()
+            .eq('match_id', matchId)
+            .eq('user_id', userId);
+        
         if (error) alert(error.message);
         else loadParticipants();
     };
 
     const joined = participants.filter(p => p.status === 'joined');
+    const pending = participants.filter(p => p.status === 'pending');
     const waitlisted = participants.filter(p => p.status === 'waitlisted');
 
     return (
         <div style={container}>
+            {/* Pending Section (Host Only) */}
+            {isHost && pending.length > 0 && (
+                <div style={section}>
+                    <div style={sectionHeader}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f59e0b' }}>
+                            <ClipboardCheck size={16} />
+                            <h3 style={sectionTitle}>승인 대기 중</h3>
+                        </div>
+                        <span style={{ ...countBadge, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>{pending.length}명</span>
+                    </div>
+                    <div style={listGrid}>
+                        {pending.map(p => (
+                            <UserCard 
+                                key={p.id} 
+                                participant={p} 
+                                isHost={isHost} 
+                                onApprove={handleApprove} 
+                                onReject={handleReject} 
+                                hostId={hostId} 
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Joined Section */}
             <div style={section}>
                 <div style={sectionHeader}>
@@ -81,9 +118,10 @@ export const MatchParticipantsTab: React.FC<MatchParticipantsTabProps> = ({ matc
     );
 };
 
-const UserCard = ({ participant, isHost, onKick, hostId }: any) => {
+const UserCard = ({ participant, isHost, onKick, onApprove, onReject, hostId }: any) => {
     const isTargetHost = participant.user_id === hostId;
-    const canKick = isHost && !isTargetHost;
+    const isPending = participant.status === 'pending';
+    const canKick = isHost && !isTargetHost && !isPending;
 
     return (
         <div style={cardStyle}>
@@ -98,9 +136,18 @@ const UserCard = ({ participant, isHost, onKick, hostId }: any) => {
             <div style={userBasic}>
                 <div style={userNameGroup}>
                     <span style={userName}>{participant.profiles?.name}</span>
+                    {isPending && <span style={pendingLabel}>대기</span>}
                 </div>
-                <div style={userGrade}>Grade C</div> {/* TODO: Fetch actual grade from user metadata */}
+                <div style={userGrade}>Grade C</div>
             </div>
+
+            {isPending && isHost && (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={() => onReject(participant.user_id)} style={rejectBtn}>거절</button>
+                    <button onClick={() => onApprove(participant.user_id)} style={approveBtn}>승인</button>
+                </div>
+            )}
+
             {canKick && (
                 <button onClick={() => onKick(participant.user_id)} style={kickBtn} title="강퇴">
                     <XCircle size={18} />
@@ -173,3 +220,6 @@ const userName: React.CSSProperties = { fontSize: '1rem', fontWeight: 850 };
 const userGrade: React.CSSProperties = { fontSize: '0.8rem', fontWeight: 700, color: '#10b981', marginTop: '2px' };
 
 const kickBtn: React.CSSProperties = { padding: '8px', color: 'rgba(239, 68, 68, 0.4)', background: 'transparent', border: 'none', cursor: 'pointer', transition: 'color 0.2s' };
+const approveBtn: React.CSSProperties = { padding: '8px 16px', borderRadius: '8px', background: 'var(--accent-primary)', color: 'white', border: 'none', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' };
+const rejectBtn: React.CSSProperties = { padding: '8px 16px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' };
+const pendingLabel: React.CSSProperties = { padding: '2px 6px', borderRadius: '4px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', fontSize: '0.65rem', fontWeight: 900, textTransform: 'uppercase' };

@@ -70,20 +70,20 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
             />
 
             {/* Mobile Header Bar */}
-            <header className="mobile-header mobile-only" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 16px' }}>
-                <div style={{ width: '44px' }}>{/* Spacer for balance */}</div>
-                <Link to="/" className="mobile-header-logo" onClick={() => setIsMenuOpen(false)} style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                    <img src="/logo.png" alt="HOOPCOLLECTOR" style={{ height: '20px', display: 'block' }} />
+            <header className="mobile-header mobile-only" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 20px', height: '64px' }}>
+                <Link to="/" className="mobile-header-logo" onClick={() => setIsMenuOpen(false)} style={{ display: 'flex', alignItems: 'center' }}>
+                    <img src="/logo.png" alt="HOOPCOLLECTOR" style={{ height: '18px', display: 'block' }} />
                 </Link>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <NotificationCenter />
                     <button 
                         className="menu-toggle-btn"
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
                         aria-label="Toggle Menu"
+                        style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
                     >
-                        {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                        {isMenuOpen ? <X size={26} /> : <Menu size={26} />}
                     </button>
-                    <NotificationCenter />
                 </div>
             </header>
             

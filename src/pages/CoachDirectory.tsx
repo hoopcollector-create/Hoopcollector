@@ -174,23 +174,24 @@ export const CoachDirectory = () => {
                     <div style={emptyBox}>COLLECTING DATA...</div>
                 ) : msg ? (
                     <div style={{ ...emptyBox, borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}>ERROR: {msg}</div>
-                ) : filteredRows.length === 0 ? (
+                                ) : filteredRows.length === 0 ? (
                     <div style={emptyBox}>코치를 찾을 수 없습니다.</div>
                 ) : (
                     <div style={{ 
                         display: 'grid', 
-                        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))', 
-                        gap: isMobile ? '16px' : '30px' 
+                        gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(280px, 1fr))', 
+                        gap: isMobile ? '12px' : '30px' 
                     }}>
                         {filteredRows.map((coach) => (
                             <Link key={coach.coach_id} to={`/coach-detail/${coach.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                                 <article className="card-minimal hover-lift" style={{ 
                                     padding: 0, 
-                                    height: isMobile ? '450px' : 'auto', 
+                                    height: '100%', 
                                     cursor: 'pointer',
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    overflow: 'hidden'
+                                    overflow: 'hidden',
+                                    borderRadius: isMobile ? '16px' : '24px'
                                 }}>
                                     <div style={thumbWrap}>
                                         {coach.photo_url ? (
@@ -198,45 +199,55 @@ export const CoachDirectory = () => {
                                         ) : (
                                             <div style={thumbFallback}>HC</div>
                                         )}
-                                        <div style={topBadgeRow}>
-                                            <span style={gradeBadge}>{coach.coach_grade ?? "-"}</span>
+                                        <div style={{ ...topBadgeRow, bottom: isMobile ? 8 : 12, right: isMobile ? 8 : 12 }}>
+                                            <span style={{ ...gradeBadge, width: isMobile ? '28px' : '36px', height: isMobile ? '28px' : '36px', fontSize: isMobile ? '0.8rem' : '1rem' }}>
+                                                {coach.coach_grade ?? "-"}
+                                            </span>
                                         </div>
                                     </div>
 
-                                    <div style={{ ...cardBody, flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                        <div style={coachName}>{coach.display_name ?? "UNNAMED"}</div>
+                                    <div style={{ ...cardBody, padding: isMobile ? '12px' : '1.5rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        <div style={{ ...coachName, fontSize: isMobile ? '1rem' : '1.25rem' }}>{coach.display_name ?? "UNNAMED"}</div>
                                         
-                                        <div style={ratingRow}>
-                                            <Star size={14} fill={ratings[coach.coach_id] ? "#f59e0b" : "transparent"} color={ratings[coach.coach_id] ? "#f59e0b" : "rgba(255,255,255,0.2)"} />
-                                            <span style={ratingVal}>{ratings[coach.coach_id]?.avg.toFixed(1) || "0.0"}</span>
-                                            <span style={reviewCount}>({ratings[coach.coach_id]?.count || 0})</span>
+                                        <div style={{ ...ratingRow, marginBottom: isMobile ? '8px' : '1rem' }}>
+                                            <Star size={isMobile ? 12 : 14} fill={ratings[coach.coach_id] ? "#f59e0b" : "transparent"} color={ratings[coach.coach_id] ? "#f59e0b" : "rgba(255,255,255,0.2)"} />
+                                            <span style={{ ...ratingVal, fontSize: isMobile ? '0.8rem' : '0.95rem' }}>{ratings[coach.coach_id]?.avg.toFixed(1) || "0.0"}</span>
+                                            <span style={{ ...reviewCount, fontSize: isMobile ? '0.7rem' : '0.8rem' }}>({ratings[coach.coach_id]?.count || 0})</span>
                                         </div>
                                         
-                                        <div style={regionPills}>
-                                            {(coach.service_regions ?? []).slice(0, 2).map((region) => (
-                                                <span key={region} style={miniPill}><MapPin size={10} style={{ marginRight: 4, opacity: 0.5 }} /> {region}</span>
-                                            ))}
-                                        </div>
-
-                                        <div style={line} />
-
-                                        <div style={{ flex: 1, overflow: 'hidden' }}>
-                                            <div style={infoLabel}>경력 / 소개</div>
-                                            <div style={{ 
-                                                fontSize: '0.85rem', 
-                                                lineHeight: 1.5, 
-                                                color: 'rgba(255,255,255,0.6)',
-                                                display: '-webkit-box',
-                                                WebkitLineClamp: isMobile ? 2 : 3,
-                                                WebkitBoxOrient: 'vertical',
-                                                overflow: 'hidden'
-                                            }}>
-                                                {coach.experience_text || coach.bio_text || "상세 프로필 참조"}
+                                        {!isMobile && (
+                                            <>
+                                                <div style={regionPills}>
+                                                    {(coach.service_regions ?? []).slice(0, 2).map((region) => (
+                                                        <span key={region} style={miniPill}><MapPin size={10} style={{ marginRight: 4, opacity: 0.5 }} /> {region}</span>
+                                                    ))}
+                                                </div>
+                                                <div style={line} />
+                                                <div style={{ flex: 1, overflow: 'hidden' }}>
+                                                    <div style={infoLabel}>경력 / 소개</div>
+                                                    <div style={{ 
+                                                        fontSize: '0.85rem', 
+                                                        lineHeight: 1.5, 
+                                                        color: 'rgba(255,255,255,0.6)',
+                                                        display: '-webkit-box',
+                                                        WebkitLineClamp: 3,
+                                                        WebkitBoxOrient: 'vertical',
+                                                        overflow: 'hidden'
+                                                    }}>
+                                                        {coach.experience_text || coach.bio_text || "상세 프로필 참조"}
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+                                        
+                                        {isMobile && (
+                                            <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <MapPin size={10} /> {(coach.service_regions ?? [])[0] || '지역 미정'}
                                             </div>
-                                        </div>
+                                        )}
 
-                                        <div style={{ ...viewMoreBtn, marginTop: 'auto', paddingTop: '16px' }}>
-                                            VIEW PROFILE <ChevronRight size={14} style={{ marginLeft: 6, opacity: 0.5 }} />
+                                        <div style={{ ...viewMoreBtn, marginTop: 'auto', paddingTop: isMobile ? '8px' : '16px', fontSize: isMobile ? '0.65rem' : '0.7rem' }}>
+                                            {isMobile ? '상세보기' : 'VIEW PROFILE'} <ChevronRight size={isMobile ? 12 : 14} style={{ marginLeft: 6, opacity: 0.5 }} />
                                         </div>
                                     </div>
                                 </article>

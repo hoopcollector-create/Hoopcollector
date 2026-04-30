@@ -304,10 +304,20 @@ export const AdminShopManager = () => {
 };
 
 const labelStyle: React.CSSProperties = { fontSize: '0.75rem', fontWeight: 900, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '8px' };
-const inputStyle: React.CSSProperties = { width: '100%', padding: '12px 16px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: 'white', fontSize: '0.9rem', outline: 'none' };
+const inputStyle: React.CSSProperties = { 
+    width: '100%', 
+    padding: '12px 16px', 
+    borderRadius: '12px', 
+    background: '#1a1a1c', 
+    border: '1px solid rgba(255,255,255,0.1)', 
+    color: 'white', 
+    fontSize: '0.9rem', 
+    outline: 'none',
+    boxSizing: 'border-box'
+};
 const vInputStyle: React.CSSProperties = { ...inputStyle, padding: '8px 10px', fontSize: '0.8rem' };
 
-const photoGuideGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' };
+const photoGuideGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '8px' };
 const photoGuideItem: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '10px', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)' };
 const removePhotoBtn: React.CSSProperties = { padding: '8px 12px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '0.75rem' };
 

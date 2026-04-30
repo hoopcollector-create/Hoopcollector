@@ -34,7 +34,8 @@ export const MatchEdit: React.FC = () => {
         timezone: 'Asia/Seoul',
         single_date: '',
         start_time: '',
-        end_time: ''
+        end_time: '',
+        approval_required: false
     });
 
     useEffect(() => {
@@ -73,7 +74,8 @@ export const MatchEdit: React.FC = () => {
                 timezone: data.timezone || 'Asia/Seoul',
                 single_date: data.occurrence_date || startAt.toISOString().split('T')[0],
                 start_time: startAt.toTimeString().slice(0, 5),
-                end_time: endAt.toTimeString().slice(0, 5)
+                end_time: endAt.toTimeString().slice(0, 5),
+                approval_required: data.approval_required || false
             });
         } catch (e: any) {
             alert('정보를 불러오는데 실패했습니다: ' + e.message);
@@ -118,7 +120,8 @@ export const MatchEdit: React.FC = () => {
                     fee_amount: formData.fee_amount,
                     supplies: formData.supplies,
                     notice: formData.notice,
-                    timezone: formData.timezone
+                    timezone: formData.timezone,
+                    approval_required: formData.approval_required
                 })
                 .eq('id', id);
 
@@ -180,13 +183,33 @@ export const MatchEdit: React.FC = () => {
                         </select>
                     </div>
                     <div style={formGroup}>
-                        <label style={labelStyle}>요구 등급</label>
-                        <select value={formData.required_grade} onChange={e => updateForm('required_grade', e.target.value)} style={inputStyle}>
-                            <option value="all">전체 가능</option>
-                            <option value="C">C 이상</option>
-                            <option value="B">B 이상</option>
-                            <option value="A">A 이상</option>
-                        </select>
+                        <label style={labelStyle}>참가 방식</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                            <button 
+                                onClick={() => updateForm('approval_required', false)}
+                                style={{
+                                    ...choiceBtn,
+                                    borderColor: !formData.approval_required ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)',
+                                    background: !formData.approval_required ? 'rgba(249, 115, 22, 0.1)' : 'transparent',
+                                    padding: '10px'
+                                }}
+                            >
+                                <Zap size={14} color={!formData.approval_required ? 'var(--accent-primary)' : 'rgba(255,255,255,0.3)'} />
+                                <span style={{ fontSize: '0.8rem', fontWeight: 800 }}>자유</span>
+                            </button>
+                            <button 
+                                onClick={() => updateForm('approval_required', true)}
+                                style={{
+                                    ...choiceBtn,
+                                    borderColor: formData.approval_required ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)',
+                                    background: formData.approval_required ? 'rgba(249, 115, 22, 0.1)' : 'transparent',
+                                    padding: '10px'
+                                }}
+                            >
+                                <Check size={14} color={formData.approval_required ? 'var(--accent-primary)' : 'rgba(255,255,255,0.3)'} />
+                                <span style={{ fontSize: '0.8rem', fontWeight: 800 }}>승인</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -304,5 +327,6 @@ const labelSubStyle: React.CSSProperties = { fontSize: '0.75rem', fontWeight: 70
 const inputStyle: React.CSSProperties = { width: '100%', padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '1rem', boxSizing: 'border-box' };
 
 const submitBtn: React.CSSProperties = { padding: '18px', borderRadius: '18px', background: 'var(--accent-primary)', color: 'white', border: 'none', fontWeight: 900, fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: 'all 0.2s', marginTop: '20px', boxShadow: '0 10px 25px rgba(249, 115, 22, 0.3)' };
+const choiceBtn: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'white', cursor: 'pointer', transition: 'all 0.2s' };
 
 const loadingOverlay: React.CSSProperties = { height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#070708', color: 'rgba(255,255,255,0.2)', fontSize: '1.2rem', fontWeight: 900 };

@@ -101,10 +101,10 @@ BEGIN
         WHERE user_id = v_user_id;
     END IF;
 
-    -- 3. 티켓 지급
+    -- 3. 티켓 지급 (NULL 방지 처리 완벽 적용)
     INSERT INTO ticket_balances (user_id, class_type, balance) 
     VALUES (v_user_id, v_grade, v_ticket_qty)
-    ON CONFLICT (user_id, class_type) DO UPDATE SET balance = ticket_balances.balance + v_ticket_qty;
+    ON CONFLICT (user_id, class_type) DO UPDATE SET balance = COALESCE(ticket_balances.balance, 0) + v_ticket_qty;
 
     -- 4. 상태 변경
     UPDATE purchases SET status = 'completed', updated_at = NOW() WHERE id = p_purchase_id;

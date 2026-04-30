@@ -114,7 +114,7 @@ BEGIN
 
     IF v_grade IS NOT NULL THEN
         INSERT INTO ticket_balances (user_id, class_type, balance) VALUES (v_user_id, v_grade, v_qty)
-        ON CONFLICT (user_id, class_type) DO UPDATE SET balance = ticket_balances.balance + v_qty;
+        ON CONFLICT (user_id, class_type) DO UPDATE SET balance = COALESCE(ticket_balances.balance, 0) + v_qty;
     END IF;
 
     -- 3. 상태 업데이트

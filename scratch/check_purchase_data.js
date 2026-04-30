@@ -7,28 +7,27 @@ const supabaseKey = envFile.match(/VITE_SUPABASE_SERVICE_ROLE_KEY=(.*)/)[1].trim
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function checkData() {
-    // Check recent purchases
+    // Check recent ticket balances
+    const { data: tickets, error: tErr } = await supabase
+        .from('ticket_balances')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(5);
+        
+    console.log("Recent Ticket Balances:");
+    if (tErr) console.error(tErr);
+    else console.log(JSON.stringify(tickets, null, 2));
+
+    // Check recent purchases to see what was actually saved
     const { data: purchases, error: pErr } = await supabase
         .from('purchases')
-        .select('*')
+        .select('id, product_title, class_type, ticket_qty, status, amount, points_used')
         .order('created_at', { ascending: false })
         .limit(3);
         
-    console.log("Recent Purchases:");
+    console.log("\nRecent Purchases:");
     if (pErr) console.error(pErr);
     else console.log(JSON.stringify(purchases, null, 2));
-
-    // Check shop purchase requests
-    const { data: shopReq, error: sErr } = await supabase
-        .from('shop_purchase_requests')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(3);
-        
-    console.log("\nShop Purchase Requests:");
-    if (sErr) console.error(sErr);
-    else console.log(JSON.stringify(shopReq, null, 2));
-
     // Check products table
     const { data: products, error: prErr } = await supabase
         .from('products')
@@ -39,5 +38,6 @@ async function checkData() {
     if (prErr) console.error(prErr);
     else console.log(JSON.stringify(products, null, 2));
 }
+
 
 checkData();

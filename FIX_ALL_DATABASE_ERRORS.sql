@@ -105,10 +105,10 @@ BEGIN
         RAISE EXCEPTION '이미 처리된 요청입니다. (현재 상태: %)', v_status;
     END IF;
 
-    -- 2. 티켓 상품인 경우 티켓 지급 (한글/영문 모두 지원)
-    IF v_product_title ~* 'A[[:space:]]?GRADE|A등급' THEN v_grade := 'A';
-    ELSIF v_product_title ~* 'B[[:space:]]?GRADE|B등급' THEN v_grade := 'B';
-    ELSIF v_product_title ~* 'C[[:space:]]?GRADE|C등급' THEN v_grade := 'C';
+    -- 2. 티켓 상품인 경우 티켓 지급 (한글/영문, Class 등 모든 레거시 포맷 완벽 지원)
+    IF v_product_title ~* 'A[[:space:]]?GRADE|A등급|Class[[:space:]]?A' THEN v_grade := 'A';
+    ELSIF v_product_title ~* 'B[[:space:]]?GRADE|B등급|Class[[:space:]]?B' THEN v_grade := 'B';
+    ELSIF v_product_title ~* 'C[[:space:]]?GRADE|C등급|Class[[:space:]]?C' THEN v_grade := 'C';
     ELSE v_grade := NULL;
     END IF;
 
@@ -161,7 +161,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 현금 티켓 구매 승인: 티켓 지급 및 상태 변경
+-- 현금 티켓 구매 승인: 티켓 지급, 포인트 지급(1%), 상태 변경
 DROP FUNCTION IF EXISTS approve_cash_purchase(UUID);
 CREATE OR REPLACE FUNCTION approve_cash_purchase(p_purchase_id UUID)
 RETURNS VOID AS $$
@@ -172,38 +172,49 @@ DECLARE
     v_points_used INTEGER;
     v_ticket_qty INTEGER := 1;
     v_grade TEXT;
+    v_reward_points INTEGER := 0;
 BEGIN
     -- 1. 정보 조회
     SELECT user_id, product_title, amount, points_used 
     INTO v_user_id, v_product_title, v_amount, v_points_used
     FROM purchases WHERE id = p_purchase_id;
 
-    -- 2. 티켓 등급 파악 (한글/영문 모두 지원)
-    IF v_product_title ~* 'A[[:space:]]?GRADE|A등급' THEN v_grade := 'A';
-    ELSIF v_product_title ~* 'B[[:space:]]?GRADE|B등급' THEN v_grade := 'B';
-    ELSIF v_product_title ~* 'C[[:space:]]?GRADE|C등급' THEN v_grade := 'C';
-    ELSE v_grade := 'C';
+    -- 2. 티켓 등급 파악 (한글/영문, Class 등 모든 레거시 포맷 완벽 지원)
+    IF v_product_title ~* 'A[[:space:]]?GRADE|A등급|Class[[:space:]]?A' THEN v_grade := 'A';
+    ELSIF v_product_title ~* 'B[[:space:]]?GRADE|B등급|Class[[:space:]]?B' THEN v_grade := 'B';
+    ELSIF v_product_title ~* 'C[[:space:]]?GRADE|C등급|Class[[:space:]]?C' THEN v_grade := 'C';
+    ELSE v_grade := 'C'; -- 기본값
     END IF;
 
-    -- 개수 파악 (숫자 추출 로직 보강)
+    -- 개수 파악 (숫자 추출 로직 보강: '10회', '5회' 등)
     IF v_product_title ~ '[0-9]+' THEN
         v_ticket_qty := (substring(v_product_title from '[0-9]+'))::INTEGER;
     ELSE
         v_ticket_qty := 1;
     END IF;
 
-    -- 3. 티켓 지급
+    -- 3. 포인트 1% 적립 로직 (사용된 포인트 제외 순수 결제 금액의 1%)
+    v_reward_points := floor(v_amount * 0.01);
+    
+    IF v_reward_points > 0 THEN
+        UPDATE user_points_stats 
+        SET balance = balance + v_reward_points,
+            earned_total = earned_total + v_reward_points
+        WHERE user_id = v_user_id;
+    END IF;
+
+    -- 4. 티켓 지급
     INSERT INTO ticket_balances (user_id, class_type, balance) 
     VALUES (v_user_id, v_grade, v_ticket_qty)
     ON CONFLICT (user_id, class_type) DO UPDATE SET balance = ticket_balances.balance + v_ticket_qty;
 
-    -- 4. 상태 변경
+    -- 5. 상태 변경
     UPDATE purchases SET status = 'completed', updated_at = NOW() WHERE id = p_purchase_id;
 
-    -- 3. Notification (알림 발송)
+    -- 6. Notification (알림 발송 - 포인트 적립 안내 포함)
     INSERT INTO notifications (user_id, type, title, content)
     VALUES (v_user_id, 'payment', v_grade || ' GRADE TICKET ISSUED', 
-            v_grade || ' GRADE 티켓 ' || v_ticket_qty || '회가 지급되었습니다. 지금 COACH MATCHING을 시작해보세요!');
+            v_grade || ' GRADE 티켓 ' || v_ticket_qty || '회가 지급되었습니다. (보너스 ' || v_reward_points || 'P 적립 완료) 지금 COACH MATCHING을 시작해보세요!');
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

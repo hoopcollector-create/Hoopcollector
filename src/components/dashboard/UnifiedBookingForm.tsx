@@ -57,17 +57,21 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
     }, [tickets, targetCoachId]);
 
     const [busyReqs, setBusyReqs] = useState<any[]>([]);
+    const [personalSlots, setPersonalSlots] = useState<any[]>([]);
 
     const loadAvailableSlots = async () => {
-        // 1. 코치님의 통짜 스케줄 가져오기 (예: 08:00 ~ 22:00)
+        // 1. 코치님의 스케줄 가져오기 (예약 가능 슬롯 + 개인 일정)
         const { data: slots } = await supabase
             .from('coach_slots')
             .select('*')
             .eq('coach_id', targetCoachId)
-            .eq('type', 'slot')
+            .in('type', ['slot', 'personal']) // 개인 일정(personal)도 가져옴
             .gte('end_at', new Date().toISOString())
             .order('start_at', { ascending: true });
-        setAvailableSlots(slots || []);
+        
+        // 분류해서 저장
+        setAvailableSlots((slots || []).filter(s => s.type === 'slot'));
+        setPersonalSlots((slots || []).filter(s => s.type === 'personal'));
 
         // 2. 이미 예약 중이거나 수락된 수업 일정 가져오기
         const { data: reqs } = await supabase
@@ -240,13 +244,20 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
                                                 if (next > slotEnd) break;
 
                                                 if (curr.getTime() >= dateStart && curr.getTime() <= dateEnd) {
-                                                    const isOverlap = busyReqs.some(req => {
+                                                    // 수업 신청과 겹치는지 확인
+                                                    const isReqOverlap = busyReqs.some(req => {
                                                         const rStart = new Date(req.requested_start).getTime();
                                                         const rEnd = rStart + (req.duration_min || 60) * 60000;
                                                         return (curr.getTime() < rEnd) && (next.getTime() > rStart);
                                                     });
+                                                    // 개인 일정(수업 불가)과 겹치는지 확인
+                                                    const isPersonalOverlap = personalSlots.some(ps => {
+                                                        const pStart = new Date(ps.start_at).getTime();
+                                                        const pEnd = new Date(ps.end_at).getTime();
+                                                        return (curr.getTime() < pEnd) && (next.getTime() > pStart);
+                                                    });
 
-                                                    if (isOverlap || slot.is_booked) {
+                                                    if (isReqOverlap || isPersonalOverlap || slot.is_booked) {
                                                         hasBookedSlot = true;
                                                     } else {
                                                         hasAvailableSlot = true;
@@ -313,15 +324,20 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
                                             if (next > slotEnd) break;
                                             
                                             if (curr.getTime() >= dateStart && curr.getTime() <= dateEnd) {
-                                                const isOverlap = busyReqs.some(req => {
+                                                const isReqOverlap = busyReqs.some(req => {
                                                     const rStart = new Date(req.requested_start).getTime();
                                                     const rEnd = rStart + (req.duration_min || 60) * 60000;
                                                     return (curr.getTime() < rEnd) && (next.getTime() > rStart);
                                                 });
+                                                const isPersonalOverlap = personalSlots.some(ps => {
+                                                    const pStart = new Date(ps.start_at).getTime();
+                                                    const pEnd = new Date(ps.end_at).getTime();
+                                                    return (curr.getTime() < pEnd) && (next.getTime() > pStart);
+                                                });
 
                                                 chunks.push({
                                                     time: new Date(curr),
-                                                    isBooked: isOverlap || slot.is_booked,
+                                                    isBooked: isReqOverlap || isPersonalOverlap || slot.is_booked,
                                                     slotId: slot.id
                                                 });
                                             }

@@ -200,13 +200,14 @@ BEGIN
     -- 4. 상태 변경
     UPDATE purchases SET status = 'completed', updated_at = NOW() WHERE id = p_purchase_id;
 
-    -- 3. 알림 발송
+    -- 3. Notification (알림 발송)
     INSERT INTO notifications (user_id, type, title, content)
-    VALUES (v_user_id, 'payment', 'A/B/C GRADE 티켓 지급 완료', v_grade || ' GRADE 티켓 ' || v_ticket_qty || '회가 지급되었습니다. 지금 수업을 예약해보세요!');
+    VALUES (v_user_id, 'payment', v_grade || ' GRADE TICKET ISSUED', 
+            v_grade || ' GRADE 티켓 ' || v_ticket_qty || '회가 지급되었습니다. 지금 COACH MATCHING을 시작해보세요!');
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 현금 티켓 구매 취소/반려
+-- [CASH] cancel_cash_purchase: 현금 티켓 구매 취소/반려
 DROP FUNCTION IF EXISTS cancel_cash_purchase(UUID);
 CREATE OR REPLACE FUNCTION cancel_cash_purchase(p_purchase_id UUID)
 RETURNS VOID AS $$
@@ -216,19 +217,19 @@ DECLARE
 BEGIN
     SELECT user_id, points_used INTO v_user_id, v_points_used FROM purchases WHERE id = p_purchase_id;
 
-    -- 1. 포인트 환불
+    -- 1. Refund Points (포인트 환불)
     IF v_points_used > 0 THEN
         UPDATE user_points_stats SET balance = balance + v_points_used WHERE user_id = v_user_id;
     END IF;
 
-    -- 2. 상태 변경
+    -- 2. Update Status (상태 변경)
     UPDATE purchases SET status = 'cancelled', updated_at = NOW() WHERE id = p_purchase_id;
 
-    -- 3. 알림 발송
+    -- 3. Notification (알림 발송)
     INSERT INTO notifications (user_id, type, title, content)
-    VALUES (v_user_id, 'payment', '구매 요청 반려 안내', '티켓 구매 요청이 반려되었습니다. (사유: 입금 정보 불일치 등) 사용된 포인트는 즉시 환불되었습니다.');
+    VALUES (v_user_id, 'payment', 'PURCHASE REQUEST REJECTED', '티켓 구매 요청이 반려되었습니다. 사용된 포인트는 즉시 환불 처리되었습니다.');
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 9. 코치 슬롯(Schedule) 관련 중복 방지 제약 조건
--- ... (이하 동일)
+-- 10. Schedule Constraints (코치 슬롯 중복 방지)
+-- (이하 동일)

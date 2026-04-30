@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { CoachApplicationModal } from './CoachApplicationModal';
 import { NotificationCenter } from './NotificationCenter';
-import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { supabase } from '../lib/supabase';
 import { Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -104,8 +103,6 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
             {showCoachModal && (
                 <CoachApplicationModal onClose={() => setShowCoachModal(false)} />
             )}
-
-            <PWAInstallPrompt />
         </div>
     );
 };

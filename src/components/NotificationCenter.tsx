@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Bell, MessageSquare, Calendar, Award, Info, X } from 'lucide-react';
+import { Bell, MessageSquare, Calendar, Award, Info, X, Smartphone, Download } from 'lucide-react';
 import { useTranslation } from '../lib/i18n';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 
 interface AppNotification {
     id: string;
@@ -14,46 +15,31 @@ interface AppNotification {
 }
 
 export const NotificationCenter: React.FC = () => {
+    const { isInstallable, isIOS, install } = usePWAInstall();
     const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
     const { t } = useTranslation();
 
     useEffect(() => {
-        // Safe check for supabase
         if (!supabase) return;
-
         let channel: any;
 
         const setupSubscription = async () => {
             try {
                 fetchNotifications();
-
-                // Use unique channel ID to prevent StrictMode remount collisions
                 const newChannel = supabase.channel(`notif-changes-${Math.random()}`);
                 newChannel
                     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload: any) => {
                         const newNotif = payload.new as AppNotification;
                         if (!newNotif) return;
-                        
                         setNotifications(prev => [newNotif, ...prev]);
                         setUnreadCount(prev => prev + 1);
-                        
-                        // Browser notification logic
                         if (typeof window !== 'undefined' && 'Notification' in window && window.Notification.permission === 'granted') {
-                            try {
-                                new window.Notification(newNotif.title, { body: newNotif.content });
-                            } catch (e) {
-                                console.warn("Browser notification failed:", e);
-                            }
+                            new window.Notification(newNotif.title, { body: newNotif.content });
                         }
                     })
-                    .subscribe((status) => {
-                        if (status === 'SUBSCRIBED') {
-                            console.log("Subscribed to notifications");
-                        }
-                    });
-                
+                    .subscribe();
                 channel = newChannel;
             } catch (e) {
                 console.error("Subscription error:", e);
@@ -61,11 +47,8 @@ export const NotificationCenter: React.FC = () => {
         };
 
         setupSubscription();
-
         return () => {
-            if (channel) {
-                supabase.removeChannel(channel);
-            }
+            if (channel) supabase.removeChannel(channel);
         };
     }, []);
 
@@ -116,7 +99,6 @@ export const NotificationCenter: React.FC = () => {
         }
     };
 
-    // If notifications fail or crash, don't break the app
     if (!notifications) return null;
 
     return (
@@ -138,14 +120,40 @@ export const NotificationCenter: React.FC = () => {
                     <div style={{ position: 'fixed', inset: 0, zIndex: 1000 }} onClick={() => setIsOpen(false)} />
                     <div 
                         className="notif-dropdown"
-                        style={{ position: 'absolute', top: 45, right: -10, width: 280, background: '#161618', borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', zIndex: 1001, overflow: 'hidden' }}
+                        style={{ position: 'absolute', top: 45, right: -10, width: 300, background: '#161618', borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', zIndex: 1001, overflow: 'hidden' }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div style={{ padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>{t('sidebar.messages').toUpperCase()}</span>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>알림 ({unreadCount})</span>
                             <button onClick={() => setIsOpen(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}><X size={16} /></button>
                         </div>
-                        <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+
+                        {/* PWA Install Banner inside Notifications */}
+                        {isInstallable && (
+                            <div style={{ padding: '16px', background: 'rgba(249, 115, 22, 0.08)', borderBottom: '1px solid rgba(249, 115, 22, 0.15)' }}>
+                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#f97316', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                        <Smartphone size={20} color="white" />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'white' }}>앱으로 더 편하게!</div>
+                                        <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>
+                                            {isIOS ? '홈 화면에 추가하여 이용하세요' : '앱을 설치하고 알림을 받아보세요'}
+                                        </div>
+                                    </div>
+                                    {!isIOS && (
+                                        <button 
+                                            onClick={install}
+                                            style={{ padding: '8px 12px', borderRadius: '8px', background: '#f97316', color: 'white', border: 'none', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}
+                                        >
+                                            설치
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        <div style={{ maxHeight: 350, overflowY: 'auto' }}>
                             {notifications.length === 0 ? (
                                 <div style={{ padding: 40, textAlign: 'center', color: '#666', fontSize: '0.8rem' }}>알림이 없습니다.</div>
                             ) : (

@@ -62,19 +62,17 @@ BEGIN
         ALTER TABLE shop_purchase_requests ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
         ALTER TABLE shop_purchase_requests ADD COLUMN IF NOT EXISTS method TEXT DEFAULT 'cash';
         
-        -- 외래 키 관계 설정 (중첩 DO 제거)
-        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shop_purchase_requests_user_id_fkey') THEN
-            ALTER TABLE shop_purchase_requests ADD CONSTRAINT shop_purchase_requests_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id);
-        END IF;
+        -- 외래 키 관계 설정 (더 확실하게 삭제 후 생성)
+        ALTER TABLE shop_purchase_requests DROP CONSTRAINT IF EXISTS shop_purchase_requests_user_id_fkey;
+        ALTER TABLE shop_purchase_requests ADD CONSTRAINT shop_purchase_requests_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id);
     END IF;
 END $$;
 
 -- purchases 테이블 외래 키 설정
 DO $$ 
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'purchases_user_id_fkey') THEN
-        ALTER TABLE purchases ADD CONSTRAINT purchases_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id);
-    END IF;
+    ALTER TABLE purchases DROP CONSTRAINT IF EXISTS purchases_user_id_fkey;
+    ALTER TABLE purchases ADD CONSTRAINT purchases_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id);
 END $$;
 
 -- 8. 알림 테이블(notifications) 구조 보강 (알림 에러 해결)

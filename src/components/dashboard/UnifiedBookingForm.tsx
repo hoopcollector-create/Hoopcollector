@@ -56,16 +56,27 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
         }
     }, [tickets, targetCoachId]);
 
+    const [busyReqs, setBusyReqs] = useState<any[]>([]);
+
     const loadAvailableSlots = async () => {
-        const { data } = await supabase
+        // 1. 코치님의 통짜 스케줄 가져오기 (예: 08:00 ~ 22:00)
+        const { data: slots } = await supabase
             .from('coach_slots')
             .select('*')
             .eq('coach_id', targetCoachId)
-            // 예약된 슬롯도 모두 가져오도록 eq('is_booked', false) 필터 제거
             .eq('type', 'slot')
-            .gte('start_at', new Date().toISOString())
+            .gte('end_at', new Date().toISOString())
             .order('start_at', { ascending: true });
-        setAvailableSlots(data || []);
+        setAvailableSlots(slots || []);
+
+        // 2. 이미 예약 중이거나 수락된 수업 일정 가져오기
+        const { data: reqs } = await supabase
+            .from('class_requests')
+            .select('requested_start, duration_min, status')
+            .eq('coach_id', targetCoachId)
+            .in('status', ['pending', 'accepted'])
+            .gte('requested_start', new Date().toISOString());
+        setBusyReqs(reqs || []);
     };
 
     const fetchInternalTickets = async () => {
@@ -101,7 +112,7 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
             const iso = toISOStringFromKST(date, time);
             const fullAddress = courtName.trim() ? `${courtName.trim()} / ${address.trim()}` : address.trim();
 
-            // RPC call to unified request function v4
+            // RPC call to unified request function v4 (removed p_slot_id to prevent error)
             const { error } = await supabase.rpc("request_class_v4", {
                 p_class_type: classType,
                 p_requested_start: iso,
@@ -115,8 +126,7 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
                 p_lng: lng,
                 p_country_code: countryCode,
                 p_timezone: timezone,
-                p_is_certification: isCertification,
-                p_slot_id: selectedSlotId
+                p_is_certification: isCertification
             });
 
             if (error) {
@@ -206,15 +216,53 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
                                     for (let i = 0; i < firstDay; i++) days.push(<div key={`empty-${i}`} />);
                                     for (let i = 1; i <= daysInMonth; i++) {
                                         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-                                        const hasAvailableSlot = availableSlots.some(s => s.start_at.startsWith(dateStr) && !s.is_booked);
-                                        const hasBookedSlot = availableSlots.some(s => s.start_at.startsWith(dateStr) && s.is_booked);
+                                        
+                                        // 해당 날짜의 0시부터 24시 사이를 체크
+                                        const dateStart = new Date(dateStr + "T00:00:00").getTime();
+                                        const dateEnd = new Date(dateStr + "T23:59:59").getTime();
+                                        
+                                        // 1. 해당 날짜에 겹치는 통짜 슬롯이 있는지 확인
+                                        const daySlots = availableSlots.filter(s => {
+                                            const sStart = new Date(s.start_at).getTime();
+                                            const sEnd = new Date(s.end_at).getTime();
+                                            return sStart <= dateEnd && sEnd >= dateStart;
+                                        });
+
+                                        let hasAvailableSlot = false;
+                                        let hasBookedSlot = false;
+
+                                        // 2. 1시간 단위로 잘라서 "예약 가능"과 "예약 마감" 여부를 판단
+                                        daySlots.forEach(slot => {
+                                            let curr = new Date(slot.start_at);
+                                            const slotEnd = new Date(slot.end_at);
+                                            while (curr < slotEnd) {
+                                                const next = new Date(curr.getTime() + 60 * 60000);
+                                                if (next > slotEnd) break;
+
+                                                if (curr.getTime() >= dateStart && curr.getTime() <= dateEnd) {
+                                                    const isOverlap = busyReqs.some(req => {
+                                                        const rStart = new Date(req.requested_start).getTime();
+                                                        const rEnd = rStart + (req.duration_min || 60) * 60000;
+                                                        return (curr.getTime() < rEnd) && (next.getTime() > rStart);
+                                                    });
+
+                                                    if (isOverlap || slot.is_booked) {
+                                                        hasBookedSlot = true;
+                                                    } else {
+                                                        hasAvailableSlot = true;
+                                                    }
+                                                }
+                                                curr = next;
+                                            }
+                                        });
+
                                         const hasSlot = hasAvailableSlot || hasBookedSlot;
                                         const isSelected = date === dateStr;
                                         
                                         days.push(
                                             <div 
                                                 key={i} 
-                                                onClick={() => { setDate(dateStr); setSelectedSlotId(null); }}
+                                                onClick={() => { setDate(dateStr); setSelectedSlotId(null); setTime(""); }}
                                                 style={{
                                                     ...calDayCell,
                                                     background: isSelected ? 'var(--color-primary)' : 'transparent',
@@ -240,37 +288,75 @@ export const UnifiedBookingForm: React.FC<UnifiedBookingFormProps> = ({
                         <div>
                             <div style={sectionLabel}>{date} 코치 일정</div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                {availableSlots.filter(s => s.start_at.startsWith(date)).length > 0 ? (
-                                    availableSlots.filter(s => s.start_at.startsWith(date)).map(slot => {
-                                        const start = new Date(slot.start_at);
-                                        const isSelected = selectedSlotId === slot.id;
-                                        const isBooked = slot.is_booked;
+                                {(() => {
+                                    const dateStart = new Date(date + "T00:00:00").getTime();
+                                    const dateEnd = new Date(date + "T23:59:59").getTime();
+
+                                    const daySlots = availableSlots.filter(s => {
+                                        const sStart = new Date(s.start_at).getTime();
+                                        const sEnd = new Date(s.end_at).getTime();
+                                        return sStart <= dateEnd && sEnd >= dateStart;
+                                    });
+
+                                    if (daySlots.length === 0) {
+                                        return <div style={{ fontSize: '0.8rem', opacity: 0.4, padding: '10px' }}>해당 날짜에는 일정이 없습니다.</div>;
+                                    }
+
+                                    const chunks: { time: Date; isBooked: boolean; slotId: string }[] = [];
+                                    
+                                    daySlots.forEach(slot => {
+                                        let curr = new Date(slot.start_at);
+                                        const slotEnd = new Date(slot.end_at);
+                                        
+                                        while (curr < slotEnd) {
+                                            const next = new Date(curr.getTime() + 60 * 60000);
+                                            if (next > slotEnd) break;
+                                            
+                                            if (curr.getTime() >= dateStart && curr.getTime() <= dateEnd) {
+                                                const isOverlap = busyReqs.some(req => {
+                                                    const rStart = new Date(req.requested_start).getTime();
+                                                    const rEnd = rStart + (req.duration_min || 60) * 60000;
+                                                    return (curr.getTime() < rEnd) && (next.getTime() > rStart);
+                                                });
+
+                                                chunks.push({
+                                                    time: new Date(curr),
+                                                    isBooked: isOverlap || slot.is_booked,
+                                                    slotId: slot.id
+                                                });
+                                            }
+                                            curr = next;
+                                        }
+                                    });
+
+                                    chunks.sort((a, b) => a.time.getTime() - b.time.getTime());
+
+                                    return chunks.map((chunk, idx) => {
+                                        const isSelected = selectedSlotId === chunk.slotId && time === chunk.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
                                         
                                         return (
                                             <button
-                                                key={slot.id}
+                                                key={`${chunk.slotId}-${idx}`}
                                                 onClick={() => {
-                                                    if (isBooked) return;
-                                                    setSelectedSlotId(slot.id);
-                                                    setTime(start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }));
+                                                    if (chunk.isBooked) return;
+                                                    setSelectedSlotId(chunk.slotId);
+                                                    setTime(chunk.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }));
                                                 }}
-                                                disabled={isBooked}
+                                                disabled={chunk.isBooked}
                                                 style={{
                                                     ...slotBtnStyle,
-                                                    background: isBooked ? 'rgba(239, 68, 68, 0.05)' : (isSelected ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)'),
-                                                    borderColor: isBooked ? 'rgba(239, 68, 68, 0.2)' : (isSelected ? 'white' : 'rgba(255,255,255,0.1)'),
-                                                    color: isBooked ? '#ef4444' : (isSelected ? 'white' : 'rgba(255,255,255,0.7)'),
-                                                    cursor: isBooked ? 'not-allowed' : 'pointer'
+                                                    background: chunk.isBooked ? 'rgba(239, 68, 68, 0.05)' : (isSelected ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)'),
+                                                    borderColor: chunk.isBooked ? 'rgba(239, 68, 68, 0.2)' : (isSelected ? 'white' : 'rgba(255,255,255,0.1)'),
+                                                    color: chunk.isBooked ? '#ef4444' : (isSelected ? 'white' : 'rgba(255,255,255,0.7)'),
+                                                    cursor: chunk.isBooked ? 'not-allowed' : 'pointer'
                                                 }}
                                             >
-                                                {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                {isBooked ? ' (예약 마감)' : ''}
+                                                {chunk.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                {chunk.isBooked ? ' (예약 마감)' : ''}
                                             </button>
                                         );
-                                    })
-                                ) : (
-                                    <div style={{ fontSize: '0.8rem', opacity: 0.4, padding: '10px' }}>해당 날짜에는 일정이 없습니다.</div>
-                                )}
+                                    });
+                                })()}
                             </div>
                         </div>
                     )}

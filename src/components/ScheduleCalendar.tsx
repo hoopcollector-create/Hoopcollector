@@ -109,52 +109,22 @@ export const ScheduleCalendar = () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
+            // 1. Delete ALL existing unbooked slots/personal events for the next 28 days to prevent duplicates
             const todayStart = new Date();
             todayStart.setHours(0, 0, 0, 0);
             
             const endDate = new Date();
             endDate.setDate(todayStart.getDate() + 28);
 
-            // 1. 기존 스케줄 중 "예약되지 않은" 빈 시간대(slot)와 개인 일정 모두 삭제하여 초기화
             await supabase
                 .from('coach_slots')
                 .delete()
                 .eq('coach_id', session.user.id)
-                .eq('is_booked', false) // 예약된 건 안전하게 보호
+                .eq('is_booked', false) // Protect booked classes
                 .gte('start_at', todayStart.toISOString())
                 .lte('start_at', endDate.toISOString());
 
-            // 2. 예약이 확정된 "바쁜 시간(수업/예약)" 데이터 미리 가져오기 (겹침 방지용)
-            const { data: busySlots } = await supabase
-                .from('coach_slots')
-                .select('start_at, end_at')
-                .eq('coach_id', session.user.id)
-                .eq('is_booked', true)
-                .gte('start_at', todayStart.toISOString());
-            
-            const { data: busyReqs } = await supabase
-                .from('class_requests')
-                .select('requested_start, duration_min')
-                .eq('coach_id', session.user.id)
-                .eq('status', 'accepted')
-                .gte('requested_start', todayStart.toISOString());
-
-            // 바쁜 시간들을 (start_time, end_time) 배열로 정리
-            const busyTimes: { start: number, end: number }[] = [];
-            (busySlots || []).forEach(s => {
-                busyTimes.push({ start: new Date(s.start_at).getTime(), end: new Date(s.end_at).getTime() });
-            });
-            (busyReqs || []).forEach(r => {
-                const sTime = new Date(r.requested_start).getTime();
-                busyTimes.push({ start: sTime, end: sTime + (r.duration_min || 60) * 60000 });
-            });
-
-            // 겹치는지 확인하는 헬퍼 함수
-            const isOverlapping = (s: number, e: number) => {
-                return busyTimes.some(busy => (s < busy.end) && (e > busy.start));
-            };
-
-            // 3. 규칙에 따라 1시간 단위 슬롯 쪼개서 생성
+            // 2. Generate new slots based on rules
             const newSlots: any[] = [];
             
             for (let i = 0; i < 28; i++) {
@@ -168,58 +138,30 @@ export const ScheduleCalendar = () => {
                     const startAt = new Date(`${datePart}T${r.start_time}`);
                     const endAt = new Date(`${datePart}T${r.end_time}`);
 
-                    if (r.type === 'slot') {
-                        // 1시간 단위로 쪼개기
-                        let curr = new Date(startAt);
-                        while (curr < endAt) {
-                            const next = new Date(curr.getTime() + 60 * 60000);
-                            if (next > endAt) break;
-
-                            // 이미 예약된 수업과 겹치면 해당 시간(1시간)은 패스!
-                            if (!isOverlapping(curr.getTime(), next.getTime())) {
-                                newSlots.push({
-                                    coach_id: session.user.id,
-                                    title: "레슨 가능",
-                                    start_at: toLocalISOString(curr),
-                                    end_at: toLocalISOString(next),
-                                    type: 'slot',
-                                    is_booked: false,
-                                    status: 'open',
-                                    is_recurring: true
-                                });
-                            }
-                            curr = next;
-                        }
-                    } else {
-                        // 개인 일정(수업 불가)은 쪼개지 않고 통째로 등록, 단 예약과 겹치지 않을 때만
-                        if (!isOverlapping(startAt.getTime(), endAt.getTime())) {
-                            newSlots.push({
-                                coach_id: session.user.id,
-                                title: "개인 일정 (수업 불가)",
-                                start_at: toLocalISOString(startAt),
-                                end_at: toLocalISOString(endAt),
-                                type: r.type,
-                                is_booked: false,
-                                status: 'open',
-                                is_recurring: true
-                            });
-                        }
-                    }
+                    newSlots.push({
+                        coach_id: session.user.id,
+                        title: r.type === 'personal' ? "개인 일정 (반복)" : "반복 일정 (레슨 가능)",
+                        start_at: toLocalISOString(startAt),
+                        end_at: toLocalISOString(endAt),
+                        type: r.type || 'slot',
+                        is_booked: false,
+                        status: 'open',
+                        is_recurring: true // Mark as generated
+                    });
                 });
             }
 
             if (newSlots.length > 0) {
-                // 한 번에 1000개가 넘어가면 에러가 날 수 있으므로 안전하게 처리
-                for (let i = 0; i < newSlots.length; i += 500) {
-                    const chunk = newSlots.slice(i, i + 500);
-                    const { error } = await supabase.from('coach_slots').insert(chunk);
-                    if (error) throw error;
+                const { error } = await supabase.from('coach_slots').insert(newSlots);
+                if (error) {
+                    console.error("Batch Insert Error:", error);
+                    throw error;
                 }
-                setMsg(`기존 예약 시간을 제외하고 총 ${newSlots.length}개의 1시간 단위 일정이 생성되었습니다!`);
+                setMsg(`${newSlots.length}개의 일정이 규칙에 따라 갱신되었습니다. (수동 일정은 유지됨)`);
                 loadEvents();
                 setShowRulesModal(false);
             } else {
-                setMsg("생성 가능한 빈 시간이 없습니다. (모두 예약됨 혹은 규칙 없음)");
+                setMsg("생성할 규칙이 없습니다.");
             }
         } catch (e: any) {
             console.error("Generation Failed:", e);
@@ -336,12 +278,20 @@ export const ScheduleCalendar = () => {
             return setErrorMsg("종료 시간은 시작 시간보다 늦어야 합니다.");
         }
 
+        // Refined overlap logic: 
+        // 1. 'slot' (Available) never blocks anything.
+        // 2. 'personal' or 'class' should not overlap with each other.
         const isBusyType = (t: string) => t === 'personal' || t === 'class';
         
-        // 1. 기존 일정과 겹치는지 확인 (슬롯 타입은 무시)
         const overlap = (newType === 'personal') ? events.find(ev => {
-            if (!isBusyType(ev.type)) return false; 
-            return (startAt.getTime() < ev.end.getTime()) && (endAt.getTime() > ev.start.getTime());
+            if (!isBusyType(ev.type)) return false; // Ignore 'slot' types
+
+            const evStart = ev.start.getTime();
+            const evEnd = ev.end.getTime();
+            const newStart = startAt.getTime();
+            const newEnd = endAt.getTime();
+
+            return (newStart < evEnd) && (newEnd > evStart);
         }) : null;
 
         if (overlap) {
@@ -354,55 +304,20 @@ export const ScheduleCalendar = () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
-            const slotsToInsert: any[] = [];
+            // 2. Insert new event
+            const { error } = await supabase.from('coach_slots').insert({
+                coach_id: session.user.id,
+                title: newTitle,
+                start_at: toLocalISOString(startAt),
+                end_at: toLocalISOString(endAt),
+                type: newType,
+                is_booked: false,
+                status: 'open'
+            });
 
-            if (newType === 'slot') {
-                // 2. 수동 등록 시에도 1시간 단위로 쪼개서 넣기
-                let curr = new Date(startAt);
-                while (curr < endAt) {
-                    const next = new Date(curr.getTime() + 60 * 60000);
-                    if (next > endAt) break;
-
-                    // 이 1시간 슬롯이 기존 바쁜 일정과 겹치지 않는지 확인
-                    const slotOverlap = events.find(ev => {
-                        if (!isBusyType(ev.type)) return false;
-                        return (curr.getTime() < ev.end.getTime()) && (next.getTime() > ev.start.getTime());
-                    });
-
-                    if (!slotOverlap) {
-                        slotsToInsert.push({
-                            coach_id: session.user.id,
-                            title: newTitle,
-                            start_at: toLocalISOString(curr),
-                            end_at: toLocalISOString(next),
-                            type: 'slot',
-                            is_booked: false,
-                            status: 'open'
-                        });
-                    }
-                    curr = next;
-                }
-            } else {
-                // 개인 일정은 쪼개지 않고 하나로 등록
-                slotsToInsert.push({
-                    coach_id: session.user.id,
-                    title: newTitle,
-                    start_at: toLocalISOString(startAt),
-                    end_at: toLocalISOString(endAt),
-                    type: newType,
-                    is_booked: false,
-                    status: 'open'
-                });
-            }
-
-            if (slotsToInsert.length === 0) {
-                throw new Error("겹치는 일정을 제외하니 등록 가능한 시간이 없습니다.");
-            }
-
-            const { error } = await supabase.from('coach_slots').insert(slotsToInsert);
             if (error) throw new Error(`${error.message} (코드: ${error.code})`);
 
-            setMsg(slotsToInsert.length > 1 ? `성공적으로 ${slotsToInsert.length}개의 일정이 등록되었습니다.` : "성공적으로 일정이 등록되었습니다.");
+            setMsg("성공적으로 일정이 등록되었습니다.");
             setShowModal(false);
             setNewTitle("");
             await loadEvents();

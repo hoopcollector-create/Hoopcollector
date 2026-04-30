@@ -32,7 +32,7 @@ export const StudentHistory = ({
                 {rows.map((r: MyRequest) => (
                     <div key={r.id} style={historyCard}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                            <div style={{ fontWeight: 800, fontSize: 16 }}>Class {r.class_type}</div>
+                            <div style={{ fontWeight: 800, fontSize: 16 }}>{r.class_type} GRADE</div>
                             <div style={statusBadge}>{statusKo(r.status)}</div>
                         </div>
                         <div style={{ display: 'grid', gap: 6, opacity: 0.8, fontSize: 14 }}>

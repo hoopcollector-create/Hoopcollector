@@ -46,15 +46,15 @@ export const StudentHome = ({
                     <div style={cardValue}>{activeCount}</div>
                 </div>
                 <div style={cardMini}>
-                    <div style={cardLabel}>Class A 티켓</div>
+                    <div style={cardLabel}>A GRADE 티켓</div>
                     <div style={cardValue}>{tickets.A}</div>
                 </div>
                 <div style={cardMini}>
-                    <div style={cardLabel}>Class B 티켓</div>
+                    <div style={cardLabel}>B GRADE 티켓</div>
                     <div style={cardValue}>{tickets.B}</div>
                 </div>
                 <div style={cardMini}>
-                    <div style={cardLabel}>Class C 티켓</div>
+                    <div style={cardLabel}>C GRADE 티켓</div>
                     <div style={cardValue}>{tickets.C}</div>
                 </div>
             </div>
@@ -78,7 +78,7 @@ export const StudentHome = ({
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <div>
                                     <h2 style={{ fontSize: '1.5rem', fontWeight: 950, margin: 0 }}>{name || "이름 없음"}</h2>
-                                    <div style={{ ...classBadge, marginTop: 4 }}>CLASS {profile?.basketball_level || 'C'}</div>
+                                    <div style={{ ...classBadge, marginTop: 4 }}>GRADE {profile?.basketball_level || 'C'}</div>
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
                                     <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', fontWeight: 800 }}>MEMBER SINCE</div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { User, XCircle, Shield, Award, Users } from 'lucide-react';
+import { User, XCircle, Shield, Award, Users, ClipboardCheck } from 'lucide-react';
 
 interface MatchParticipantsTabProps {
     matchId: string;
@@ -40,6 +40,18 @@ export const MatchParticipantsTab: React.FC<MatchParticipantsTabProps> = ({ matc
 
     const handleReject = async (userId: string) => {
         if (!window.confirm('참가 신청을 거절하시겠습니까?')) return;
+        const { error } = await supabase
+            .from('match_participants')
+            .delete()
+            .eq('match_id', matchId)
+            .eq('user_id', userId);
+        
+        if (error) alert(error.message);
+        else loadParticipants();
+    };
+
+    const handleKick = async (userId: string) => {
+        if (!window.confirm('해당 참여자를 강퇴하시겠습니까?')) return;
         const { error } = await supabase
             .from('match_participants')
             .delete()

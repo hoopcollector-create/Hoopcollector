@@ -171,7 +171,7 @@ DECLARE
     v_amount INTEGER;
     v_points_used INTEGER;
     v_ticket_qty INTEGER := 1;
-    v_grade TEXT;
+    v_grade TEXT := 'C';
     v_reward_points INTEGER := 0;
 BEGIN
     -- 1. 정보 조회
@@ -179,18 +179,21 @@ BEGIN
     INTO v_user_id, v_product_title, v_amount, v_points_used
     FROM purchases WHERE id = p_purchase_id;
 
-    -- 2. 티켓 등급 파악 (한글/영문, Class 등 모든 레거시 포맷 완벽 지원)
-    IF v_product_title ~* 'A[[:space:]]?GRADE|A등급|Class[[:space:]]?A' THEN v_grade := 'A';
-    ELSIF v_product_title ~* 'B[[:space:]]?GRADE|B등급|Class[[:space:]]?B' THEN v_grade := 'B';
-    ELSIF v_product_title ~* 'C[[:space:]]?GRADE|C등급|Class[[:space:]]?C' THEN v_grade := 'C';
-    ELSE v_grade := 'C'; -- 기본값
-    END IF;
+    -- 2. 실제 상품 정보 조회 (이름으로 매칭)
+    -- products 테이블에서 직접 class_type과 ticket_qty를 가져와서 정확성 100% 보장
+    SELECT class_type, ticket_qty INTO v_grade, v_ticket_qty
+    FROM products 
+    WHERE name = v_product_title
+    LIMIT 1;
 
-    -- 개수 파악 (숫자 추출 로직 보강: '10회', '5회' 등)
-    IF v_product_title ~ '[0-9]+' THEN
-        v_ticket_qty := (substring(v_product_title from '[0-9]+'))::INTEGER;
-    ELSE
-        v_ticket_qty := 1;
+    -- 만약 products 테이블에서 이름을 못 찾았을 경우 최후의 수단 (예비 파싱)
+    IF v_grade IS NULL THEN
+        IF v_product_title ~* 'A[[:space:]]?GRADE|A등급|Class[[:space:]]?A' THEN v_grade := 'A';
+        ELSIF v_product_title ~* 'B[[:space:]]?GRADE|B등급|Class[[:space:]]?B' THEN v_grade := 'B';
+        ELSIF v_product_title ~* 'C[[:space:]]?GRADE|C등급|Class[[:space:]]?C' THEN v_grade := 'C';
+        ELSE v_grade := 'C';
+        END IF;
+        v_ticket_qty := 1; -- 파싱 실패 시 안전하게 1장만 지급
     END IF;
 
     -- 3. 포인트 1% 적립 로직 (사용된 포인트 제외 순수 결제 금액의 1%)

@@ -94,6 +94,7 @@ DECLARE
     v_status TEXT;
     v_points_used INTEGER;
     v_cash_amount INTEGER;
+    v_grade TEXT;
 BEGIN
     -- 1. 요청 정보 조회 및 상태 확인
     SELECT user_id, product_title, quantity, status, points_used, cash_amount 
@@ -104,15 +105,15 @@ BEGIN
         RAISE EXCEPTION '이미 처리된 요청입니다. (현재 상태: %)', v_status;
     END IF;
 
-    -- 2. 티켓 상품인 경우 티켓 지급
-    IF v_product_title LIKE '%A GRADE%' THEN
-        INSERT INTO ticket_balances (user_id, class_type, balance) VALUES (v_user_id, 'A', v_qty)
-        ON CONFLICT (user_id, class_type) DO UPDATE SET balance = ticket_balances.balance + v_qty;
-    ELSIF v_product_title LIKE '%B GRADE%' THEN
-        INSERT INTO ticket_balances (user_id, class_type, balance) VALUES (v_user_id, 'B', v_qty)
-        ON CONFLICT (user_id, class_type) DO UPDATE SET balance = ticket_balances.balance + v_qty;
-    ELSIF v_product_title LIKE '%C GRADE%' THEN
-        INSERT INTO ticket_balances (user_id, class_type, balance) VALUES (v_user_id, 'C', v_qty)
+    -- 2. 티켓 상품인 경우 티켓 지급 (한글/영문 모두 지원)
+    IF v_product_title ~* 'A[[:space:]]?GRADE|A등급' THEN v_grade := 'A';
+    ELSIF v_product_title ~* 'B[[:space:]]?GRADE|B등급' THEN v_grade := 'B';
+    ELSIF v_product_title ~* 'C[[:space:]]?GRADE|C등급' THEN v_grade := 'C';
+    ELSE v_grade := NULL;
+    END IF;
+
+    IF v_grade IS NOT NULL THEN
+        INSERT INTO ticket_balances (user_id, class_type, balance) VALUES (v_user_id, v_grade, v_qty)
         ON CONFLICT (user_id, class_type) DO UPDATE SET balance = ticket_balances.balance + v_qty;
     END IF;
 
@@ -177,15 +178,14 @@ BEGIN
     INTO v_user_id, v_product_title, v_amount, v_points_used
     FROM purchases WHERE id = p_purchase_id;
 
-    -- 2. 티켓 등급 및 개수 파악
-    -- 등급 파악
-    IF v_product_title LIKE '%A GRADE%' THEN v_grade := 'A';
-    ELSIF v_product_title LIKE '%B GRADE%' THEN v_grade := 'B';
-    ELSIF v_product_title LIKE '%C GRADE%' THEN v_grade := 'C';
+    -- 2. 티켓 등급 파악 (한글/영문 모두 지원)
+    IF v_product_title ~* 'A[[:space:]]?GRADE|A등급' THEN v_grade := 'A';
+    ELSIF v_product_title ~* 'B[[:space:]]?GRADE|B등급' THEN v_grade := 'B';
+    ELSIF v_product_title ~* 'C[[:space:]]?GRADE|C등급' THEN v_grade := 'C';
     ELSE v_grade := 'C';
     END IF;
 
-    -- 개수 파악 (상품명에 '10', '20' 등 숫자가 있으면 그만큼 지급, 없으면 1개)
+    -- 개수 파악 (숫자 추출 로직 보강)
     IF v_product_title ~ '[0-9]+' THEN
         v_ticket_qty := (substring(v_product_title from '[0-9]+'))::INTEGER;
     ELSE

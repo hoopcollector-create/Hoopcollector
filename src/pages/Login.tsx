@@ -51,13 +51,25 @@ export const Login = () => {
         return '#22c55e'; // Green
     };
 
-    const isFormValid = isSignUp 
-        ? (Object.values(passwordValidation).every(v => v) && name && birthday && phone)
-        : isForgotPassword ? !!email : (email && password);
+    const isFormValid = useMemo(() => {
+        if (isSignUp) {
+            // "Not too simple": Length 8+ AND (at least one Number OR Special Character)
+            const isPasswordAcceptable = passwordValidation.length && (passwordValidation.hasNumber || passwordValidation.hasSpecial);
+            const isProfileComplete = name.trim().length >= 2 && birthday && phone.trim().length >= 10;
+            return isPasswordAcceptable && passwordValidation.match && isProfileComplete;
+        }
+        if (isForgotPassword) return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        return email.length > 0 && password.length > 0;
+    }, [isSignUp, isForgotPassword, passwordValidation, name, birthday, phone, email, password]);
 
     async function handleAuth(e: React.FormEvent) {
         e.preventDefault();
-        if (!isFormValid) return;
+        
+        // Final sanity check before submission
+        if (!isFormValid) {
+            if (isSignUp) setMsg('모든 필수 항목을 올바르게 입력해 주세요.');
+            return;
+        }
 
         setLoading(true);
         setMsg('');
@@ -68,7 +80,7 @@ export const Login = () => {
                     password,
                     options: {
                         data: {
-                            name,
+                            name: name.trim(),
                             birthday,
                             position,
                             experience_years: experience ? parseInt(experience, 10) : null,
@@ -106,6 +118,18 @@ export const Login = () => {
         }
     }
 
+    // Prevent submission on Enter unless specifically intended
+    const handleInputKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            if (isSignUp) {
+                // Force user to click the REGISTER button explicitly as requested
+                e.preventDefault();
+            } else if (!isFormValid) {
+                e.preventDefault();
+            }
+        }
+    };
+
     const inputStyle = { 
         width: '100%', 
         padding: '14px', 
@@ -139,7 +163,7 @@ export const Login = () => {
                             <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)' }}>가입하신 이메일로 재설정 링크를 보내드립니다.</p>
                         </div>
                     )}
-                    <input type="email" placeholder="이메일" value={email} onChange={e => setEmail(e.target.value)} required style={inputStyle} />
+                    <input type="email" placeholder="이메일" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={handleInputKeyDown} required style={inputStyle} />
                     
                     {!isForgotPassword && (
                         <div style={{ position: 'relative' }}>
@@ -148,6 +172,7 @@ export const Login = () => {
                                 placeholder="비밀번호" 
                                 value={password} 
                                 onChange={e => setPassword(e.target.value)} 
+                                onKeyDown={handleInputKeyDown}
                                 required 
                                 style={inputStyle} 
                             />
@@ -180,6 +205,7 @@ export const Login = () => {
                                 placeholder="비밀번호 확인" 
                                 value={confirmPassword} 
                                 onChange={e => setConfirmPassword(e.target.value)} 
+                                onKeyDown={handleInputKeyDown}
                                 required 
                                 style={{ ...inputStyle, border: !passwordValidation.match && confirmPassword ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.1)' }} 
                             />
@@ -190,12 +216,12 @@ export const Login = () => {
                             <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', margin: '24px 0 24px' }}></div>
                             <h3 style={{ fontSize: '0.9rem', fontWeight: 800, marginBottom: '16px', color: 'rgba(255,255,255,0.4)' }}>PROFILE DETAILS</h3>
                             
-                            <input type="text" placeholder="이름 (실명)" value={name} onChange={e => setName(e.target.value)} required style={inputStyle} />
-                            <input type="text" placeholder="전화번호" value={phone} onChange={e => setPhone(e.target.value)} required style={inputStyle} />
+                            <input type="text" placeholder="이름 (실명)" value={name} onChange={e => setName(e.target.value)} onKeyDown={handleInputKeyDown} required style={inputStyle} />
+                            <input type="text" placeholder="전화번호" value={phone} onChange={e => setPhone(e.target.value)} onKeyDown={handleInputKeyDown} required style={inputStyle} />
                             
                              <div style={{ marginBottom: '16px' }}>
                                 <label style={{ display: 'block', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>생년월일</label>
-                                <input type="date" value={birthday} onChange={e => setBirthday(e.target.value)} required style={{ ...inputStyle, marginBottom: '8px' }} />
+                                <input type="date" value={birthday} onChange={e => setBirthday(e.target.value)} onKeyDown={handleInputKeyDown} required style={{ ...inputStyle, marginBottom: '8px' }} />
                                 <div style={birthdayNotice}>
                                     <AlertCircle size={12} style={{ marginRight: 6, flexShrink: 0 }} />
                                     <span>생년월일은 본인 확인 및 연령별 매칭 제한을 위해 사용되며, <strong>가입 후 직접 수정이 불가능</strong>합니다. 수정이 필요한 경우 훕콜렉터 고객센터로 문의해 주세요.</span>
@@ -211,25 +237,26 @@ export const Login = () => {
                                 </select>
                             </div>
 
-                            <input type="number" placeholder="경력 (년 단위)" value={experience} onChange={e => setExperience(e.target.value)} style={inputStyle} />
+                            <input type="number" placeholder="경력 (년 단위)" value={experience} onChange={e => setExperience(e.target.value)} onKeyDown={handleInputKeyDown} style={inputStyle} />
                         </>
                     )}
 
                     <button 
                         type="submit" 
-                        disabled={loading || (isSignUp && !isFormValid)} 
+                        disabled={loading || !isFormValid} 
                         style={{ 
                             width: '100%', 
                             padding: '16px', 
                             borderRadius: '12px', 
-                            background: (isSignUp && !isFormValid) ? 'rgba(255,255,255,0.05)' : 'var(--theme-primary)', 
-                            color: (isSignUp && !isFormValid) ? 'rgba(255,255,255,0.2)' : 'white', 
+                            background: !isFormValid ? 'rgba(255,255,255,0.05)' : 'var(--theme-primary)', 
+                            color: !isFormValid ? 'rgba(255,255,255,0.2)' : 'white', 
                             border: 'none', 
                             fontWeight: 900, 
                             fontSize: '1rem', 
-                            cursor: (loading || (isSignUp && !isFormValid)) ? 'not-allowed' : 'pointer', 
+                            cursor: (loading || !isFormValid) ? 'not-allowed' : 'pointer', 
                             marginTop: '12px',
-                            transition: 'all 0.3s ease'
+                            transition: 'all 0.3s ease',
+                            boxShadow: isFormValid ? '0 10px 20px rgba(0,0,0,0.2)' : 'none'
                         }}
                     >
                         {loading ? 'PROCESSING...' : (isSignUp ? 'REGISTER' : isForgotPassword ? 'SEND RESET LINK' : 'LOG IN')}

@@ -1,15 +1,15 @@
 :root {
-  /* Core Palette */
-  --color-black: #000000;
+  /* Deep Background */
+  --color-black: #0f0f12;
   --color-white: #ffffff;
   --color-gray-100: #f3f4f6;
   --color-gray-800: #1f2937;
-  --color-gray-900: #121214;     /* Deep Surface */
+  --color-gray-900: #0f0f12;     /* Deep Surface Background */
   
-  /* Surface Layers for Depth */
-  --bg-surface-L1: #161618;
-  --bg-surface-L2: #1e1e20;
-  --border-subtle: rgba(255, 255, 255, 0.08);
+  /* Surface Layers for Depth (Antigravity Style) */
+  --bg-surface-L1: #1a1a20;
+  --bg-surface-L2: #25252e;
+  --border-subtle: rgba(255, 255, 255, 0.06);
   --border-distinct: rgba(255, 255, 255, 0.15);
 
   /* Typography & Accents */
@@ -60,7 +60,7 @@ body {
   margin: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: var(--font-base);
-  background-color: #070708;
+  background-color: var(--color-gray-900);
   color: #ffffff;
   overflow-x: hidden;
   width: 100%;
@@ -86,7 +86,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: #070708;
+  background: var(--color-gray-900);
   min-width: 0;
 }
 

@@ -530,154 +530,131 @@ export const ScheduleCalendar = () => {
             </div>
 
             {/* Calendar Grid */}
-            <div style={gridContainer} className="card-premium">
-                <div style={weekHeader}>
-                    {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (
-                        <div key={d} style={{ ...weekDay, display: viewMode === 'day' && i !== viewDate.getDay() ? 'none' : 'block' }}>{d}</div>
-                    ))}
+            <div style={{ ...gridContainer, overflowX: 'auto' }} className="card-premium">
+                <div style={{ ...weekHeader, display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                    {viewMode !== 'month' && <div style={{ width: '60px', flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.05)' }} />}
+                    <div style={{ display: 'grid', gridTemplateColumns: viewMode === 'month' ? 'repeat(7, 1fr)' : (viewMode === 'week' ? 'repeat(7, 1fr)' : '1fr'), flex: 1 }}>
+                        {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (
+                            <div key={d} style={{ ...weekDay, display: viewMode === 'day' && i !== viewDate.getDay() ? 'none' : 'block' }}>{d}</div>
+                        ))}
+                    </div>
                 </div>
-                <div style={{ ...daysGrid, gridTemplateColumns: viewMode === 'day' ? '1fr' : 'repeat(7, 1fr)', gridAutoRows: viewMode === 'month' ? 'minmax(80px, auto)' : 'minmax(400px, auto)' }}>
-                    {(viewMode === 'month' ? monthData : viewMode === 'week' ? weekData : [{ day: viewDate.getDate(), month: viewDate.getMonth(), year: viewDate.getFullYear(), current: true }]).map((d, i) => {
-                        const dayEvents = events.filter(e => 
-                            e.start.getDate() === d.day && 
-                            e.start.getMonth() === d.month && 
-                            e.start.getFullYear() === d.year
-                        );
 
-                        if (viewMode === 'day') {
-                            // Render 24-hour timeline for Day View
-                            const hours = Array.from({ length: 24 }, (_, i) => i);
+                <div style={{ 
+                    ...daysGrid, 
+                    display: viewMode === 'month' ? 'grid' : 'flex',
+                    gridTemplateColumns: viewMode === 'month' ? 'repeat(7, 1fr)' : 'none',
+                    position: 'relative',
+                    minWidth: viewMode === 'week' ? '800px' : 'auto' // Ensure enough width for 7 days timeline
+                }}>
+                    {viewMode === 'month' ? (
+                        monthData.map((d, i) => {
+                            const dayEvents = events.filter(e => 
+                                e.start.getDate() === d.day && 
+                                e.start.getMonth() === d.month && 
+                                e.start.getFullYear() === d.year
+                            );
                             return (
-                                <div key={i} style={{ ...dayTimelineContainer, minHeight: '1200px' }}>
-                                    {hours.map(h => (
-                                        <div key={h} style={timelineRow}>
-                                            <div style={timeLabel}>{h === 12 ? '정오' : (h < 12 ? `오전 ${h}시` : `오후 ${h - 12}시`)}</div>
-                                            <div style={timeGridLine} />
-                                        </div>
-                                    ))}
-                                    
-                                    {/* Availability Slots (Background Layer) */}
-                                    {dayEvents.filter(ev => ev.type === 'slot').map(ev => {
-                                        const startMin = ev.start.getHours() * 60 + ev.start.getMinutes();
-                                        const duration = (ev.end.getTime() - ev.start.getTime()) / (1000 * 60);
-                                        return (
-                                            <div key={ev.id} style={{
-                                                position: 'absolute',
-                                                left: '80px',
-                                                right: '10px',
-                                                top: `${startMin * (60/60)}px`,
-                                                height: `${duration * (60/60)}px`,
-                                                background: 'rgba(59, 130, 246, 0.15)',
-                                                borderLeft: '4px solid var(--color-coach)',
-                                                borderRadius: '4px',
-                                                zIndex: 1,
-                                                padding: '8px',
-                                                fontSize: '0.75rem',
-                                                color: 'var(--color-coach)',
-                                                fontWeight: 800
-                                            }}>
-                                                수업 가능 시간
+                                <div 
+                                    key={i} 
+                                    onClick={() => handleDayClick(d)}
+                                    style={{ 
+                                        ...dayCell, 
+                                        opacity: d.current ? 1 : 0.3, 
+                                        cursor: 'pointer',
+                                        minHeight: '100px'
+                                    }}
+                                    className="hover-bright"
+                                >
+                                    <div style={dayNumber}>{d.day}</div>
+                                    <div style={eventsList}>
+                                        {dayEvents.slice(0, 3).map(ev => (
+                                            <div key={ev.id} onClick={(e) => handleEventClick(e, ev)} style={{ ...eventChip, padding: '2px 6px', fontSize: '0.7rem', background: ev.type === 'class' ? 'var(--color-coach)' : (ev.type === 'personal' ? '#8b5cf6' : 'rgba(255,255,255,0.1)'), color: 'white' }}>
+                                                {ev.title}
                                             </div>
-                                        );
-                                    })}
-
-                                    {/* Real Events (Top Layer) */}
-                                    {dayEvents.filter(ev => ev.type !== 'slot').map(ev => {
-                                        const startMin = ev.start.getHours() * 60 + ev.start.getMinutes();
-                                        const duration = (ev.end.getTime() - ev.start.getTime()) / (1000 * 60);
-                                        return (
-                                            <div key={ev.id} 
-                                                onClick={(e) => handleEventClick(e, ev)}
-                                                style={{
-                                                    position: 'absolute',
-                                                    left: '100px',
-                                                    right: '20px',
-                                                    top: `${startMin * (60/60)}px`,
-                                                    height: `${Math.max(40, duration * (60/60))}px`,
-                                                    background: ev.type === 'class' ? 'rgba(59, 130, 246, 0.95)' : 'rgba(139, 92, 246, 0.95)',
-                                                    borderRadius: '12px',
-                                                    zIndex: 5,
-                                                    padding: '12px',
-                                                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-                                                    color: 'white',
-                                                    border: '1px solid rgba(255,255,255,0.2)',
-                                                    cursor: 'pointer'
-                                                }}>
-                                                <div style={{ fontWeight: 900, fontSize: '0.9rem', marginBottom: '4px' }}>{ev.title}</div>
-                                                <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>
-                                                    {ev.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ~ {ev.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                        ))}
+                                        {dayEvents.length > 3 && <div style={{ fontSize: '0.65rem', opacity: 0.5 }}>+{dayEvents.length - 3} 더보기</div>}
+                                    </div>
                                 </div>
                             );
-                        }
-
-                        return (
-                            <div 
-                                key={i} 
-                                onClick={() => handleDayClick(d)}
-                                style={{ 
-                                    ...dayCell, 
-                                    opacity: d.current ? 1 : 0.3, 
-                                    background: viewMode !== 'month' ? 'rgba(255,255,255,0.01)' : 'transparent',
-                                    cursor: viewMode === 'month' ? 'pointer' : 'default',
-                                    minHeight: viewMode === 'month' ? '100px' : '400px'
-                                }}
-                                className={viewMode === 'month' ? "hover-bright" : ""}
-                            >
-                                <div style={dayNumber}>{d.day}</div>
-                                <div style={eventsList}>
-                                    {dayEvents
-                                        .sort((a, b) => {
-                                            const priority: Record<string, number> = { class: 1, personal: 2, slot: 3 };
-                                            return (priority[a.type] || 99) - (priority[b.type] || 99);
-                                        })
-                                        .map(ev => {
-                                            const isSlot = ev.type === 'slot';
-                                            const slotStyle: React.CSSProperties = {
-                                                background: 'rgba(59, 130, 246, 0.05)',
-                                                border: '1px dashed rgba(59, 130, 246, 0.3)',
-                                                color: 'rgba(96, 165, 250, 0.6)',
-                                                fontSize: '0.7rem',
-                                                padding: '2px 6px',
-                                                borderRadius: '4px'
-                                            };
-                                            const solidStyle: React.CSSProperties = {
-                                                padding: viewMode === 'month' ? '4px 8px' : '10px 12px',
-                                                fontSize: viewMode === 'month' ? '0.75rem' : '0.85rem',
-                                                background: ev.type === 'class' ? 'rgba(59, 130, 246, 0.9)' : 'rgba(139, 92, 246, 0.85)',
-                                                color: 'white',
-                                                boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                                                borderLeft: `4px solid ${ev.type === 'class' ? '#ffffff' : '#fbcfe8'}`,
-                                            };
-
-                                            return (
-                                                <div 
-                                                    key={ev.id} 
-                                                    onClick={(e) => handleEventClick(e, ev)}
-                                                    style={{ 
-                                                        ...eventChip, 
-                                                        ...(isSlot ? slotStyle : solidStyle),
-                                                        cursor: 'pointer'
-                                                    }}
-                                                >
-                                                    <div style={{ fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                        {isSlot ? `🕒 ${ev.start.getHours()}:${String(ev.start.getMinutes()).padStart(2, '0')} 가능` : ev.title}
-                                                    </div>
-                                                    {viewMode !== 'month' && (
-                                                        <div style={{ fontSize: '0.7rem', opacity: isSlot ? 0.5 : 0.8, marginTop: '2px', fontWeight: 700 }}>
-                                                            {ev.start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ~ {ev.end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                </div>
+                        })
+                    ) : (
+                        <>
+                            {/* Time Axis (Shared for Day/Week) */}
+                            <div style={{ width: '60px', flexShrink: 0, background: 'rgba(255,255,255,0.01)', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+                                {Array.from({ length: 24 }).map((_, h) => (
+                                    <div key={h} style={{ height: '60px', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', paddingTop: '4px', fontWeight: 800 }}>
+                                        {String(h).padStart(2, '0')}:00
+                                    </div>
+                                ))}
                             </div>
-                        );
-                    })}
+
+                            {/* Columns Container */}
+                            <div style={{ flex: 1, display: 'flex', position: 'relative', minHeight: '1440px' }}>
+                                {/* Horizontal Grid Lines (Shared) */}
+                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' }}>
+                                    {Array.from({ length: 24 }).map((_, h) => (
+                                        <div key={h} style={{ height: '60px', borderBottom: '1px solid rgba(255,255,255,0.03)' }} />
+                                    ))}
+                                </div>
+
+                                {/* Columns Render */}
+                                {(viewMode === 'week' ? weekData : [{ day: viewDate.getDate(), month: viewDate.getMonth(), year: viewDate.getFullYear(), current: true }]).map((d, colIdx) => {
+                                    const dayEvents = events.filter(e => 
+                                        e.start.getDate() === d.day && 
+                                        e.start.getMonth() === d.month && 
+                                        e.start.getFullYear() === d.year
+                                    );
+
+                                    return (
+                                        <div key={colIdx} style={{ flex: 1, position: 'relative', borderRight: '1px solid rgba(255,255,255,0.03)' }}>
+                                            {/* Render Availability Background (Slots) */}
+                                            {dayEvents.filter(ev => ev.type === 'slot').map(ev => {
+                                                const startMin = ev.start.getHours() * 60 + ev.start.getMinutes();
+                                                const duration = (ev.end.getTime() - ev.start.getTime()) / (1000 * 60);
+                                                return (
+                                                    <div key={ev.id} onClick={(e) => handleEventClick(e, ev)} style={{
+                                                        position: 'absolute', left: '4px', right: '4px',
+                                                        top: `${startMin}px`, height: `${duration}px`,
+                                                        background: 'rgba(59, 130, 246, 0.08)',
+                                                        borderLeft: '3px solid var(--color-coach)',
+                                                        zIndex: 1, cursor: 'pointer', borderRadius: '4px', padding: '4px',
+                                                        fontSize: '0.65rem', color: 'rgba(59, 130, 246, 0.5)', fontWeight: 800, overflow: 'hidden'
+                                                    }}>
+                                                        레슨 가능
+                                                    </div>
+                                                );
+                                            })}
+
+                                            {/* Render Busy Events (Class/Personal) */}
+                                            {dayEvents.filter(ev => ev.type !== 'slot').map(ev => {
+                                                const startMin = ev.start.getHours() * 60 + ev.start.getMinutes();
+                                                const duration = (ev.end.getTime() - ev.start.getTime()) / (1000 * 60);
+                                                return (
+                                                    <div key={ev.id} onClick={(e) => handleEventClick(e, ev)} style={{
+                                                        position: 'absolute', left: '2px', right: '2px',
+                                                        top: `${startMin}px`, height: `${Math.max(30, duration)}px`,
+                                                        background: ev.type === 'class' ? 'var(--color-coach)' : '#8b5cf6',
+                                                        borderRadius: '8px', zIndex: 10, padding: '8px',
+                                                        color: 'white', border: '1px solid rgba(255,255,255,0.1)',
+                                                        cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                                                        overflow: 'hidden'
+                                                    }}>
+                                                        <div style={{ fontWeight: 900, fontSize: '0.75rem', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ev.title}</div>
+                                                        {duration > 40 && (
+                                                            <div style={{ fontSize: '0.65rem', opacity: 0.8, marginTop: '2px' }}>
+                                                                {ev.start.getHours()}:{String(ev.start.getMinutes()).padStart(2, '0')}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 
